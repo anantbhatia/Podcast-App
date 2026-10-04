@@ -26,4 +26,4 @@ python render/render_elevenlabs.py path/to/ep01-script.md out/ep01.mp3 --stop-at
 python render/render_elevenlabs.py path/to/ep01-script.md out/ep01.mp3 --stop-at "Amazon blocks"
 ```
 
-Voices: Mara is Sarah (`EXAVITQu4vr4xnSDxMaL`), Theo is Chris (`iP95p4xoKVk53GoZ742B`), both ElevenLabs default voices because the free tier can't use library voices over the API. Credits are about one per character: the full Ep 1 is about 13,000, the cold open plus "What Muse is" about 4,000. Use `--start-at`/`--stop-at` with any `##` or `###` heading, and `--seed` for a repeatable take.
+Voices: Mara is Sarah (`EXAVITQu4vr4xnSDxMaL`), Theo is Chris (`iP95p4xoKVk53GoZ742B`), both ElevenLabs default voices because the free tier can't use library voices over the API. Credits are about one per character: the full Ep 1 is about 13,000, the cold open plus "What Muse is" about 4,000. Use `--start-at`/`--stop-at` with any `##` or `###` heading, `--seed` for a repeatable take, `--voice MARA=<id>` to try another voice, and `--stability 0` for the most expressive delivery.

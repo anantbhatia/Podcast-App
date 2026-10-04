@@ -71,13 +71,15 @@ def chunk(lines):
         yield batch
 
 
-def request(lines, key: str, seed: int | None) -> bytes:
+def request(lines, key: str, seed: int | None, stability: float | None) -> bytes:
     body = {
         "model_id": MODEL,
         "inputs": [{"text": t, "voice_id": VOICES[s]} for s, t in lines],
     }
     if seed is not None:
         body["seed"] = seed
+    if stability is not None:
+        body["settings"] = {"stability": stability}
     req = urllib.request.Request(
         f"{API}?output_format=mp3_44100_128",
         data=json.dumps(body).encode(),
@@ -120,8 +122,17 @@ def main():
     ap.add_argument("--start-at", help="start at the heading that starts with this")
     ap.add_argument("--stop-at", help="stop before the heading that starts with this")
     ap.add_argument("--seed", type=int, help="fix the seed for a repeatable take")
+    ap.add_argument("--stability", type=float,
+                    help="v3 stability: 0.0 creative (most expressive), 0.5 natural, 1.0 robust")
+    ap.add_argument("--voice", action="append", default=[], metavar="HOST=VOICE_ID",
+                    help="override a host's voice, e.g. --voice MARA=cgSgspJ2msm6clMCkdW9")
     ap.add_argument("--dry-run", action="store_true", help="print sections and character count only")
     a = ap.parse_args()
+    for override in a.voice:
+        host, _, voice_id = override.partition("=")
+        if host.upper() not in VOICES or not voice_id:
+            sys.exit(f"bad --voice {override!r}; expected MARA=<id> or THEO=<id>")
+        VOICES[host.upper()] = voice_id
 
     sections = parse_sections(a.script.read_text(), a.start_at, a.stop_at)
     total = sum(len(t) for _, lines in sections for _, t in lines)
@@ -139,7 +150,7 @@ def main():
             for ci, batch in enumerate(chunk(lines)):
                 print(f"rendering {title} ({ci + 1})...")
                 p = Path(tmp) / f"{si:02d}_{ci:02d}.mp3"
-                p.write_bytes(request(batch, key, a.seed))
+                p.write_bytes(request(batch, key, a.seed, a.stability))
                 parts.append((p, ci == 0))
         join(parts, a.out)
     print(f"wrote {a.out}")
