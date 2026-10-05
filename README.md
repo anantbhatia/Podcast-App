@@ -27,3 +27,11 @@ python render/render_elevenlabs.py path/to/ep01-script.md out/ep01.mp3 --stop-at
 ```
 
 Voices: Mara is Laura (`FGY2WhTYpPnrIDTdsKH5`), Theo is Chris (`iP95p4xoKVk53GoZ742B`), both ElevenLabs default voices because the free tier can't use library voices over the API. Credits are about one per character: the full Ep 1 is about 13,000, the cold open plus "What Muse is" about 4,000. Use `--start-at`/`--stop-at` with any `##` or `###` heading, `--seed` for a repeatable take, `--voice MARA=<id>` to try another voice, and `--stability` to trade expressiveness (0.0, the default) for consistency (1.0).
+
+## Theme sting
+
+`render/theme_sting.py` synthesizes the show's 14-second theme (112 bpm, D major: a quiet plucked bed, a marimba hook and a button chord) with numpy, so there are no samples to license. With `--mix` it scores an episode: the bed comes in under the host intros, the hook lands right after "This is Terms and Conditions", and `--gap` seconds of room are opened so the hook plays in the clear.
+
+```sh
+python render/theme_sting.py sting.wav --mix out/ep01.mp3 --title-end 50.96 --out out/ep01_scored.mp3
+```
