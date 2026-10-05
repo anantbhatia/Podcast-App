@@ -35,3 +35,11 @@ Voices: Mara is Laura (`FGY2WhTYpPnrIDTdsKH5`), Theo is Chris (`iP95p4xoKVk53GoZ
 ```sh
 python render/theme_sting.py sting.wav --mix out/ep01.mp3 --title-end 50.96 --out out/ep01_scored.mp3
 ```
+
+## Score an episode with a theme
+
+`render/score_episode.py` places a theme track the way a tech-news show does: a quiet bed under the host intros, the theme in the clear for a few seconds right after the title call, a duck and fade under the next line, and the theme's ending as a closing button. The pilot's theme is a 15-second ElevenLabs sound-generation clip (the Music API needs a paid plan).
+
+```sh
+python render/score_episode.py out/ep01.mp3 theme.mp3 --title-end 50.96 --out out/ep01_scored.mp3
+```
