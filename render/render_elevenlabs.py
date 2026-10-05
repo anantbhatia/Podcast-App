@@ -24,7 +24,7 @@ API = "https://api.elevenlabs.io/v1/text-to-dialogue"
 MODEL = "eleven_v3"
 # Default voices usable on the free tier (library voices need a paid plan).
 VOICES = {
-    "MARA": "EXAVITQu4vr4xnSDxMaL",  # Sarah: calm, precise, deadpan
+    "MARA": "FGY2WhTYpPnrIDTdsKH5",  # Laura: high energy, conversational
     "THEO": "iP95p4xoKVk53GoZ742B",  # Chris: warm, quick, conversational
 }
 MAX_CHARS = 2500     # keep each request well under the v3 per-request limit
@@ -122,8 +122,8 @@ def main():
     ap.add_argument("--start-at", help="start at the heading that starts with this")
     ap.add_argument("--stop-at", help="stop before the heading that starts with this")
     ap.add_argument("--seed", type=int, help="fix the seed for a repeatable take")
-    ap.add_argument("--stability", type=float,
-                    help="v3 stability: 0.0 creative (most expressive), 0.5 natural, 1.0 robust")
+    ap.add_argument("--stability", type=float, default=0.0,
+                    help="v3 stability: 0.0 creative (default, most expressive), 0.5 natural, 1.0 robust")
     ap.add_argument("--voice", action="append", default=[], metavar="HOST=VOICE_ID",
                     help="override a host's voice, e.g. --voice MARA=cgSgspJ2msm6clMCkdW9")
     ap.add_argument("--dry-run", action="store_true", help="print sections and character count only")
