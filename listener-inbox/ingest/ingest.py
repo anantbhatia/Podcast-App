@@ -20,7 +20,8 @@ from pathlib import Path
 
 def api(base, token, path, method="GET"):
     req = urllib.request.Request(base.rstrip("/") + path, method=method,
-                                 headers={"authorization": f"Bearer {token}"})
+                                 # Cloudflare blocks the default Python user agent, so name ourselves.
+                                 headers={"authorization": f"Bearer {token}", "user-agent": "hpm-ingest/1.0"})
     with urllib.request.urlopen(req, timeout=60) as res:
         return res.read()
 
