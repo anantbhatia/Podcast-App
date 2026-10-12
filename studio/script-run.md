@@ -10,6 +10,7 @@ Dashboard: https://claude.ai/artifact/UcZgdyKCCwcPMRYi41yb6g. Read and write its
   - `scriptNotes` (optional free text from the hosts)
 - `digests`: the newest document. Its `leads` array holds the candidate leads; its `markdown` holds the full digest.
 - `ideas` with status "promoted", and `asks` with status "new" or "top3".
+- `traits`: traits the hosts added on the Studio's Host bible tab ({host: "anant" or "aman", kind, text, by, status, createdAt}). Use every one with status "active" as part of the show bible. Where one conflicts with the bible, the trait wins, because it's newer. A kind of "offlimits" is a hard on-air rule. Then sync them into show-bible.md: re-read the file, and under section 2 keep a subsection "### Added on the Studio" listing each active trait as "- Anant (Humor, added 2026-10-14): text". Add new ones and remove retired ones; don't touch anything else in the file.
 - /mnt/project-files/show-bible.md: read it fresh every run. Follow it exactly, especially the hosts, relationship, editorial rules, the on-air rules (no politics or religion, the Walmart disclosure, no AI-voice disclosure line), and section 4's structure and **standard opening**.
 - Past scripts, so you don't repeat them: /mnt/project-files/pilot/ep01-script.md and /mnt/project-files/ep02-script.md.
 

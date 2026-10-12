@@ -145,6 +145,12 @@ td.url{overflow-wrap:anywhere;max-width:340px}
 .hb-split > div{background:var(--panel-2);border-radius:var(--r);padding:12px 14px;display:grid;gap:4px;min-width:0}
 .hb ul,.hb ol{margin:0;padding-left:1.2em;display:grid;gap:6px;max-width:72ch}
 .hb h2{font-size:20px}
+.hb-adds{display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:12px}
+.hb-adds ul{list-style:none;padding:0;margin:0;display:grid;gap:6px;max-width:none}
+.hb-adds li{background:var(--accent-soft);border-radius:4px;padding:8px 10px;display:grid;gap:4px}
+.hb-adds li .meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.trait-form{display:grid;gap:8px;grid-template-columns:minmax(0,160px) minmax(0,1fr) auto;align-items:end}
+@media (max-width:560px){.trait-form{grid-template-columns:1fr}}
 
 /* This week's episode */
 .leads{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
@@ -317,7 +323,7 @@ td.url{overflow-wrap:anywhere;max-width:340px}
       <div class="panel">
         <p class="label">Who we are on air</p>
         <p class="hb-quote">Two school friends who never argue, now on a show built to make them care enough to. Anant trusts what he can get his hands on. Aman trusts what someone is paying for and whether real people will actually use it.</p>
-        <p class="intro">Approved by Anant on 12 October 2026. The scripts follow this page. To change it, ask Claude in the hosts thread.</p>
+        <p class="intro">Approved by Anant on 12 October 2026. Either of you can add new traits under each host below; the next script run reads them along with everything else on this page. To rewrite an approved line, add the correction as a trait, or ask Claude in the project.</p>
       </div>
 
       <div class="hb-hosts">
@@ -334,6 +340,15 @@ td.url{overflow-wrap:anywhere;max-width:340px}
             <div><dt>Humor</dt><dd>Sarcastic and silly. Goes quiet or jokes when he disagrees.</dd></div>
             <div><dt>Pet peeves</dt><dd>Information overload. Calling something early and not getting credit.</dd></div>
           </dl>
+          <div class="hb-adds">
+            <span class="label">Added since the intake</span>
+            <ul id="traits-anant"></ul>
+            <form class="trait-form" data-host="anant">
+              <label class="field"><span>Kind</span><select name="kind"><option value="personality">Personality</option><option value="views">Views</option><option value="humor">Humor</option><option value="catchphrase">Catchphrase</option><option value="peeve">Pet peeve</option><option value="story">Story or memory</option><option value="offlimits">Off limits on air</option></select></label>
+              <label class="field"><span>New trait for Anant</span><input name="text" required maxlength="400" placeholder="e.g. Has started running; brings it up when a launch is 'a marathon, not a sprint'"></label>
+              <div><button class="btn" type="submit">Add</button></div>
+            </form>
+          </div>
         </article>
 
         <article class="panel hb-host">
@@ -349,6 +364,15 @@ td.url{overflow-wrap:anywhere;max-width:340px}
             <div><dt>Humor</dt><dd>Every kind, with one rule: whoever tells the joke owns the landing. Asks questions when he disagrees.</dd></div>
             <div><dt>Catchphrase</dt><dd>"I looked into it…"</dd></div>
           </dl>
+          <div class="hb-adds">
+            <span class="label">Added since the intake</span>
+            <ul id="traits-aman"></ul>
+            <form class="trait-form" data-host="aman">
+              <label class="field"><span>Kind</span><select name="kind"><option value="personality">Personality</option><option value="views">Views</option><option value="humor">Humor</option><option value="catchphrase">Catchphrase</option><option value="peeve">Pet peeve</option><option value="story">Story or memory</option><option value="offlimits">Off limits on air</option></select></label>
+              <label class="field"><span>New trait for Aman</span><input name="text" required maxlength="400" placeholder="e.g. Has started running; brings it up when a launch is 'a marathon, not a sprint'"></label>
+              <div><button class="btn" type="submit">Add</button></div>
+            </form>
+          </div>
         </article>
       </div>
 
@@ -395,7 +419,7 @@ td.url{overflow-wrap:anywhere;max-width:340px}
 const STAGES=["Ideas","Research","Brief","Script","Your review","Audio","Final review","Ready to send"];
 const STATE_LABEL={idle:"Idle",working:"Working",waiting:"Waiting on you",done:"Done",failed:"Failed"};
 const SCRIPT_TRIGGER="trig_01UYsgEmJwy7PLJNbdANDNfn";
-const S={episodes:[],digests:[],agents:[],show:null,ideas:[],sources:[],asks:[],contacts:[],me:null,canWrite:true,names:{}};
+const S={traits:[],episodes:[],digests:[],agents:[],show:null,ideas:[],sources:[],asks:[],contacts:[],me:null,canWrite:true,names:{}};
 let db=null,user=null,mcp=null;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -557,13 +581,26 @@ const FIRE_MSG={
   blocked_by_policy:"Saved. Your organization blocks starting runs from here. Ask Anant to press the button.",
   tool_error:"Saved, but the run didn't start from this account. Only Anant's account can start it; ask Anant to press the button.",
   approval_required:"Saved. The run needs your approval to start; press the button again and allow it."};
-function renderAll(){renderEpisode();renderDigests();renderShow();renderAgents();renderIdeas();renderSources();renderAsks();renderContacts()}
+const TRAIT_KIND={personality:"Personality",views:"Views",humor:"Humor",catchphrase:"Catchphrase",peeve:"Pet peeve",story:"Story or memory",offlimits:"Off limits on air"};
+function renderTraits(){
+  ["anant","aman"].forEach(h=>{
+    const list=S.traits.filter(t=>t.host===h&&t.status!=="retired");
+    $("traits-"+h).innerHTML=list.length?list.map(t=>`<li><span>${esc(t.text)}</span><span class="meta"><span class="tag">${esc(TRAIT_KIND[t.kind]||"Trait")}</span>Added by ${esc(nameOf(t.by))} · ${ago(t.createdAt)}${S.canWrite?` <button class="btn ghost" data-act="del-trait" data-id="${t.id}">Remove</button>`:""}</span></li>`).join("")
+      :`<li style="background:none;padding:0;color:var(--muted);font-size:13.5px">Nothing added yet.</li>`;
+  });
+  document.querySelectorAll(".trait-form").forEach(f=>f.hidden=!S.canWrite);
+}
+document.querySelectorAll(".trait-form").forEach(f=>f.addEventListener("submit",async e=>{
+  e.preventDefault();const text=f.elements.text.value.trim();if(!text)return;
+  if(await guard(()=>db.collection("traits").add({host:f.dataset.host,kind:f.elements.kind.value,text,by:S.me,status:"active",createdAt:now()}))){f.reset();toast("Trait added. The next script will use it.")}
+}));
+function renderAll(){renderTraits();renderEpisode();renderDigests();renderShow();renderAgents();renderIdeas();renderSources();renderAsks();renderContacts()}
 
 /* Names for whoever appears on screen */
 let nameTimer=null;
 function resolveNames(){clearTimeout(nameTimer);nameTimer=setTimeout(async()=>{
   if(!user)return;const ids=new Set();
-  [...S.ideas,...S.sources,...S.contacts,...S.episodes,...(S.episodes.flatMap(e=>e.feedback||[])),S.show?.leadPick||{},S.show?.scriptRequested||{}].forEach(x=>{["by","promotedBy","vetoedBy","approvedBy"].forEach(k=>x[k]&&ids.add(x[k]))});
+  [...S.ideas,...S.sources,...S.contacts,...S.traits,...S.episodes,...(S.episodes.flatMap(e=>e.feedback||[])),S.show?.leadPick||{},S.show?.scriptRequested||{}].forEach(x=>{["by","promotedBy","vetoedBy","approvedBy"].forEach(k=>x[k]&&ids.add(x[k]))});
   const need=[...ids].filter(id=>!S.names[id]);if(!need.length)return;
   try{const ps=await user.profiles(need);let changed=false;for(const id of need){const n=ps[id]?.name;if(n){S.names[id]=n.split(" ")[0];changed=true}}if(changed)renderAll()}catch{}
 },150)}
@@ -595,7 +632,8 @@ document.addEventListener("click",async e=>{
     "del-idea":()=>db.doc("ideas/"+id).delete(),
     "del-source":()=>db.doc("sources/"+id).delete(),
     "del-ask":()=>db.doc("asks/"+id).delete(),
-    "del-contact":()=>db.doc("contacts/"+id).delete()};
+    "del-contact":()=>db.doc("contacts/"+id).delete(),
+    "del-trait":()=>db.doc("traits/"+id).update({status:"retired",retiredBy:S.me,retiredAt:now()})};
   const ok=await guard(acts[b.dataset.act]);if(!ok)b.disabled=false;
 });
 
@@ -647,6 +685,7 @@ renderAll();
   const bySort=(arr,k="createdAt")=>arr.sort((a,b)=>(b[k]||0)-(a[k]||0));
   const sub=(col,key,after)=>db.collection(col).onSnapshot(s=>{S[key]=s.docs.map(d=>({id:d.id,...d.data()}));after&&after();renderAll();resolveNames()},()=>{});
   sub("episodes","episodes");
+  sub("traits","traits",()=>S.traits.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)));
   sub("digests","digests",()=>S.digests.sort((a,b)=>String(b.id).localeCompare(String(a.id))));
   sub("agents","agents",()=>S.agents.sort((a,b)=>(a.order??99)-(b.order??99)));
   sub("ideas","ideas",()=>bySort(S.ideas));

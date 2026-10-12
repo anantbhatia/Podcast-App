@@ -15,6 +15,7 @@ The private production desk for *The two Hallucinating PMs*: a claude.ai artifac
 | `show/current` | Agents, hosts | episode, stage, title, note, waitingOn, leadPick {id, title, by, at}, scriptNotes, scriptRequested {by, at, kind} |
 | `agents/<id>` | Agents | order, name, role, state (idle, working, waiting, done, failed), step, sources, found, ideas, log, updatedAt |
 | `digests/<YYYY-MM-DD>` | Research run | date, day, markdown, createdAt, leads [{id, title, pitch, recommended}] |
+| `traits/<id>` | Hosts | host (anant, aman), kind, text, by, status (active, retired), createdAt |
 | `episodes/ep<NN>` | Script run, hosts | number, titleOptions, lead, briefMd, scriptMd, factcheckMd, wordCount, status (review, revising, approved), approvedBy, approvedAt, feedback [{by, at, text}], createdAt, updatedAt |
 | `ideas/<id>` | Hosts | text, link, by, status (new, promoted, vetoed, used, parked), promotedBy, vetoedBy, note |
 | `sources/<id>` | Hosts, Watcher | name, url, kind, by, lastChecked, lastItem |
