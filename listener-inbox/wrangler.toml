@@ -1,0 +1,17 @@
+name = "hpm-listener-inbox"
+main = "src/worker.js"
+compatibility_date = "2025-09-01"
+
+# The recorder page is bundled into the worker as text.
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = false
+
+# Voice notes and messages. Create once with:
+#   npx wrangler r2 bucket create hpm-listener-inbox
+[[r2_buckets]]
+binding = "INBOX"
+bucket_name = "hpm-listener-inbox"
+
+# INBOX_TOKEN is a secret: npx wrangler secret put INBOX_TOKEN
