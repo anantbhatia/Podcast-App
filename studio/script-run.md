@@ -50,6 +50,8 @@ Use a separate subagent through the Agent tool, under the same rules about tools
 
 Then edit `script.md` yourself: cut or soften every unsupported claim. Record what changed at the end of `factcheck.md`.
 
+Then write `references.json` beside the script, for the public listening page's "Sources" section. It's a JSON array with one entry per story segment: {"story": segment title, "refs": [{"title": article headline, "outlet": publication, "url": link, "supports": the claim it backs, in a short plain sentence, "verified": true only if the page itself was opened, false if it rests on search summaries}]}. Include only links the fact-check actually used. Never invent or guess a URL: leave out a source you can't link. Store the same array as `references` in the episode doc.
+
 ## 5. Put it up for review
 Set `episodes/ep<NN>` with these fields:
 - number
