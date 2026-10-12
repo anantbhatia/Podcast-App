@@ -26,6 +26,7 @@
   }
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.55; }
 .wrap { max-width: 34rem; margin: 0 auto; padding-inline: 18px; padding-block: max(32px, env(safe-area-inset-top)) 56px; display: grid; gap: 24px; }
 h1 { font-family: var(--display); font-weight: 800; font-size: clamp(2rem, 8vw, 2.7rem); line-height: 1.05; margin: 0; text-wrap: balance; }
@@ -53,6 +54,8 @@ legend, label.lbl { font-weight: 600; padding: 0; margin-bottom: 8px; }
 .timer { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 1.1rem; }
 .hint { color: var(--muted); font-size: 0.9rem; }
 audio { width: 100%; }
+.fallback { display: grid; gap: 8px; justify-items: center; max-width: 100%; }
+.fallback input { max-width: 100%; }
 .link-btn { background: none; border: 0; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; padding: 4px; }
 
 textarea, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; }
@@ -97,7 +100,7 @@ textarea:focus, input[type=text]:focus { outline: none; border-color: var(--acce
       <p class="hint" id="rec-hint">Up to 3 minutes. Your browser will ask to use the microphone.</p>
       <audio id="preview" controls hidden></audio>
       <button type="button" class="link-btn" id="redo" hidden>Record again</button>
-      <div id="fallback" hidden style="display:grid;gap:8px;justify-items:center">
+      <div id="fallback" class="fallback" hidden>
         <p class="hint">This browser can't record here. Pick a voice memo instead.</p>
         <input type="file" id="file" accept="audio/*" capture>
       </div>
