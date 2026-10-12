@@ -1,11 +1,13 @@
 // Listener inbox for The Two Hallucinating PMs.
-// Serves the recorder page at "/" and stores what listeners send in R2.
+// Serves the recorder page at "/" and stores what listeners send in Workers KV
+// (free tier, no card needed). Recordings expire after 90 days.
 // The ingest script (ingest/ingest.py) reads the inbox with INBOX_TOKEN,
 // transcribes voice notes, and marks each item done.
 import page from "./recorder.html";
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // about 10 minutes of phone audio
 const MAX_TEXT = 2000;
+const AUDIO_TTL = 90 * 24 * 60 * 60;
 const MAX_NAME = 80;
 const KINDS = new Set(["question", "followup", "feedback"]);
 
@@ -87,8 +89,9 @@ async function submit(request, env) {
   if (hasAudio) {
     const ext = extFor(audio.type, audio.name);
     audioKey = `audio/${id}.${ext}`;
-    await env.INBOX.put(audioKey, audio.stream(), {
-      httpMetadata: { contentType: audio.type || "application/octet-stream" },
+    await env.INBOX.put(audioKey, await audio.arrayBuffer(), {
+      metadata: { contentType: audio.type || "application/octet-stream" },
+      expirationTtl: AUDIO_TTL,
     });
   }
 
@@ -110,9 +113,7 @@ async function submit(request, env) {
     audioType: hasAudio ? audio.type || null : null,
     audioBytes: hasAudio ? audio.size : 0,
   };
-  await env.INBOX.put(`inbox/${id}.json`, JSON.stringify(record), {
-    httpMetadata: { contentType: "application/json" },
-  });
+  await env.INBOX.put(`inbox/${id}.json`, JSON.stringify(record));
   return json({ ok: true, id });
 }
 
@@ -131,11 +132,11 @@ async function listInbox(env) {
   let cursor;
   do {
     const page = await env.INBOX.list({ prefix: "inbox/", cursor });
-    for (const obj of page.objects) {
-      const body = await env.INBOX.get(obj.key);
-      if (body) items.push(await body.json());
+    for (const { name } of page.keys) {
+      const rec = await env.INBOX.get(name, { type: "json" });
+      if (rec) items.push(rec);
     }
-    cursor = page.truncated ? page.cursor : undefined;
+    cursor = page.list_complete ? undefined : page.cursor;
   } while (cursor);
   items.sort((a, b) => a.receivedAt.localeCompare(b.receivedAt));
   return json({ items });
@@ -143,24 +144,24 @@ async function listInbox(env) {
 
 async function getAudio(env, id) {
   if (!/^[0-9]{14}-[0-9a-f]{8}$/.test(id)) return json({ error: "bad id" }, 400);
-  const rec = await env.INBOX.get(`inbox/${id}.json`) || await env.INBOX.get(`done/${id}.json`);
+  const rec = await env.INBOX.get(`inbox/${id}.json`, { type: "json" })
+    || await env.INBOX.get(`done/${id}.json`, { type: "json" });
   if (!rec) return json({ error: "not found" }, 404);
-  const { audioKey } = await rec.json();
-  const obj = audioKey && await env.INBOX.get(audioKey);
-  if (!obj) return json({ error: "no audio" }, 404);
-  return new Response(obj.body, {
-    headers: { "content-type": obj.httpMetadata?.contentType || "application/octet-stream" },
+  const { value, metadata } = rec.audioKey
+    ? await env.INBOX.getWithMetadata(rec.audioKey, { type: "stream" })
+    : { value: null };
+  if (!value) return json({ error: "no audio" }, 404);
+  return new Response(value, {
+    headers: { "content-type": metadata?.contentType || "application/octet-stream" },
   });
 }
 
 async function markDone(env, id) {
   if (!/^[0-9]{14}-[0-9a-f]{8}$/.test(id)) return json({ error: "bad id" }, 400);
   const key = `inbox/${id}.json`;
-  const obj = await env.INBOX.get(key);
-  if (!obj) return json({ ok: true, already: true });
-  await env.INBOX.put(`done/${id}.json`, await obj.text(), {
-    httpMetadata: { contentType: "application/json" },
-  });
+  const rec = await env.INBOX.get(key);
+  if (rec === null) return json({ ok: true, already: true });
+  await env.INBOX.put(`done/${id}.json`, rec);
   await env.INBOX.delete(key);
   return json({ ok: true });
 }

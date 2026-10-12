@@ -8,10 +8,11 @@ type = "Text"
 globs = ["**/*.html"]
 fallthrough = false
 
-# Voice notes and messages. Create once with:
-#   npx wrangler r2 bucket create hpm-listener-inbox
-[[r2_buckets]]
+# Voice notes and messages, in Workers KV (free tier, no card needed). Create once with:
+#   npx wrangler kv namespace create INBOX
+# and paste the printed id below.
+[[kv_namespaces]]
 binding = "INBOX"
-bucket_name = "hpm-listener-inbox"
+id = "REPLACE_WITH_KV_ID"
 
 # INBOX_TOKEN is a secret: npx wrangler secret put INBOX_TOKEN
