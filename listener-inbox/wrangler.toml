@@ -13,6 +13,6 @@ fallthrough = false
 # and paste the printed id below.
 [[kv_namespaces]]
 binding = "INBOX"
-id = "REPLACE_WITH_KV_ID"
+id = "1212616bf67a4ed98b994872e445ff1e"
 
 # INBOX_TOKEN is a secret: npx wrangler secret put INBOX_TOKEN
