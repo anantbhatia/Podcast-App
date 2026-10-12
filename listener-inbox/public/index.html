@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta property="og:title" content="The Two Hallucinating PMs">
+<meta property="og:description" content="A weekly AI news show with Anant and Aman. AI trends that get outdated by Monday and obsolete by launch.">
+<title>The Two Hallucinating PMs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one narrow listening column; a show masthead, the next-episode slot, then the pilot archive as stacked episode entries. */
+:root {
+  --bg: #f4f5f9;
+  --surface: #ffffff;
+  --ink: #161a2c;
+  --muted: #5b6078;
+  --line: #dcdfea;
+  --accent: #2f4de0;
+  --marker: #ffe066;
+  --marker-ink: #161a2c;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10121c; --surface: #191c2a; --ink: #eceef6; --muted: #a2a7bf; --line: #2c3045;
+    --accent: #8fa2ff; --marker: #e8c53a; --marker-ink: #10121c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10121c; --surface: #191c2a; --ink: #eceef6; --muted: #a2a7bf; --line: #2c3045;
+  --accent: #8fa2ff; --marker: #e8c53a; --marker-ink: #10121c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 44rem; margin: 0 auto; padding-inline: 20px; padding-block: 48px 64px; display: grid; gap: 48px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+.mast { display: grid; gap: 16px; }
+.mast h1 { font-size: clamp(2.4rem, 8vw, 3.8rem); font-weight: 800; line-height: 1.02; letter-spacing: -0.02em; }
+.mast h1 .hl { background: linear-gradient(transparent 58%, var(--marker) 58%, var(--marker) 92%, transparent 92%); padding-inline: 2px; }
+.tagline { font-size: 1.15rem; color: var(--muted); max-width: 34rem; }
+.tagline strong { color: var(--ink); font-weight: 600; }
+.hosts { font-size: 0.95rem; color: var(--muted); }
+.hosts b { color: var(--ink); font-weight: 600; }
+
+.next { border: 1.5px dashed var(--line); border-radius: 14px; padding: 22px 22px; display: grid; gap: 6px; }
+.next h2 { font-size: 1.35rem; font-weight: 800; }
+.next p { color: var(--muted); }
+.badge { justify-self: start; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; background: var(--marker); color: var(--marker-ink); padding: 3px 8px; border-radius: 4px; }
+
+.archive { display: grid; gap: 20px; }
+.archive-head { display: grid; gap: 8px; }
+.archive-head h2 { font-size: 1.6rem; font-weight: 800; }
+.archive-head p { color: var(--muted); max-width: 38rem; }
+
+.ep { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px 22px; display: grid; gap: 14px; }
+.ep-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--mono); font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ep-meta .num { color: var(--accent); }
+.ep h3 { font-size: 1.5rem; font-weight: 800; line-height: 1.15; }
+.ep ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 6px; color: var(--ink); }
+.ep li::marker { color: var(--accent); }
+audio { width: 100%; display: block; }
+.fine { font-size: 0.85rem; color: var(--muted); }
+
+.refs { border-top: 1px solid var(--line); padding-top: 12px; }
+.refs summary { cursor: pointer; font-weight: 600; color: var(--accent); list-style: none; display: flex; align-items: center; gap: 8px; }
+.refs summary::-webkit-details-marker { display: none; }
+.refs summary::before { content: "+"; font-family: var(--mono); width: 1ch; }
+.refs[open] summary::before { content: "\2212"; }
+.refs summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.refs .cnt { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+.refs-body { display: grid; gap: 14px; padding-top: 12px; }
+.ref-group h4 { margin: 0 0 4px; font-family: var(--body); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.ref-group ul { list-style: none; padding: 0; gap: 4px; }
+.ref-group a { color: var(--ink); text-decoration-color: var(--accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.ref-group a:hover { color: var(--accent); }
+
+.ask { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.ask p { min-width: 0; flex: 1 1 16rem; }
+.ask strong { display: block; font-family: var(--display); font-size: 1.15rem; font-weight: 800; }
+.ask span { color: var(--muted); font-size: 0.95rem; }
+.ask-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--accent); color: var(--surface); font-weight: 600; text-decoration: none; border-radius: 999px; padding: 10px 18px; white-space: nowrap; }
+.ask-btn::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.ask-btn:hover { filter: brightness(1.08); }
+.ask-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.ask-btn.is-soon { background: var(--line); color: var(--muted); }
+.ask-btn.is-soon::before { background: var(--muted); }
+.ep-ask { justify-self: start; color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
+
+footer { border-top: 1px solid var(--line); padding-top: 20px; font-size: 0.85rem; color: var(--muted); display: grid; gap: 6px; }
+@media (max-width: 480px) { .wrap { padding-inline: 16px; padding-block: 32px 48px; gap: 36px; } .ep { padding: 20px 16px; } }
+</style>
+</head>
+<body>
+
+<main class="wrap">
+  <header class="mast">
+    <span class="eyebrow">A weekly AI news show · about 15 minutes</span>
+    <h1>The Two <span class="hl">Hallucinating</span> PMs</h1>
+    <p class="tagline">We talk about AI trends that get <strong>outdated by Monday</strong> and <strong>obsolete by launch</strong>.</p>
+    <p class="hosts">With <b>Anant</b>, a hands-on PM who'd rather build it than read about it, and <b>Aman</b>, who wants to know who's paying and whether anyone will actually use it.</p>
+  </header>
+
+  <section class="ask" aria-label="Ask the hosts">
+    <p><strong>Got a question or a follow-up?</strong><span>Record a quick voice note or type it, with or without your name. We pick a few for the next episode.</span></p>
+    <a class="ask-btn" href="/ask" data-ask="">Ask us</a>
+  </section>
+
+  <section class="next" aria-labelledby="next-title">
+    <span class="badge">Coming soon</span>
+    <h2 id="next-title">Episode 1</h2>
+    <p>The first episode with Anant and Aman is in the works. It will show up here, at the top of this page, when it's ready.</p>
+  </section>
+
+  <section class="archive" aria-labelledby="archive-title">
+    <div class="archive-head">
+      <span class="eyebrow">From the archive</span>
+      <h2 id="archive-title">The pilots</h2>
+      <p>Before the show had its name or its hosts, we made two test episodes under the working title <em>Terms and Conditions</em>, voiced by two AI stand-in hosts, Mara and Theo. They're here so you can hear where it started.</p>
+    </div>
+
+    <article class="ep" aria-labelledby="p2-title" data-ep="pilot-2">
+      <div class="ep-meta"><span class="num">Pilot 2</span><span>Week of Oct 6, 2026</span><span>15:04</span></div>
+      <h3 id="p2-title">Assume All Risks</h3>
+      <ul>
+        <li>A coding agent deletes 48,000 real files in 103 seconds, then writes an apology.</li>
+        <li>McKinsey says productivity fell at 30% of companies that adopted agentic AI tools. How did they measure that?</li>
+        <li>Two senators propose the AI Agent Accountability Act, which could make the people who build and run agents liable.</li>
+      </ul>
+      <audio controls preload="none" src="audio/pilot-2-assume-all-risks.mp3"></audio>
+      <details class="refs"><summary>Sources and further reading <span class="cnt">16</span></summary><div class="refs-body">
+      <div class="ref-group"><h4>The coding agent that deleted 48,000 files</h4><ul>
+      <li><a href="https://www.techradar.com/pro/security/i-broke-something-a-claude-code-ai-agent-deleted-48-000-files-in-just-over-100-seconds-then-apologized-for-doing-so" target="_blank" rel="noopener">TechRadar: &quot;I broke something&quot;</a></li>
+      </ul></div>
+      <div class="ref-group"><h4>Update: Meta&#x27;s Muse</h4><ul>
+      <li><a href="https://techcrunch.com/2026/10/06/the-next-hurdle-for-ai-agents-getting-websites-to-let-them-in" target="_blank" rel="noopener">TechCrunch: Getting websites to let agents in</a></li>
+      <li><a href="https://time.com/article/2026/10/06/meta-muse-ai-agent-privacy/" target="_blank" rel="noopener">Time: Muse and privacy</a></li>
+      </ul></div>
+      <div class="ref-group"><h4>McKinsey&#x27;s 30 percent and the cost of coding agents</h4><ul>
+      <li><a href="https://www.ciodive.com/news/enterprises-bet-coding-agents-despite-ROI/830943/" target="_blank" rel="noopener">CIO Dive: Enterprises bet on coding agents despite ROI</a></li>
+      <li><a href="https://www.mckinsey.com/capabilities/tech-and-ai/our-insights/the-top-trends-in-tech" target="_blank" rel="noopener">McKinsey: The top trends in tech</a></li>
+      <li><a href="https://oecd.ai/en/incidents/2026-09-20-5c05" target="_blank" rel="noopener">OECD.AI incident entry</a></li>
+      <li><a href="https://thehackernews.com/2026/09/ai-coding-agents-exposed-13000-internal.html" target="_blank" rel="noopener">The Hacker News: Coding agents exposed 13,000 internal images</a></li>
+      <li><a href="https://www.cnbc.com/2026/08/29/openai-cursor-spacex-model-access.html" target="_blank" rel="noopener">CNBC: OpenAI pulls its models from Cursor</a></li>
+      <li><a href="https://cursor.com/terms-of-service" target="_blank" rel="noopener">Cursor terms of service</a></li>
+      </ul></div>
+      <div class="ref-group"><h4>Who pays when an agent breaks something</h4><ul>
+      <li><a href="https://rollcall.com/2026/10/01/senators-debate-liability-for-rogue-ai-agents/" target="_blank" rel="noopener">Roll Call: Senators debate liability for rogue AI agents</a></li>
+      <li><a href="https://techtimes.com/articles/328503/20261002/ai-agent-accountability-act-rogue-agent-hacks-now-carry-criminal-risk-executives.htm" target="_blank" rel="noopener">TechTimes: AI Agent Accountability Act</a></li>
+      <li><a href="https://support.stripe.com/questions/stripe-user-terms-update-september-28-2026" target="_blank" rel="noopener">Stripe user terms update</a></li>
+      <li><a href="https://thehackernews.com/2026/09/openai-shelves-gpt-61-astra-after-tests.html" target="_blank" rel="noopener">The Hacker News: OpenAI shelves GPT-6.1 Astra</a></li>
+      <li><a href="https://techcrunch.com/2026/09/29/openai-apologizes-to-australia-after-its-ai-agents-breached-government-sites/" target="_blank" rel="noopener">TechCrunch: OpenAI apologizes to Australia</a></li>
+      </ul></div>
+      <div class="ref-group"><h4>Also mentioned</h4><ul>
+      <li><a href="https://www.actionnewsjax.com/news/politics/california-gov-gavin/NVX5VEG7QM3QTKHAN3UPSXSF3Y/" target="_blank" rel="noopener">AP: California keeps saying &quot;artificial intelligence&quot;</a></li>
+      <li><a href="https://news.harvard.edu/gazette/story/2026/09/why-ai-hasnt-triggered-mass-layoffs-yet/" target="_blank" rel="noopener">Harvard Gazette: Why AI hasn&#x27;t triggered mass layoffs, yet</a></li>
+      </ul></div>
+      </div></details>
+      <a class="ep-ask" href="/ask?ep=pilot-2" data-ask="pilot-2">Ask about this episode</a>
+    </article>
+
+    <article class="ep" aria-labelledby="p1-title" data-ep="pilot-1">
+      <div class="ep-meta"><span class="num">Pilot 1</span><span>Week of Oct 4, 2026</span><span>21:12</span></div>
+      <h3 id="p1-title">Cancel Anytime</h3>
+      <ul>
+        <li>Meta's Muse agent tops the App Store by clicking through cancellation flows for you, and Amazon blocks it.</li>
+        <li>Why it matters when an agent, not a person, is the one shopping and unsubscribing.</li>
+        <li>The Senate's "Rogue AI" hearing on an OpenAI security test that went sideways.</li>
+      </ul>
+      <audio controls preload="none" src="audio/pilot-1-cancel-anytime.mp3"></audio>
+      <details class="refs"><summary>Sources and further reading <span class="cnt">12</span></summary><div class="refs-body">
+      <div class="ref-group"><h4>Meta&#x27;s Muse</h4><ul>
+      <li><a href="https://runtimewire.com/article/meta-muse-personal-ai-agent-whatsapp-apps-launch" target="_blank" rel="noopener">RuntimeWire: Muse launches</a></li>
+      <li><a href="https://www.techrepublic.com/article/news-meta-muse-ai-agent-us-launch/" target="_blank" rel="noopener">TechRepublic: Muse&#x27;s US launch</a></li>
+      <li><a href="https://apps.apple.com/us/app/muse-from-meta/id6760173601" target="_blank" rel="noopener">Muse on the App Store</a></li>
+      <li><a href="https://thenextweb.com/news/meta-jumps-11-as-investors-bet-on-its-muse-agent" target="_blank" rel="noopener">The Next Web: Meta jumps 11%</a></li>
+      </ul></div>
+      <div class="ref-group"><h4>Amazon blocks Muse</h4><ul>
+      <li><a href="https://shellypalmer.com/2026/09/amazon-blocks-metas-muse/" target="_blank" rel="noopener">Shelly Palmer: Amazon blocks Meta&#x27;s Muse</a></li>
+      <li><a href="https://www.techspot.com/news/113981-amazon-blocked-meta-muse-agentic-ai-shopping-service.html" target="_blank" rel="noopener">TechSpot: Amazon blocks Muse</a></li>
+      <li><a href="https://news.bloomberglaw.com/ip-law/perplexity-overturns-amazon-ban-on-ai-shopping-bot-on-appeal" target="_blank" rel="noopener">Bloomberg Law: Perplexity wins on appeal</a></li>
+      </ul></div>
+      <div class="ref-group"><h4>Why it matters</h4><ul>
+      <li><a href="https://www.axios.com/2026/09/29/openai-dev-day-2026-dots-space-sol" target="_blank" rel="noopener">Axios: OpenAI DevDay 2026</a></li>
+      <li><a href="https://finance.yahoo.com/markets/stocks/articles/robinhood-now-lets-ai-agents-123000016.html" target="_blank" rel="noopener">Yahoo Finance: Robinhood lets AI agents trade</a></li>
+      <li><a href="https://stellagent.ai/insights/topsort-sponsored-prompts-agentic-retail-media" target="_blank" rel="noopener">Stellagent: Topsort Sponsored Prompts</a></li>
+      </ul></div>
+      <div class="ref-group"><h4>The &quot;Rogue AI&quot; hearing</h4><ul>
+      <li><a href="https://www.techpolicy.press/senate-hearing-on-rogue-ai-securing-the-homeland-against-ai-agent-attacks/" target="_blank" rel="noopener">Tech Policy Press: Senate hearing on rogue AI</a></li>
+      <li><a href="https://www.cnbc.com/2026/09/30/hawley-openai-sam-altman-rogue-ai.html" target="_blank" rel="noopener">CNBC: Hawley and the Altman no-show</a></li>
+      </ul></div>
+      </div></details>
+      <a class="ep-ask" href="/ask?ep=pilot-1" data-ask="pilot-1">Ask about this episode</a>
+    </article>
+  </section>
+
+  <footer>
+    <p>The pilots were researched and fact-checked with Claude and voiced with NotebookLM. News in them is as of the week each was made.</p>
+    <p class="fine">Made by Anant and Aman for friends and family.</p>
+  </footer>
+</main>
+
+<script>
+// Listening stats for the hosts. Sends small anonymous events to /api/event:
+// page view, play, pause, how far into the episode (25/50/75/100%), and Ask clicks.
+// A random id in this browser recognizes repeat visits; nothing else about the listener is stored.
+(() => {
+  let vid = null;
+  try { vid = localStorage.getItem("hpm-listener"); if (!vid) { vid = crypto.randomUUID(); localStorage.setItem("hpm-listener", vid); } } catch {}
+  const sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random())).slice(0, 18);
+  function send(type, ep, extra) {
+    const body = JSON.stringify(Object.assign({ type, ep: ep || "", v: vid, s: sid }, extra || {}));
+    try {
+      if (navigator.sendBeacon && navigator.sendBeacon("/api/event", new Blob([body], { type: "application/json" }))) return;
+    } catch {}
+    fetch("/api/event", { method: "POST", body, headers: { "content-type": "application/json" }, keepalive: true }).catch(() => {});
+  }
+  send("view", "");
+  document.querySelectorAll("article[data-ep]").forEach((art) => {
+    const ep = art.dataset.ep, audio = art.querySelector("audio");
+    if (!audio) return;
+    const hit = new Set();
+    let listened = 0, last = null;
+    const pos = () => ({ t: Math.round(audio.currentTime || 0), d: Math.round(audio.duration || 0) });
+    audio.addEventListener("play", () => { last = audio.currentTime; send("play", ep, pos()); });
+    audio.addEventListener("pause", () => { if (!audio.ended) send("pause", ep, Object.assign(pos(), { l: Math.round(listened) })); });
+    audio.addEventListener("seeked", () => { last = audio.currentTime; });
+    audio.addEventListener("timeupdate", () => {
+      if (last !== null && !audio.paused) { const dt = audio.currentTime - last; if (dt > 0 && dt < 2) listened += dt; }
+      last = audio.currentTime;
+      const d = audio.duration; if (!d || !isFinite(d)) return;
+      // "complete" means they actually listened to 95% of it, not that they skipped to the end.
+      for (const q of [25, 50, 75, 95]) if (!hit.has(q) && listened >= d * q / 100) { hit.add(q); send(q === 95 ? "complete" : "q" + q, ep, Object.assign(pos(), { l: Math.round(listened) })); }
+    });
+  });
+  document.querySelectorAll("a[data-ask]").forEach((a) => a.addEventListener("click", () => send("ask_click", a.dataset.ask)));
+})();
+</script>
+</body>
+</html>

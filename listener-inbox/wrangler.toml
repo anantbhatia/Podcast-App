@@ -15,4 +15,20 @@ fallthrough = false
 binding = "INBOX"
 id = "1212616bf67a4ed98b994872e445ff1e"
 
+# Listening page and episode audio, served as static files.
+# Audio goes through the worker first so it can answer Range requests
+# (iPhones need them to play and seek); static assets alone don't.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/audio/*"]
+
+# Listening stats. Create once with:
+#   npx wrangler d1 create hpm-stats
+# and paste the printed database_id below. The table is created on first use.
+[[d1_databases]]
+binding = "DB"
+database_name = "hpm-stats"
+database_id = "REPLACE_WITH_D1_ID"
+
 # INBOX_TOKEN is a secret: npx wrangler secret put INBOX_TOKEN

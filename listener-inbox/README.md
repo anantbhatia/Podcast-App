@@ -1,4 +1,6 @@
-# Listener inbox
+# Listener site
+
+The show's public site on Cloudflare's free tier: the listening page (`public/`), the recorder at `/ask`, listening stats for the hosts at `/stats`, and the listener inbox.
 
 Where listeners of The Two Hallucinating PMs send questions, follow-ups and feedback, by voice or text, with or without their name.
 
@@ -12,6 +14,7 @@ Where listeners of The Two Hallucinating PMs send questions, follow-ups and feed
 cd listener-inbox
 npx wrangler login
 npx wrangler kv namespace create INBOX   # paste the id into wrangler.toml
+npx wrangler d1 create hpm-stats         # paste the database_id into wrangler.toml
 npx wrangler secret put INBOX_TOKEN     # any long random string
 npx wrangler deploy                     # prints https://hpm-listener-inbox.<account>.workers.dev
 ```
@@ -24,3 +27,9 @@ npx wrangler dev
 curl -F kind=question -F text="hello" http://127.0.0.1:8787/api/submit
 INBOX_URL=http://127.0.0.1:8787 INBOX_TOKEN=testtoken python3 ingest/ingest.py --out /tmp/notes
 ```
+
+## Listening stats
+The listening page sends anonymous events to `/api/event`: page view, play, pause, 25/50/75% and finished (95% actually listened, not skipped), and Ask clicks; the recorder logs each sent question. Each event keeps a random per-browser id (for repeat visitors), a salted SHA-256 of the IP address (never the address), the episode, device type and country. Stored in D1 (`events` table, created on first use). Hosts open `/stats` and enter the INBOX_TOKEN; `/api/stats` returns the same numbers as JSON.
+
+## Adding an episode
+Put the MP3 (96k mono) in `public/audio/`, add an `<article class="ep" data-ep="<slug>">` block to `public/index.html` (newest first) with its sources and an "Ask about this episode" link to `/ask?ep=<slug>`, add the slug's name to `NAMES` in `src/stats.html`, then `npx wrangler deploy`.

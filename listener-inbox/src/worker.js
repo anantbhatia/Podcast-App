@@ -1,9 +1,13 @@
-// Listener inbox for The Two Hallucinating PMs.
-// Serves the recorder page at "/" and stores what listeners send in Workers KV
-// (free tier, no card needed). Recordings expire after 90 days.
-// The ingest script (ingest/ingest.py) reads the inbox with INBOX_TOKEN,
-// transcribes voice notes, and marks each item done.
-import page from "./recorder.html";
+// Site for The Two Hallucinating PMs, on Cloudflare's free tier.
+// - "/" and /audio/* are the listening page and episodes (static files in public/).
+// - "/ask" is the recorder. Notes go to Workers KV; recordings expire after 90 days.
+//   The ingest script (ingest/ingest.py) reads the inbox with INBOX_TOKEN,
+//   transcribes voice notes, and marks each item done.
+// - "/api/event" takes anonymous listening events into D1; "/stats" shows them
+//   to the hosts (same INBOX_TOKEN as the password).
+import recorderPage from "./recorder.html";
+import statsPage from "./stats.html";
+import { recordEvent, getStats } from "./stats.js";
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // about 10 minutes of phone audio
 const MAX_TEXT = 2000;
@@ -11,24 +15,39 @@ const AUDIO_TTL = 90 * 24 * 60 * 60;
 const MAX_NAME = 80;
 const KINDS = new Set(["question", "followup", "feedback"]);
 
+function html(body, extra = {}) {
+  return new Response(body, {
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache", ...extra },
+  });
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const { pathname } = url;
 
-    if (request.method === "GET" && pathname === "/") {
-      return new Response(page, {
-        headers: {
-          "content-type": "text/html; charset=utf-8",
-          "cache-control": "no-cache",
-          // The page records from the microphone, so it must be allowed here.
-          "permissions-policy": "microphone=(self)",
-        },
-      });
+    // The listening page is a static file served before the worker runs.
+    // Audio comes through here so seeking works on every phone.
+    if ((request.method === "GET" || request.method === "HEAD") && pathname.startsWith("/audio/")) {
+      return serveAudio(request, env);
+    }
+    if (request.method === "GET" && (pathname === "/ask" || pathname === "/ask/")) {
+      // The page records from the microphone, so it must be allowed here.
+      return html(recorderPage, { "permissions-policy": "microphone=(self)" });
+    }
+    if (request.method === "GET" && (pathname === "/stats" || pathname === "/stats/")) {
+      return html(statsPage, { "x-robots-tag": "noindex" });
     }
 
     if (request.method === "POST" && pathname === "/api/submit") {
-      return submit(request, env);
+      return submit(request, env, ctx);
+    }
+    if (request.method === "POST" && pathname === "/api/event") {
+      return recordEvent(request, env);
+    }
+    if (request.method === "GET" && pathname === "/api/stats") {
+      if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
+      return json(await getStats(env));
     }
 
     if (pathname.startsWith("/api/inbox") || pathname.startsWith("/api/audio/") || pathname.startsWith("/api/done/")) {
@@ -41,6 +60,28 @@ export default {
     return json({ error: "not found" }, 404);
   },
 };
+
+async function serveAudio(request, env) {
+  const res = await env.ASSETS.fetch(new Request(request.url, { method: "GET" }));
+  if (!res.ok) return res;
+  const headers = new Headers(res.headers);
+  headers.set("accept-ranges", "bytes");
+  headers.set("cache-control", "public, max-age=86400");
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") || "");
+  if (!range) {
+    return new Response(request.method === "HEAD" ? null : res.body, { status: 200, headers });
+  }
+  const buf = await res.arrayBuffer();
+  const size = buf.byteLength;
+  const start = range[1] === "" ? Math.max(0, size - Number(range[2])) : Number(range[1]);
+  const end = range[1] !== "" && range[2] !== "" ? Math.min(Number(range[2]), size - 1) : size - 1;
+  if (start >= size || start > end) {
+    return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
+  }
+  headers.set("content-range", `bytes ${start}-${end}/${size}`);
+  headers.set("content-length", String(end - start + 1));
+  return new Response(request.method === "HEAD" ? null : buf.slice(start, end + 1), { status: 206, headers });
+}
 
 function authorized(request, env) {
   const header = request.headers.get("authorization") || "";
@@ -60,7 +101,7 @@ function clean(value, max) {
 
 const SAFE_ID = /^[a-z0-9-]{8,64}$/;
 
-async function submit(request, env) {
+async function submit(request, env, ctx) {
   let form;
   try {
     form = await request.formData();
@@ -114,6 +155,10 @@ async function submit(request, env) {
     audioBytes: hasAudio ? audio.size : 0,
   };
   await env.INBOX.put(`inbox/${id}.json`, JSON.stringify(record));
+  // Count it as a conversion in the listening stats (no note content is copied there).
+  ctx.waitUntil(recordEvent(request, env, {
+    type: "ask_submit", ep: record.episode, v: record.listenerId, voice: hasAudio ? 1 : 0,
+  }).catch(() => {}));
   return json({ ok: true, id });
 }
 
