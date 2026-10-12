@@ -1,0 +1,437 @@
+<title>Hallucinating PMs Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a broadcast control room. Slate bar on top, the episode's signal path under it,
+   then one channel strip per agent like a mixing desk; other desks sit behind tabs. */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --panel-2:#f5f7f9; --line:#d5dbe2; --ink:#18202b; --muted:#5b6675;
+  --accent:#b86e00; --accent-ink:#ffffff; --accent-soft:#fbefdc;
+  --st-idle:#8a95a3; --st-work:#0f7c8a; --st-wait:#b86e00; --st-done:#2e7d4f; --st-fail:#c0392b;
+  --font-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161d; --panel:#19202a; --panel-2:#1f2733; --line:#2d3746; --ink:#e6ebf1; --muted:#97a3b3;
+  --accent:#f0a830; --accent-ink:#1a1206; --accent-soft:#3a2c14;
+  --st-idle:#6c7787; --st-work:#2bb3c4; --st-wait:#f0a830; --st-done:#4cbf7d; --st-fail:#ef6b5c;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161d; --panel:#19202a; --panel-2:#1f2733; --line:#2d3746; --ink:#e6ebf1; --muted:#97a3b3;
+  --accent:#f0a830; --accent-ink:#1a1206; --accent-soft:#3a2c14;
+  --st-idle:#6c7787; --st-work:#2bb3c4; --st-wait:#f0a830; --st-done:#4cbf7d; --st-fail:#ef6b5c;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--font-body);margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:20px 48px;display:grid;gap:20px}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+a{color:inherit}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Slate */
+.slate{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;justify-content:space-between}
+.slate h1{font-size:clamp(26px,4vw,38px);line-height:1.05}
+.slate h1 small{display:block;font:500 13px var(--font-body);color:var(--muted);letter-spacing:0;margin-bottom:4px}
+.slate-facts{display:flex;flex-wrap:wrap;gap:8px 24px}
+.fact{display:grid;gap:2px;min-width:0}
+.fact b{font-weight:600;font-size:15px}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--st-idle);flex:none}
+
+/* Signal path */
+.path{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:10px}
+.path ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
+.path li{position:relative;padding-top:14px;font-size:12.5px;color:var(--muted);min-width:0}
+.path li::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;border-radius:3px;background:var(--line)}
+.path li.done::before{background:var(--st-done)}
+.path li.now{color:var(--ink);font-weight:600}
+.path li.now::before{background:var(--accent)}
+.path-note{font-size:13.5px;color:var(--muted)}
+.path-note b{color:var(--ink)}
+@media (max-width:720px){.path ol{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:12px}}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs .count{font-family:var(--font-mono);font-size:12px;margin-left:6px;color:var(--muted)}
+
+/* Agent desk */
+.desk-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.desk{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.strip{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:10px;align-content:start;min-width:0;border-top:4px solid var(--c,var(--st-idle))}
+.strip header{display:flex;align-items:center;gap:10px}
+.strip h3{font-size:16.5px;flex:1;min-width:0}
+.strip .role{font-size:12.5px;color:var(--muted);margin-top:-6px}
+.led{width:12px;height:12px;border-radius:50%;background:var(--c,var(--st-idle));box-shadow:0 0 0 3px color-mix(in srgb,var(--c,var(--st-idle)) 22%,transparent);flex:none}
+.s-working .led{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--c) 0%,transparent)}}
+@media (prefers-reduced-motion:reduce){.s-working .led{animation:none}}
+.pill{font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:99px;color:var(--c,var(--st-idle));background:color-mix(in srgb,var(--c,var(--st-idle)) 14%,transparent);white-space:nowrap}
+.s-idle{--c:var(--st-idle)} .s-working{--c:var(--st-work)} .s-waiting{--c:var(--st-wait)} .s-done{--c:var(--st-done)} .s-failed{--c:var(--st-fail)}
+.step{margin:0;font-size:14px;overflow-wrap:anywhere}
+.srcs{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13px}
+.srcs li{display:flex;gap:6px;min-width:0}
+.srcs li::before{content:"↗";color:var(--muted);flex:none}
+.srcs a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;text-decoration-color:var(--line)}
+.strip footer{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px}
+.strip details summary{cursor:pointer;font-size:12.5px;color:var(--muted)}
+.log{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:4px;font-size:12.5px;max-height:220px;overflow:auto}
+.log li{display:grid;grid-template-columns:auto 1fr;gap:8px}
+.log time{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:12px;background:var(--accent-soft);color:var(--ink);border-radius:4px;padding:1px 6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Shared panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:12px;min-width:0}
+.intro{color:var(--muted);margin:0;max-width:68ch}
+form.add{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end}
+form.add .wide{grid-column:1/-1}
+.field{display:grid;gap:4px;min-width:0}
+.field span{font-size:12.5px;color:var(--muted);font-weight:500}
+input,select,textarea{background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:64px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:4px;padding:9px 14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500;padding:5px 10px;font-size:13px}
+.btn.ghost:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:18px;color:var(--muted);font-size:14px;text-align:left}
+
+/* Ideas board */
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
+@media (max-width:980px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.board{grid-template-columns:1fr}}
+.col{display:grid;gap:8px;align-content:start;min-width:0}
+.col h3{font-size:15px;display:flex;justify-content:space-between}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:grid;gap:8px;min-width:0}
+.card.promoted{border-left:4px solid var(--accent)}
+.card p{margin:0;overflow-wrap:anywhere}
+.card .meta{font-size:12px;color:var(--muted)}
+.card .acts{display:flex;flex-wrap:wrap;gap:6px}
+.card a.link{font-size:13px;overflow-wrap:anywhere}
+.note{font-size:12.5px;background:var(--panel-2);border-radius:4px;padding:6px 8px;color:var(--muted)}
+
+/* Tables */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.url{overflow-wrap:anywhere;max-width:340px}
+.tag{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:1px 8px;white-space:nowrap}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:4px;font-size:14px}
+.digest{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;max-height:520px;overflow:auto;background:var(--panel-2);border-radius:4px;padding:12px 14px;max-width:none}
+.banner{background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;font-size:14px}
+</style>
+
+<div class="wrap">
+  <header class="slate">
+    <h1><small>Production desk</small>The two Hallucinating PMs</h1>
+    <div class="slate-facts">
+      <div class="fact"><span class="label">Episode</span><b id="f-ep" class="mono">–</b></div>
+      <div class="fact"><span class="label">Promote cut-off</span><b id="f-cut">Wednesday night</b></div>
+      <div class="fact"><span class="label">Next research run</span><b id="f-next">–</b></div>
+      <div class="who" id="who"><span class="dot"></span><span>Connecting…</span></div>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="path" aria-label="This week's episode">
+    <ol id="path"></ol>
+    <div class="path-note" id="path-note">This week's episode hasn't started yet.</div>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-agents" data-tab="agents" aria-selected="true">Control room</button>
+    <button role="tab" id="tab-ideas" data-tab="ideas" aria-selected="false">Ideas<span class="count" id="c-ideas"></span></button>
+    <button role="tab" id="tab-sources" data-tab="sources" aria-selected="false">Watched sources<span class="count" id="c-sources"></span></button>
+    <button role="tab" id="tab-asks" data-tab="asks" aria-selected="false">Listener asks<span class="count" id="c-asks"></span></button>
+    <button role="tab" id="tab-contacts" data-tab="contacts" aria-selected="false">Distribution list<span class="count" id="c-contacts"></span></button>
+  </nav>
+
+  <!-- Control room -->
+  <section data-pane="agents">
+    <div style="display:grid;gap:12px">
+      <div class="desk-head">
+        <h2 style="font-size:20px">What each agent is doing</h2>
+        <div class="legend">
+          <span><i class="dot" style="background:var(--st-idle)"></i>Idle</span>
+          <span><i class="dot" style="background:var(--st-work)"></i>Working</span>
+          <span><i class="dot" style="background:var(--st-wait)"></i>Waiting on you</span>
+          <span><i class="dot" style="background:var(--st-done)"></i>Done</span>
+          <span><i class="dot" style="background:var(--st-fail)"></i>Failed</span>
+        </div>
+      </div>
+      <div class="desk" id="desk"><div class="empty">The agents appear here once the studio is connected. Each one reports what it's reading and what it found, step by step.</div></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <div class="desk-head"><h2 style="font-size:20px">Research digests</h2><label class="field" style="width:auto"><span>Digest</span><select id="dg-pick"></select></label></div>
+      <div id="digest" class="digest"><div class="empty">The first digest lands here, and in both your inboxes, after Monday's 6:52am Pacific run.</div></div>
+    </div>
+  </section>
+
+  <!-- Ideas -->
+  <section data-pane="ideas" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="panel">
+        <h2 style="font-size:20px">Add an idea</h2>
+        <p class="intro">Promoting an idea approves it for the next episode. Either of you can veto a promoted idea until the Wednesday night cut-off. Trending news leads each episode and promoted ideas get woven in.</p>
+        <form class="add" id="f-idea">
+          <label class="field wide"><span>Idea or cue</span><textarea id="idea-text" required placeholder="e.g. What do AI companies' 'you assume all risks' clauses mean for small teams?"></textarea></label>
+          <label class="field"><span>Link (optional)</span><input id="idea-link" type="url" placeholder="https://"></label>
+          <div><button class="btn" type="submit">Add idea</button></div>
+        </form>
+      </div>
+      <div class="board" id="board"></div>
+    </div>
+  </section>
+
+  <!-- Sources -->
+  <section data-pane="sources" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="panel">
+        <h2 style="font-size:20px">Watched sources</h2>
+        <p class="intro">The Watcher checks every source here on each Monday and Thursday run for new episodes and posts, so trending topics the general research misses still make it in. YouTube channels and podcasts are read through their feeds and transcripts where they can be fetched.</p>
+        <form class="add" id="f-source">
+          <label class="field"><span>Name</span><input id="src-name" required placeholder="e.g. Stratechery"></label>
+          <label class="field"><span>Link</span><input id="src-url" type="url" required placeholder="https://"></label>
+          <label class="field"><span>Kind</span><select id="src-kind"><option value="youtube">YouTube channel</option><option value="blog">Blog or newsletter</option><option value="podcast">Podcast</option><option value="news">News site</option><option value="other">Other</option></select></label>
+          <div><button class="btn" type="submit">Add source</button></div>
+        </form>
+      </div>
+      <div class="panel"><div class="tablewrap"><table><thead><tr><th>Source</th><th>Kind</th><th>Link</th><th>Last checked</th><th>Added by</th><th></th></tr></thead><tbody id="sources"></tbody></table></div></div>
+    </div>
+  </section>
+
+  <!-- Asks -->
+  <section data-pane="asks" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="panel">
+        <h2 style="font-size:20px">Log a listener ask</h2>
+        <p class="intro">Paste questions listeners send back by email or WhatsApp. Before each Thursday script run, the asks are ranked and the top 3 are answered in a "You asked" segment. Voice notes and transcription arrive in a later step; for now paste the gist.</p>
+        <form class="add" id="f-ask">
+          <label class="field"><span>Listener</span><input id="ask-who" required placeholder="First name"></label>
+          <label class="field"><span>Came in by</span><select id="ask-via"><option value="email">Email</option><option value="whatsapp">WhatsApp</option><option value="in person">In person</option></select></label>
+          <label class="field"><span>OK to say their name on air?</span><select id="ask-name"><option value="no">No</option><option value="yes">Yes</option></select></label>
+          <label class="field wide"><span>Their question</span><textarea id="ask-text" required></textarea></label>
+          <div><button class="btn" type="submit">Log ask</button></div>
+        </form>
+      </div>
+      <div class="panel"><div class="tablewrap"><table><thead><tr><th>Listener</th><th>Question</th><th>Via</th><th>Status</th><th>Logged</th><th></th></tr></thead><tbody id="asks"></tbody></table></div></div>
+    </div>
+  </section>
+
+  <!-- Contacts -->
+  <section data-pane="contacts" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="panel">
+        <h2 style="font-size:20px">Distribution list</h2>
+        <p class="intro">Both of you can edit this list. Episodes go out by hand from your own email and WhatsApp: copy the addresses below into a BCC line or a WhatsApp broadcast list. Nothing is sent from here.</p>
+        <form class="add" id="f-contact">
+          <label class="field"><span>Name</span><input id="ct-name" required></label>
+          <label class="field"><span>Channel</span><select id="ct-channel"><option value="email">Email</option><option value="whatsapp">WhatsApp</option></select></label>
+          <label class="field"><span>Email or phone</span><input id="ct-addr" required placeholder="name@example.com or +1 555…"></label>
+          <label class="field"><span>Group</span><select id="ct-group"><option value="friends">Friends</option><option value="family">Family</option><option value="colleagues">Colleagues</option></select></label>
+          <div><button class="btn" type="submit">Add contact</button></div>
+        </form>
+      </div>
+      <div class="panel">
+        <div class="toolbar">
+          <label class="field" style="width:auto"><span>Show</span><select id="ct-filter"><option value="all">Everyone</option><option value="friends">Friends</option><option value="family">Family</option><option value="colleagues">Colleagues</option></select></label>
+          <button class="btn ghost" id="copy-emails" type="button">Copy email addresses</button>
+          <button class="btn ghost" id="copy-phones" type="button">Copy WhatsApp numbers</button>
+        </div>
+        <div class="tablewrap"><table><thead><tr><th>Name</th><th>Channel</th><th>Address</th><th>Group</th><th>Added by</th><th></th></tr></thead><tbody id="contacts"></tbody></table></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const STAGES=["Ideas","Research","Brief","Script","Your review","Audio","Final review","Ready to send"];
+const STATE_LABEL={idle:"Idle",working:"Working",waiting:"Waiting on you",done:"Done",failed:"Failed"};
+const S={digests:[],agents:[],show:null,ideas:[],sources:[],asks:[],contacts:[],me:null,canWrite:true,names:{}};
+let db=null,user=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl=u=>{try{const x=new URL(u);return /^https?:$/.test(x.protocol)?x.href:null}catch{return null}};
+const ago=t=>{if(!t)return"never";const s=(Date.now()-t)/1000;if(s<60)return"just now";if(s<3600)return Math.round(s/60)+" min ago";if(s<86400)return Math.round(s/3600)+" h ago";return new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"})};
+const clock=t=>new Date(t).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+const nameOf=id=>id===S.me?"You":(S.names[id]||"Someone");
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+function banner(msg){const b=$("banner");b.textContent=msg;b.hidden=!msg}
+
+/* Tabs, remembered per viewer */
+function showTab(name){document.querySelectorAll("[data-tab]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===name));document.querySelectorAll("[data-pane]").forEach(p=>p.hidden=p.dataset.pane!==name);try{localStorage.setItem("tab",name)}catch{}}
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
+try{const t=location.hash.slice(1)||localStorage.getItem("tab");if(t&&document.querySelector(`[data-pane="${t}"]`))showTab(t)}catch{}
+
+/* Next Monday/Thursday 7:00 local */
+function nextRun(){const d=new Date();for(let i=0;i<8;i++){const c=new Date(d);c.setDate(d.getDate()+i);c.setHours(7,0,0,0);if((c.getDay()===1||c.getDay()===4)&&c>d)return c}}
+$("f-next").textContent=nextRun().toLocaleString(undefined,{weekday:"long",hour:"numeric",minute:"2-digit"});
+
+function renderShow(){
+  const sh=S.show||{};const idx=STAGES.indexOf(sh.stage);
+  $("f-ep").textContent=sh.episode?("Ep "+String(sh.episode).padStart(2,"0")):"–";
+  $("path").innerHTML=STAGES.map((s,i)=>`<li class="${i<idx?"done":i===idx?"now":""}">${esc(s)}</li>`).join("");
+  const parts=[];if(sh.title)parts.push(`<b>${esc(sh.title)}</b>`);if(sh.note)parts.push(esc(sh.note));if(sh.waitingOn)parts.push("Waiting on "+esc(sh.waitingOn));
+  $("path-note").innerHTML=parts.join(" · ")||"This week's episode hasn't started yet.";
+}
+
+function renderAgents(){
+  if(!S.agents.length){$("desk").innerHTML=`<div class="empty">No agents have reported yet. They check in here on the first Monday or Thursday run.</div>`;return}
+  const open=new Set([...document.querySelectorAll("#desk details[open]")].map(d=>d.dataset.k));
+  $("desk").innerHTML=S.agents.map(a=>{
+    const st=STATE_LABEL[a.state]?a.state:"idle";
+    const srcs=(a.sources||[]).slice(-4).reverse();
+    const more=(a.sources||[]).length-srcs.length;
+    const ideas=(a.ideas||[]).map(id=>S.ideas.find(x=>x.id===id)).filter(Boolean);
+    const log=(a.log||[]).slice(-30).reverse();
+    return `<article class="strip s-${st}">
+      <header><span class="led" aria-hidden="true"></span><h3>${esc(a.name)}</h3><span class="pill">${STATE_LABEL[st]}</span></header>
+      ${a.role?`<div class="role">${esc(a.role)}</div>`:""}
+      <p class="step">${esc(a.step||"Nothing running.")}</p>
+      ${srcs.length?`<ul class="srcs">${srcs.map(s=>{const u=safeUrl(s.url);return `<li>${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(s.title||u)}</a>`:esc(s.title||"")}</li>`}).join("")}${more>0?`<li class="label" style="text-transform:none;letter-spacing:0">and ${more} more</li>`:""}</ul>`:""}
+      ${ideas.length?`<div class="chips">${ideas.map(i=>`<span class="chip" title="${esc(i.text)}">${esc(i.text)}</span>`).join("")}</div>`:""}
+      <footer><span class="mono">${a.found!=null?esc(a.found)+" found":""}</span><span>${a.updatedAt?"Updated "+ago(a.updatedAt):"No runs yet"}</span></footer>
+      ${log.length?`<details data-k="${esc(a.id)}"${open.has(a.id)?" open":""}><summary>Run log (${(a.log||[]).length})</summary><ol class="log">${log.map(l=>`<li><time class="mono">${clock(l.t)}</time><span>${esc(l.text)}</span></li>`).join("")}</ol></details>`:""}
+    </article>`}).join("");
+}
+
+function renderIdeas(){
+  const cols=[["new","New"],["promoted","Promoted"],["used","Used in an episode"],["parked","Parked or vetoed"]];
+  const groups={new:[],promoted:[],used:[],parked:[]};
+  S.ideas.forEach(i=>{const k=i.status==="vetoed"?"parked":(groups[i.status]?i.status:"new");groups[k].push(i)});
+  $("c-ideas").textContent=S.ideas.length||"";
+  $("board").innerHTML=cols.map(([k,label])=>`<div class="col"><h3>${label}<span class="mono label">${groups[k].length}</span></h3>${
+    groups[k].length?groups[k].map(ideaCard).join(""):`<div class="empty">${k==="new"?"Add the first idea above.":"Nothing here yet."}</div>`}</div>`).join("");
+}
+function ideaCard(i){
+  const u=safeUrl(i.link);const acts=[];
+  if(S.canWrite){
+    if(i.status==="new"||!i.status)acts.push(`<button class="btn ghost" data-act="promote" data-id="${i.id}">Promote</button>`);
+    if(i.status==="promoted")acts.push(`<button class="btn ghost" data-act="veto" data-id="${i.id}">Veto</button>`);
+    if(i.status==="vetoed")acts.push(`<button class="btn ghost" data-act="reopen" data-id="${i.id}">Undo veto</button>`);
+    if(i.by===S.me&&(i.status==="new"||!i.status))acts.push(`<button class="btn ghost" data-act="del-idea" data-id="${i.id}">Delete</button>`);
+  }
+  let meta=`Added by ${esc(nameOf(i.by))} · ${ago(i.createdAt)}`;
+  if(i.status==="promoted"&&i.promotedBy)meta+=` · promoted by ${esc(nameOf(i.promotedBy))}`;
+  if(i.status==="vetoed"&&i.vetoedBy)meta+=` · vetoed by ${esc(nameOf(i.vetoedBy))}`;
+  return `<div class="card ${i.status==="promoted"?"promoted":""}"><p>${esc(i.text)}</p>${u?`<a class="link" href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`:""}
+    ${i.note?`<div class="note">${esc(i.note)}</div>`:""}<div class="meta">${meta}</div>${acts.length?`<div class="acts">${acts.join("")}</div>`:""}</div>`;
+}
+
+function renderSources(){
+  $("c-sources").textContent=S.sources.length||"";
+  const kinds={youtube:"YouTube",blog:"Blog",podcast:"Podcast",news:"News",other:"Other"};
+  $("sources").innerHTML=S.sources.length?S.sources.map(s=>{const u=safeUrl(s.url);return `<tr><td><b>${esc(s.name)}</b>${s.lastItem?`<div class="label" style="text-transform:none;letter-spacing:0;font-weight:400">Latest: ${esc(s.lastItem)}</div>`:""}</td><td><span class="tag">${esc(kinds[s.kind]||"Other")}</span></td><td class="url">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`:""}</td><td class="mono">${ago(s.lastChecked)}</td><td>${s.by?esc(nameOf(s.by)):"Default list"}</td><td>${S.canWrite?`<button class="btn ghost" data-act="del-source" data-id="${s.id}">Remove</button>`:""}</td></tr>`}).join("")
+    :`<tr><td colspan="6"><div class="empty">No sources yet. Add a YouTube channel, blog or podcast above.</div></td></tr>`;
+}
+
+function renderAsks(){
+  $("c-asks").textContent=S.asks.length||"";
+  const lab={new:"In the queue",top3:"Picked for this week",answered:"Answered",held:"Held for later"};
+  $("asks").innerHTML=S.asks.length?S.asks.map(a=>`<tr><td><b>${esc(a.who)}</b>${a.nameOk==="yes"?"":`<div class="label" style="text-transform:none;letter-spacing:0;font-weight:400">Name stays off air</div>`}</td><td style="max-width:420px;overflow-wrap:anywhere">${esc(a.text)}</td><td>${esc(a.via)}</td><td><span class="tag">${esc(lab[a.status]||lab.new)}</span></td><td class="mono">${ago(a.createdAt)}</td><td>${S.canWrite?`<button class="btn ghost" data-act="del-ask" data-id="${a.id}">Remove</button>`:""}</td></tr>`).join("")
+    :`<tr><td colspan="6"><div class="empty">No asks yet. When a listener replies with a question, log it above.</div></td></tr>`;
+}
+
+function filteredContacts(){const f=$("ct-filter").value;return S.contacts.filter(c=>f==="all"||c.group===f)}
+function renderContacts(){
+  $("c-contacts").textContent=S.contacts.length||"";
+  const rows=filteredContacts();
+  $("contacts").innerHTML=rows.length?rows.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${c.channel==="whatsapp"?"WhatsApp":"Email"}</td><td class="mono url">${esc(c.address)}</td><td><span class="tag">${esc(c.group)}</span></td><td>${esc(nameOf(c.by))}</td><td>${S.canWrite?`<button class="btn ghost" data-act="del-contact" data-id="${c.id}">Remove</button>`:""}</td></tr>`).join("")
+    :`<tr><td colspan="6"><div class="empty">${S.contacts.length?"Nobody in this group yet.":"No one on the list yet. Add friends, family and colleagues above."}</div></td></tr>`;
+}
+$("ct-filter").addEventListener("change",renderContacts);
+
+async function copyText(text,what){
+  if(!text){toast("No "+what+" in this view");return}
+  try{await navigator.clipboard.writeText(text);toast("Copied "+what)}catch{
+    const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("Copied "+what)}catch{toast("Select and copy the text manually")}ta.remove()}
+}
+$("copy-emails").addEventListener("click",()=>copyText(filteredContacts().filter(c=>c.channel==="email").map(c=>c.address).join(", "),"email addresses"));
+$("copy-phones").addEventListener("click",()=>copyText(filteredContacts().filter(c=>c.channel==="whatsapp").map(c=>c.address).join("\n"),"WhatsApp numbers"));
+
+function renderDigests(){
+  const pick=$("dg-pick");const cur=pick.value;
+  pick.innerHTML=S.digests.map(d=>`<option value="${esc(d.id)}">${esc(d.day?d.day+" ":"")}${esc(d.date||d.id)}</option>`).join("");
+  pick.parentElement.hidden=!S.digests.length;
+  if(cur&&S.digests.some(d=>d.id===cur))pick.value=cur;
+  const d=S.digests.find(x=>x.id===pick.value)||S.digests[0];
+  if(d){const el=$("digest");el.textContent=d.markdown||""}
+}
+$("dg-pick").addEventListener("change",renderDigests);
+function renderAll(){renderDigests();renderShow();renderAgents();renderIdeas();renderSources();renderAsks();renderContacts()}
+
+/* Names for whoever appears on screen */
+let nameTimer=null;
+function resolveNames(){clearTimeout(nameTimer);nameTimer=setTimeout(async()=>{
+  if(!user)return;const ids=new Set();
+  [...S.ideas,...S.sources,...S.contacts].forEach(x=>{["by","promotedBy","vetoedBy"].forEach(k=>x[k]&&ids.add(x[k]))});
+  const need=[...ids].filter(id=>!S.names[id]);if(!need.length)return;
+  try{const ps=await user.profiles(need);let changed=false;for(const id of need){const n=ps[id]?.name;if(n){S.names[id]=n.split(" ")[0];changed=true}}if(changed)renderAll()}catch{}
+},150)}
+
+/* Writes */
+async function guard(fn){
+  if(!db){toast("The studio isn't connected in this view");return false}
+  try{await fn();return true}catch(e){
+    if(e&&e.code==="invalid_argument"&&!S.canWrite){toast("You can view this desk but not change it")}
+    else toast(e&&e.code==="quota_exceeded"?"Storage is full":"That didn't save. Try again.");
+    return false}
+}
+const now=()=>Date.now();
+$("f-idea").addEventListener("submit",async e=>{e.preventDefault();const text=$("idea-text").value.trim();if(!text)return;const link=$("idea-link").value.trim();
+  if(await guard(()=>db.collection("ideas").add({text,link:safeUrl(link)||"",by:S.me,status:"new",createdAt:now()}))){e.target.reset();toast("Idea added")}});
+$("f-source").addEventListener("submit",async e=>{e.preventDefault();const url=safeUrl($("src-url").value.trim());if(!url){toast("Enter a full link starting with https://");return}
+  if(await guard(()=>db.collection("sources").add({name:$("src-name").value.trim(),url,kind:$("src-kind").value,by:S.me,createdAt:now()}))){e.target.reset();toast("Source added")}});
+$("f-ask").addEventListener("submit",async e=>{e.preventDefault();
+  if(await guard(()=>db.collection("asks").add({who:$("ask-who").value.trim(),via:$("ask-via").value,nameOk:$("ask-name").value,text:$("ask-text").value.trim(),status:"new",by:S.me,createdAt:now()}))){e.target.reset();toast("Ask logged")}});
+$("f-contact").addEventListener("submit",async e=>{e.preventDefault();
+  if(await guard(()=>db.collection("contacts").add({name:$("ct-name").value.trim(),channel:$("ct-channel").value,address:$("ct-addr").value.trim(),group:$("ct-group").value,by:S.me,createdAt:now()}))){e.target.reset();toast("Contact added")}});
+
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("button[data-act]");if(!b)return;const id=b.dataset.id;b.disabled=true;
+  const acts={
+    "promote":()=>db.doc("ideas/"+id).update({status:"promoted",promotedBy:S.me,promotedAt:now()}),
+    "veto":()=>db.doc("ideas/"+id).update({status:"vetoed",vetoedBy:S.me,vetoedAt:now()}),
+    "reopen":()=>db.doc("ideas/"+id).update({status:"new",vetoedBy:null}),
+    "del-idea":()=>db.doc("ideas/"+id).delete(),
+    "del-source":()=>db.doc("sources/"+id).delete(),
+    "del-ask":()=>db.doc("asks/"+id).delete(),
+    "del-contact":()=>db.doc("contacts/"+id).delete()};
+  const ok=await guard(acts[b.dataset.act]);if(!ok)b.disabled=false;
+});
+
+/* Connect */
+renderAll();
+(async()=>{
+  if(!window.claude||!window.claude.use){banner("Open this page on claude.ai to use the studio.");return}
+  [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+  if(!db){banner("The studio's shared data isn't available in this view. Sign in to claude.ai with the account this page was shared with.");$("who").innerHTML=`<span class="dot"></span><span>Not connected</span>`;return}
+  if(user){
+    try{S.me=await user.id()}catch{}
+    try{const w=await user.can("data.write");if(w===false){S.canWrite=false;banner("You can view this desk but not change it.");document.querySelectorAll("form.add").forEach(f=>f.hidden=true)}}catch{}
+    try{const m=await user.me();$("who").innerHTML=`<span class="dot" style="background:var(--st-done)"></span><span>Signed in as ${esc(m.name||"you")}</span>`}catch{}
+  }
+  const bySort=(arr,k="createdAt")=>arr.sort((a,b)=>(b[k]||0)-(a[k]||0));
+  const sub=(col,key,after)=>db.collection(col).onSnapshot(s=>{S[key]=s.docs.map(d=>({id:d.id,...d.data()}));after&&after();renderAll();resolveNames()},()=>{});
+  sub("digests","digests",()=>S.digests.sort((a,b)=>String(b.id).localeCompare(String(a.id))));
+  sub("agents","agents",()=>S.agents.sort((a,b)=>(a.order??99)-(b.order??99)));
+  sub("ideas","ideas",()=>bySort(S.ideas));
+  sub("sources","sources",()=>bySort(S.sources));
+  sub("asks","asks",()=>bySort(S.asks));
+  sub("contacts","contacts",()=>S.contacts.sort((a,b)=>String(a.name).localeCompare(String(b.name))));
+  db.doc("show/current").onSnapshot(d=>{S.show=d.exists?d.data():null;renderShow()},()=>{});
+  setInterval(renderAgents,60000);
+})();
+</script>
