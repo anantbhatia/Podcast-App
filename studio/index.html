@@ -130,6 +130,39 @@ td.url{overflow-wrap:anywhere;max-width:340px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:4px;font-size:14px}
 .digest{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;max-height:520px;overflow:auto;background:var(--panel-2);border-radius:4px;padding:12px 14px;max-width:none}
 .banner{background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;font-size:14px}
+
+/* Host bible */
+.hb{display:grid;gap:16px}
+.hb-hosts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.hb-host{border-top:4px solid var(--accent)}
+.hb-host h3{font-size:22px}
+.hb-tag{font-size:14px;color:var(--muted);margin:-6px 0 0}
+.hb dl{margin:0;display:grid;gap:10px}
+.hb dt{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.hb dd{margin:2px 0 0;max-width:68ch}
+.hb-quote{font-family:var(--font-display);font-size:18px;line-height:1.3;margin:0}
+.hb-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.hb-split > div{background:var(--panel-2);border-radius:var(--r);padding:12px 14px;display:grid;gap:4px;min-width:0}
+.hb ul,.hb ol{margin:0;padding-left:1.2em;display:grid;gap:6px;max-width:72ch}
+.hb h2{font-size:20px}
+
+/* This week's episode */
+.leads{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.lead{background:var(--panel-2);border:2px solid transparent;border-radius:var(--r);padding:14px;display:grid;gap:8px;align-content:start;min-width:0;text-align:left;cursor:pointer;color:inherit}
+.lead:hover{border-color:var(--line)}
+.lead[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.lead:disabled{cursor:default}
+.lead h3{font-size:17px}
+.lead p{margin:0;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.lead .tag{justify-self:start}
+.go{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.go .hint{font-size:13.5px;color:var(--muted);flex:1;min-width:220px}
+.titles{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap}
+.subtabs button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.fb{display:grid;gap:6px;font-size:13.5px}
+.fb li{background:var(--panel-2);border-radius:4px;padding:6px 8px;list-style:none}
+.fb ul{margin:0;padding:0;display:grid;gap:6px}
 </style>
 
 <div class="wrap">
@@ -152,10 +185,12 @@ td.url{overflow-wrap:anywhere;max-width:340px}
 
   <nav class="tabs" role="tablist">
     <button role="tab" id="tab-agents" data-tab="agents" aria-selected="true">Control room</button>
+    <button role="tab" id="tab-episode" data-tab="episode" aria-selected="false">This week's episode</button>
     <button role="tab" id="tab-ideas" data-tab="ideas" aria-selected="false">Ideas<span class="count" id="c-ideas"></span></button>
     <button role="tab" id="tab-sources" data-tab="sources" aria-selected="false">Watched sources<span class="count" id="c-sources"></span></button>
     <button role="tab" id="tab-asks" data-tab="asks" aria-selected="false">Listener asks<span class="count" id="c-asks"></span></button>
     <button role="tab" id="tab-contacts" data-tab="contacts" aria-selected="false">Distribution list<span class="count" id="c-contacts"></span></button>
+    <button role="tab" id="tab-hosts" data-tab="hosts" aria-selected="false">Host bible</button>
   </nav>
 
   <!-- Control room -->
@@ -176,6 +211,26 @@ td.url{overflow-wrap:anywhere;max-width:340px}
     <div class="panel" style="margin-top:16px">
       <div class="desk-head"><h2 style="font-size:20px">Research digests</h2><label class="field" style="width:auto"><span>Digest</span><select id="dg-pick"></select></label></div>
       <div id="digest" class="digest"><div class="empty">The first digest lands here, and in both your inboxes, after Monday's 6:52am Pacific run.</div></div>
+    </div>
+  </section>
+
+  <!-- This week's episode: lead pick, script request, script review -->
+  <section data-pane="episode" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="panel">
+        <div class="desk-head"><h2 style="font-size:20px">Pick the lead story</h2><span class="label" id="lead-from"></span></div>
+        <p class="intro">These come from the latest research digest. Either of you can pick; the last pick counts. If nobody picks, the script uses the one marked recommended.</p>
+        <div class="leads" id="leads"><div class="empty">Lead options appear here after the next research digest.</div></div>
+        <label class="field"><span>Notes for the script (optional)</span><textarea id="script-notes" placeholder="e.g. Keep the Walmart bit short. Use Story 3 as the second segment."></textarea></label>
+        <div class="go">
+          <button class="btn" id="write-script" type="button">Write the script</button>
+          <span class="hint" id="go-hint">Starts the producer, host writers and fact-checker. You'll both get an email when the draft is ready to review.</span>
+        </div>
+      </div>
+      <div class="panel" id="review">
+        <div class="desk-head"><h2 style="font-size:20px">Script review</h2><span class="tag" id="ep-status">No draft yet</span></div>
+        <div id="review-body"><div class="empty">The draft lands here when the script run finishes. One approval from either of you is enough.</div></div>
+      </div>
     </div>
   </section>
 
@@ -254,13 +309,93 @@ td.url{overflow-wrap:anywhere;max-width:340px}
       </div>
     </div>
   </section>
+
+  <!-- Host bible (approved 2026-10-12; source of truth is /mnt/project-files/show-bible.md) -->
+  <section data-pane="hosts" hidden>
+    <div class="hb">
+      <div class="panel">
+        <p class="label">Who we are on air</p>
+        <p class="hb-quote">Two school friends who never argue, now on a show built to make them care enough to. Anant trusts what he can get his hands on. Aman trusts what someone is paying for and whether real people will actually use it.</p>
+        <p class="intro">Approved by Anant on 12 October 2026. The scripts follow this page. To change it, ask Claude in the hosts thread.</p>
+      </div>
+
+      <div class="hb-hosts">
+        <article class="panel hb-host">
+          <h3>Anant Bhatia</h3>
+          <p class="hb-tag">AdTech product leader at Walmart Connect</p>
+          <dl>
+            <div><dt>Background</dt><dd>About 15 years. Software engineer at Infosys, then an MBA at Maryland's Smith School (2014). Measurement at Comscore, surveys at Resonate, DSP platform at InMobi, then Walmart. Builds side projects with Claude Code and makes videos for his kids from their own stories.</dd></div>
+            <div><dt>Personality</dt><dd>Helpful, concerned, connected. A nerdy, hands-on PM who asks a lot of questions and explains in depth when he knows the answer.</dd></div>
+            <div><dt>What convinces him</dt><dd>A demo. First question about any launch: "When can I get access to it?"</dd></div>
+            <div><dt>Knows better than most</dt><dd>How online ads are bought in real time. "Everything is an ad network."</dd></div>
+            <div><dt>Views</dt><dd>Excited about agentic AI shopping and assistants. Thinks crypto and prediction markets are overhyped. Admires OpenAI, Anthropic and Google; annoyed by Apple. Loves Claude, Higgsfield and Robinhood; can't stand Fidelity.</dd></div>
+            <div><dt>Contrarian take</dt><dd>Ads will have to win over AI agents, and will probably end up bribing them.</dd></div>
+            <div><dt>Humor</dt><dd>Sarcastic and silly. Goes quiet or jokes when he disagrees.</dd></div>
+            <div><dt>Pet peeves</dt><dd>Information overload. Calling something early and not getting credit.</dd></div>
+          </dl>
+        </article>
+
+        <article class="panel hb-host">
+          <h3>Aman Goyal</h3>
+          <p class="hb-tag">Operations leader: Amazon fulfillment centers, Uber, Tata Motors</p>
+          <dl>
+            <div><dt>Background</dt><dd>Mechanical engineer with an MBA in supply chain. Vendor development at Tata Motors (3 years), an internship at ISRO Ahmedabad, GM and operations manager at Amazon fulfillment centers (5 years), and Uber. Has been writing for two years.</dd></div>
+            <div><dt>Personality</dt><dd>Nerdy, eccentric, friendly and detail-obsessed. Philosophical; loves history, literature and spirituality. "I discuss why not, not why."</dd></div>
+            <div><dt>What convinces him</dt><dd>Who's paying, and for what. First question: what value does it bring, to whom, and where's the line between serving people and preying on them?</dd></div>
+            <div><dt>Knows better than most</dt><dd>Taking an idea from proof of concept to scale. He won't build the Iron Man suit in the cave, but he'll build everything after it.</dd></div>
+            <div><dt>Views</dt><dd>Excited about everything AI is setting off. Thinks doom about humanity is overhyped. Admires Slack's pivot. Loves Reddit.</dd></div>
+            <div><dt>Contrarian take</dt><dd>No patience for learned helplessness.</dd></div>
+            <div><dt>Humor</dt><dd>Every kind, with one rule: whoever tells the joke owns the landing. Asks questions when he disagrees.</dd></div>
+            <div><dt>Catchphrase</dt><dd>"I looked into it…"</dd></div>
+          </dl>
+        </article>
+      </div>
+
+      <div class="panel">
+        <h2>Chemistry</h2>
+        <div class="hb-split">
+          <div><span class="label">Anant opens the door</span><span>He got access, tried it, built something with it. Here's what happened.</span></div>
+          <div><span class="label">Aman asks the scale question</span><span>Is this the suit in the cave or the factory? Who pays, and will real people use it?</span></div>
+        </div>
+        <ul>
+          <li><b>Where they split:</b> demo versus the bill; whether ads courting AI agents is clever or predatory; crypto hype versus doom hype.</li>
+          <li><b>What they share:</b> both hate padding, both ask a lot of questions, both make things outside work, and both have MBAs (Anant followed Aman into his).</li>
+          <li><b>History:</b> neighbours, inseparable in 11th and 12th grade. Recess lunch eaten in first period, guitar, teasing a shared friend, and a CD exchange club. This show is the sequel.</li>
+          <li><b>Teasing:</b> Anant the night owl who can't do mornings; "You own that landing"; "Of course you looked into it"; "I followed you into an MBA, you followed me into a podcast"; Mr. Bhalla; the nickname joke, used rarely.</li>
+        </ul>
+      </div>
+
+      <div class="hb-hosts">
+        <div class="panel">
+          <h2>Recurring bits</h2>
+          <ul>
+            <li><b>The ledger.</b> Dated predictions, scored in later episodes.</li>
+            <li><b>"I looked into it."</b> Aman's deep dive to the bottom of one thread.</li>
+            <li><b>"Can I get access?"</b> Anant's hands-on test of a real tool.</li>
+            <li><b>Cave or factory?</b> Aman's scale test for a launch.</li>
+            <li><b>"Everything is an ad network."</b> Anant finds the hidden ad model.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h2>On-air rules</h2>
+          <ul>
+            <li>No politics or religion.</li>
+            <li>When a story involves Walmart, Anant says he works there and Aman leads.</li>
+            <li>Either host's approval of the script and the final episode is enough to publish.</li>
+            <li>Weekly, about 15 minutes. Listeners: PMs, engineers and busy parents keeping up with AI.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script>
 const STAGES=["Ideas","Research","Brief","Script","Your review","Audio","Final review","Ready to send"];
 const STATE_LABEL={idle:"Idle",working:"Working",waiting:"Waiting on you",done:"Done",failed:"Failed"};
-const S={digests:[],agents:[],show:null,ideas:[],sources:[],asks:[],contacts:[],me:null,canWrite:true,names:{}};
-let db=null,user=null;
+const SCRIPT_TRIGGER="trig_01UYsgEmJwy7PLJNbdANDNfn";
+const S={episodes:[],digests:[],agents:[],show:null,ideas:[],sources:[],asks:[],contacts:[],me:null,canWrite:true,names:{}};
+let db=null,user=null,mcp=null;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeUrl=u=>{try{const x=new URL(u);return /^https?:$/.test(x.protocol)?x.href:null}catch{return null}};
@@ -370,13 +505,64 @@ function renderDigests(){
   if(d){const el=$("digest");el.textContent=d.markdown||""}
 }
 $("dg-pick").addEventListener("change",renderDigests);
-function renderAll(){renderDigests();renderShow();renderAgents();renderIdeas();renderSources();renderAsks();renderContacts()}
+const epId=n=>"ep"+String(n||1).padStart(2,"0");
+const curEp=()=>S.episodes.find(e=>e.id===epId(S.show?.episode));
+let subView="scriptMd";
+function renderEpisode(){
+  const sh=S.show||{};const dg=S.digests[0];const leads=(dg&&dg.leads)||[];const pick=sh.leadPick;
+  $("lead-from").textContent=dg?"From the "+(dg.day?dg.day+" ":"")+(dg.date||dg.id)+" digest":"";
+  $("leads").innerHTML=leads.length?leads.map(l=>{const on=pick?pick.id===l.id:false;return `<button type="button" class="lead" data-lead="${esc(l.id)}" aria-pressed="${on}"${S.canWrite?"":" disabled"}>
+      <h3>${esc(l.title)}</h3><p>${esc(l.pitch||"")}</p>
+      ${on?`<span class="tag">Picked by ${esc(nameOf(pick.by))} · ${ago(pick.at)}</span>`:l.recommended?`<span class="tag">Recommended</span>`:""}</button>`}).join("")
+    :`<div class="empty">Lead options appear here after the next research digest.</div>`;
+  const notes=$("script-notes");if(document.activeElement!==notes)notes.value=sh.scriptNotes||"";
+  const req=sh.scriptRequested;const busy=!!(req&&now()-req.at<3*3600e3);
+  const ep=curEp();
+  $("write-script").textContent=ep?"Rewrite the script from scratch":"Write the script";
+  $("write-script").disabled=!S.canWrite||busy;
+  $("go-hint").textContent=busy?("Script run in progress"+(req?", started by "+nameOf(req.by)+" "+ago(req.at):"")+". Watch the Producer, Host writers and Fact-checker in the Control room.")
+    :"Starts the producer, host writers and fact-checker. You'll both get an email when the draft is ready to review.";
+  renderReview(ep);
+}
+function renderReview(ep){
+  const lab={review:"Waiting for your review",revising:"Revising",approved:"Approved"};
+  $("ep-status").textContent=ep?(lab[ep.status]||ep.status||"Draft"):"No draft yet";
+  if(!ep){$("review-body").innerHTML=`<div class="empty">The draft lands here when the script run finishes. One approval from either of you is enough.</div>`;return}
+  const views=[["scriptMd","Script"],["factcheckMd","Fact-check"],["briefMd","Producer brief"]];
+  const fb=(ep.feedback||[]).slice().reverse();
+  const canAct=S.canWrite&&ep.status==="review";
+  $("review-body").innerHTML=`<div style="display:grid;gap:12px">
+    ${(ep.titleOptions||[]).length?`<div><div class="label">Title options</div><ol class="titles">${ep.titleOptions.map(t=>`<li>${esc(t)}</li>`).join("")}</ol></div>`:""}
+    <div class="label" style="text-transform:none;letter-spacing:0;font-weight:400">${ep.lead?"Lead: "+esc(ep.lead)+" · ":""}${ep.wordCount?esc(ep.wordCount)+" words · ":""}updated ${ago(ep.updatedAt)}${ep.status==="approved"&&ep.approvedBy?" · approved by "+esc(nameOf(ep.approvedBy)):""}</div>
+    <div class="subtabs">${views.map(([k,l])=>`<button type="button" class="btn ghost" data-view="${k}" aria-pressed="${subView===k}">${l}</button>`).join("")}</div>
+    <div class="digest" id="ep-text"></div>
+    ${canAct?`<label class="field"><span>What should change?</span><textarea id="fb-text" placeholder="e.g. Aman's history bit runs long; cut the Copilot story; punch up the opening."></textarea></label>
+    <div class="go"><button class="btn" type="button" id="approve">Approve script</button><button class="btn ghost" type="button" id="revise">Request changes</button><span class="hint">Approving moves the episode on to audio. Requested changes go back to the writers and you both get an email when the revision is ready.</span></div>`:""}
+    ${fb.length?`<div class="fb"><div class="label">Feedback so far</div><ul>${fb.map(f=>`<li><b>${esc(nameOf(f.by))}</b> · ${ago(f.at)}: ${esc(f.text)}</li>`).join("")}</ul></div>`:""}
+  </div>`;
+  $("ep-text").textContent=ep[subView]||"Not written yet.";
+}
+/* Starting a run goes through the Claude Code Remote connector, which only works from the account that owns the routine */
+async function fireScript(text){
+  if(!mcp)return "unavailable";
+  try{await mcp.callTool("Claude Code Remote","fire_trigger",{trigger_id:SCRIPT_TRIGGER,text});return "ok"}
+  catch(e){return (e&&e.code)||"upstream_error"}
+}
+const FIRE_MSG={
+  unavailable:"Saved. This view can't start runs, so Anant's account needs to press the button (or tell Claude in the project).",
+  server_not_connected:"Saved. Starting runs needs the Claude Code Remote connector, which only Anant's account has. Ask Anant to press the button.",
+  needs_reauth:"Saved. Reconnect Claude Code Remote in claude.ai Settings, Connectors, then press the button again.",
+  not_in_manifest:"Saved. You turned off Claude Code Remote for this page, so the run didn't start. Turn it back on in the page's Permissions menu.",
+  blocked_by_policy:"Saved. Your organization blocks starting runs from here. Ask Anant to press the button.",
+  tool_error:"Saved, but the run didn't start from this account. Only Anant's account can start it; ask Anant to press the button.",
+  approval_required:"Saved. The run needs your approval to start; press the button again and allow it."};
+function renderAll(){renderEpisode();renderDigests();renderShow();renderAgents();renderIdeas();renderSources();renderAsks();renderContacts()}
 
 /* Names for whoever appears on screen */
 let nameTimer=null;
 function resolveNames(){clearTimeout(nameTimer);nameTimer=setTimeout(async()=>{
   if(!user)return;const ids=new Set();
-  [...S.ideas,...S.sources,...S.contacts].forEach(x=>{["by","promotedBy","vetoedBy"].forEach(k=>x[k]&&ids.add(x[k]))});
+  [...S.ideas,...S.sources,...S.contacts,...S.episodes,...(S.episodes.flatMap(e=>e.feedback||[])),S.show?.leadPick||{},S.show?.scriptRequested||{}].forEach(x=>{["by","promotedBy","vetoedBy","approvedBy"].forEach(k=>x[k]&&ids.add(x[k]))});
   const need=[...ids].filter(id=>!S.names[id]);if(!need.length)return;
   try{const ps=await user.profiles(need);let changed=false;for(const id of need){const n=ps[id]?.name;if(n){S.names[id]=n.split(" ")[0];changed=true}}if(changed)renderAll()}catch{}
 },150)}
@@ -412,26 +598,61 @@ document.addEventListener("click",async e=>{
   const ok=await guard(acts[b.dataset.act]);if(!ok)b.disabled=false;
 });
 
+document.addEventListener("click",async e=>{
+  const v=e.target.closest("button[data-view]");if(v){subView=v.dataset.view;renderReview(curEp());return}
+  const l=e.target.closest("button[data-lead]");if(!l||!S.canWrite)return;
+  const lead=((S.digests[0]||{}).leads||[]).find(x=>x.id===l.dataset.lead);if(!lead)return;
+  if(await guard(()=>db.doc("show/current").update({leadPick:{id:lead.id,title:lead.title,by:S.me,at:now()}})))toast("Lead picked");
+});
+$("script-notes").addEventListener("change",e=>guard(()=>db.doc("show/current").update({scriptNotes:e.target.value.trim()})));
+$("write-script").addEventListener("click",async e=>{
+  const b=e.currentTarget;b.disabled=true;const sh=S.show||{};const ep=sh.episode||1;
+  const lead=sh.leadPick||((S.digests[0]||{}).leads||[]).find(x=>x.recommended);
+  const saved=await guard(()=>db.doc("show/current").update({scriptNotes:$("script-notes").value.trim(),scriptRequested:{by:S.me,at:now(),kind:curEp()?"rewrite":"first"}}));
+  if(!saved){b.disabled=false;return}
+  const r=await fireScript(`${curEp()?"Rewrite from scratch":"First draft"} for Episode ${ep}. Lead: ${lead?lead.title:"recommended lead"}. Requested from the dashboard.`);
+  if(r==="ok")toast("Script run started");
+  else{banner(FIRE_MSG[r]||"Saved, but the run didn't start. Ask Anant to press the button, or try again later.");
+    /* An ambiguous failure may still have started the run, so keep the request marked; clear it otherwise */
+    if(r!=="upstream_error"&&r!=="server_unavailable")await guard(()=>db.doc("show/current").update({scriptRequested:null}));
+    renderEpisode()}
+});
+document.addEventListener("click",async e=>{
+  const ep=curEp();if(!ep)return;
+  if(e.target.id==="approve"){e.target.disabled=true;
+    if(await guard(async()=>{await db.doc("episodes/"+ep.id).update({status:"approved",approvedBy:S.me,approvedAt:now(),updatedAt:now()});
+      await db.doc("show/current").update({stage:"Audio",title:(ep.titleOptions||[])[0]||S.show?.title||"",waitingOn:"Voice clones and the ElevenLabs plan before audio can render",note:"Script approved"+(S.myName?" by "+S.myName:"")})}))toast("Script approved");
+    else e.target.disabled=false}
+  if(e.target.id==="revise"){const text=($("fb-text")?.value||"").trim();if(!text){toast("Say what should change first");return}
+    e.target.disabled=true;
+    const ok=await guard(async()=>{await db.doc("episodes/"+ep.id).update({status:"revising",feedback:[...(ep.feedback||[]),{by:S.me,at:now(),text}],updatedAt:now()});
+      await db.doc("show/current").update({stage:"Script",waitingOn:null,note:"Revising the script",scriptRequested:{by:S.me,at:now(),kind:"revision"}})});
+    if(!ok){e.target.disabled=false;return}
+    const r=await fireScript(`Revision for Episode ${S.show?.episode||1}. Read episodes/${ep.id}.feedback (latest entry).`);
+    if(r==="ok")toast("Sent back to the writers");else banner(FIRE_MSG[r]||"Feedback saved, but the revision didn't start. Ask Anant to press Request changes, or tell Claude in the project.")}
+});
+
 /* Connect */
 renderAll();
 (async()=>{
   if(!window.claude||!window.claude.use){banner("Open this page on claude.ai to use the studio.");return}
-  [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+  [db,user,mcp]=await Promise.all([claude.use("db"),claude.use("user"),claude.use("mcp")]);
   if(!db){banner("The studio's shared data isn't available in this view. Sign in to claude.ai with the account this page was shared with.");$("who").innerHTML=`<span class="dot"></span><span>Not connected</span>`;return}
   if(user){
     try{S.me=await user.id()}catch{}
     try{const w=await user.can("data.write");if(w===false){S.canWrite=false;banner("You can view this desk but not change it.");document.querySelectorAll("form.add").forEach(f=>f.hidden=true)}}catch{}
-    try{const m=await user.me();$("who").innerHTML=`<span class="dot" style="background:var(--st-done)"></span><span>Signed in as ${esc(m.name||"you")}</span>`}catch{}
+    try{const m=await user.me();S.myName=(m.name||"").split(" ")[0];$("who").innerHTML=`<span class="dot" style="background:var(--st-done)"></span><span>Signed in as ${esc(m.name||"you")}</span>`}catch{}
   }
   const bySort=(arr,k="createdAt")=>arr.sort((a,b)=>(b[k]||0)-(a[k]||0));
   const sub=(col,key,after)=>db.collection(col).onSnapshot(s=>{S[key]=s.docs.map(d=>({id:d.id,...d.data()}));after&&after();renderAll();resolveNames()},()=>{});
+  sub("episodes","episodes");
   sub("digests","digests",()=>S.digests.sort((a,b)=>String(b.id).localeCompare(String(a.id))));
   sub("agents","agents",()=>S.agents.sort((a,b)=>(a.order??99)-(b.order??99)));
   sub("ideas","ideas",()=>bySort(S.ideas));
   sub("sources","sources",()=>bySort(S.sources));
   sub("asks","asks",()=>bySort(S.asks));
   sub("contacts","contacts",()=>S.contacts.sort((a,b)=>String(a.name).localeCompare(String(b.name))));
-  db.doc("show/current").onSnapshot(d=>{S.show=d.exists?d.data():null;renderShow()},()=>{});
+  db.doc("show/current").onSnapshot(d=>{S.show=d.exists?d.data():null;renderShow();renderEpisode()},()=>{});
   setInterval(renderAgents,60000);
 })();
 </script>

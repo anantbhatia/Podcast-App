@@ -28,7 +28,7 @@ Run the five lanes (Watcher, Technology, Product, Business, Legal and policy) as
 - For each promoted idea, find what is new that connects it to this week's news, and add its id to the `ideas` array of the agent that used it.
 
 ## 3. Write the digest
-Save it as /mnt/project-files/research/<YYYY-MM-DD>-digest.md (create the folder if needed). Also save it in the dashboard database as collection `digests`, doc id <YYYY-MM-DD>, with fields {date, day, markdown, createdAt}. Include:
+Save it as /mnt/project-files/research/<YYYY-MM-DD>-digest.md (create the folder if needed). Also save it in the dashboard database as collection `digests`, doc id <YYYY-MM-DD>, with fields {date, day, markdown, createdAt, leads}. `leads` holds the candidate leads from item 4 below as [{id (short kebab-case), title, pitch (two or three sentences: the story and where Anant and Aman split), recommended (true on exactly one)}]. The hosts pick one of these on the dashboard's "This week's episode" tab. Then remove `leadPick` from `show/current` (write {"__delete__": true}) so last week's pick doesn't carry over, and set its waitingOn to "Anant or Aman to pick the lead on This week's episode, then press Write the script". Include:
 1. The top 5 to 7 trending stories. For each: what happened, why it matters, what's hype, sources as links, and a confidence level.
 2. How each promoted idea could be woven in.
 3. Listener asks this week's news makes answerable.
