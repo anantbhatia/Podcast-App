@@ -3,125 +3,238 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta property="og:title" content="The Two Hallucinating PMs">
-<meta property="og:description" content="A weekly AI news show with Anant and Aman. AI trends that get outdated by Monday and obsolete by launch.">
-<title>The Two Hallucinating PMs</title>
+<title>Two Hallucinating PMs</title>
+<meta name="description" content="A weekly AI news show with Anant and Aman. AI trends that get outdated by Monday and obsolete by launch.">
+<meta property="og:title" content="Two Hallucinating PMs">
+<meta property="og:description" content="Weekly AI updates with Anant and Aman. AI trends that get outdated by Monday and obsolete by launch.">
+<meta property="og:image" content="https://hpm-listener-inbox.listener-inbox.workers.dev/img/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#fbf3e2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f2c" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="preload" as="image" href="/img/hero-960.webp" imagesrcset="/img/hero-960.webp 960w, /img/hero-1600.webp 1600w" imagesizes="(max-width: 760px) 100vw, 720px">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap">
 <style>
-/* Layout: one narrow listening column; a show masthead, the next-episode slot, then the pilot archive as stacked episode entries. */
+/* Pop-art comic look taken from the show art: cream paper with halftone dots, thick ink outlines,
+   hard offset shadows, and the logo's neon lime, cyan, pink and yellow. Dark mode is the logo's navy. */
 :root {
-  --bg: #f4f5f9;
-  --surface: #ffffff;
-  --ink: #161a2c;
-  --muted: #5b6078;
-  --line: #dcdfea;
-  --accent: #2f4de0;
-  --marker: #ffe066;
-  --marker-ink: #161a2c;
-  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
-  --body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --paper: #fbf3e2; --dots: rgba(21, 19, 31, 0.07); --surface: #fffaf0; --ink: #15131f; --text: #15131f;
+  --muted: #5a566b; --line: #15131f; --shade: #15131f; --soft: #efe4cc;
+  --lime: #b4f01c; --cyan: #18b6f6; --pink: #ff3ea5; --yellow: #ffe83a; --purple: #4b3a9c;
+  --link: #4b3a9c; --on-accent: #15131f;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --comic: "Bangers", "Impact", "Arial Black", sans-serif;
+  --body: "Nunito", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #10121c; --surface: #191c2a; --ink: #eceef6; --muted: #a2a7bf; --line: #2c3045;
-    --accent: #8fa2ff; --marker: #e8c53a; --marker-ink: #10121c; color-scheme: dark;
+    --paper: #1b1f2c; --dots: rgba(255, 255, 255, 0.05); --surface: #252a3a; --text: #f5efe0;
+    --muted: #b5b8ca; --line: #0b0c12; --shade: #0b0c12; --soft: #2f3547; --link: #6fd3ff; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #10121c; --surface: #191c2a; --ink: #eceef6; --muted: #a2a7bf; --line: #2c3045;
-  --accent: #8fa2ff; --marker: #e8c53a; --marker-ink: #10121c; color-scheme: dark;
+  --paper: #1b1f2c; --dots: rgba(255, 255, 255, 0.05); --surface: #252a3a; --text: #f5efe0;
+  --muted: #b5b8ca; --line: #0b0c12; --shade: #0b0c12; --soft: #2f3547; --link: #6fd3ff; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; }
-.wrap { max-width: 44rem; margin: 0 auto; padding-inline: 20px; padding-block: 48px 64px; display: grid; gap: 48px; }
-h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; color: var(--text); font-family: var(--body); font-size: 17px; line-height: 1.6;
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--dots) 1.2px, transparent 1.6px);
+  background-size: 14px 14px;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; letter-spacing: 0.005em; }
 p { margin: 0; }
-.eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+a { color: var(--link); text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; border-radius: 6px; }
 
-.mast { display: grid; gap: 16px; }
-.mast h1 { font-size: clamp(2.4rem, 8vw, 3.8rem); font-weight: 800; line-height: 1.02; letter-spacing: -0.02em; }
-.mast h1 .hl { background: linear-gradient(transparent 58%, var(--marker) 58%, var(--marker) 92%, transparent 92%); padding-inline: 2px; }
-.tagline { font-size: 1.15rem; color: var(--muted); max-width: 34rem; }
-.tagline strong { color: var(--ink); font-weight: 600; }
-.hosts { font-size: 0.95rem; color: var(--muted); }
-.hosts b { color: var(--ink); font-weight: 600; }
+.wrap { max-width: 46rem; margin: 0 auto; padding-inline: 20px; padding-block: 16px 64px; display: grid; gap: 44px; }
 
-.next { border: 1.5px dashed var(--line); border-radius: 14px; padding: 22px 22px; display: grid; gap: 6px; }
-.next h2 { font-size: 1.35rem; font-weight: 800; }
-.next p { color: var(--muted); }
-.badge { justify-self: start; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; background: var(--marker); color: var(--marker-ink); padding: 3px 8px; border-radius: 4px; }
+/* Top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: max(8px, env(safe-area-inset-top)); }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; min-width: 0; }
+.brand img { width: 48px; height: 48px; flex: none; filter: drop-shadow(2px 2px 0 var(--shade)); }
+.brand span { font-family: var(--display); font-size: 1.15rem; line-height: 1.1; }
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; flex: none;
+  font-family: var(--body); font-weight: 800; font-size: 1rem; text-decoration: none; white-space: nowrap;
+  color: var(--on-accent); background: var(--pink); border: 2.5px solid var(--line); border-radius: 999px;
+  padding: 8px 16px; box-shadow: 3px 3px 0 var(--shade); transition: transform .12s, box-shadow .12s;
+}
+.pill svg { width: 18px; height: 18px; }
+.pill:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--shade); }
+.pill:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shade); }
 
-.archive { display: grid; gap: 20px; }
-.archive-head { display: grid; gap: 8px; }
-.archive-head h2 { font-size: 1.6rem; font-weight: 800; }
-.archive-head p { color: var(--muted); max-width: 38rem; }
+/* Hero */
+.hero { display: grid; gap: 22px; }
+.art {
+  margin: 0; border: 3px solid var(--line); border-radius: 22px; overflow: hidden;
+  box-shadow: 7px 7px 0 var(--pink), 7px 7px 0 3px var(--shade); background: var(--soft); aspect-ratio: 2752 / 1536;
+}
+.art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.intro { display: grid; gap: 14px; }
+.stickers { display: flex; flex-wrap: wrap; gap: 8px; }
+.sticker {
+  font-family: var(--comic); font-size: 1.05rem; letter-spacing: 0.06em; line-height: 1; text-transform: uppercase;
+  color: var(--on-accent); background: var(--yellow); border: 2px solid var(--line); border-radius: 6px;
+  padding: 6px 10px 5px; box-shadow: 2px 2px 0 var(--shade);
+}
+.sticker.lime { background: var(--lime); } .sticker.cyan { background: var(--cyan); } .sticker.pink { background: var(--pink); }
+.tilt-l { transform: rotate(-2deg); } .tilt-r { transform: rotate(1.5deg); }
+h1 { font-size: clamp(2.5rem, 9vw, 4rem); line-height: 1.02; color: var(--text); }
+h1 .pop { color: var(--cyan); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 3px 3px 0 var(--ink); }
+.tagline { font-size: 1.2rem; font-weight: 600; max-width: 36rem; }
+mark { color: var(--on-accent); padding: 0 4px; border-radius: 4px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 
-.ep { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px 22px; display: grid; gap: 14px; }
-.ep-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--mono); font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.ep-meta .num { color: var(--accent); }
-.ep h3 { font-size: 1.5rem; font-weight: 800; line-height: 1.15; }
-.ep ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 6px; color: var(--ink); }
-.ep li::marker { color: var(--accent); }
-audio { width: 100%; display: block; }
-.fine { font-size: 0.85rem; color: var(--muted); }
+.hosts { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 14px; }
+.host { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; background: var(--surface); border: 2.5px solid var(--line); border-radius: 16px; padding: 14px 16px; box-shadow: 4px 4px 0 var(--shade); }
+.host .dot { grid-row: span 2; width: 38px; height: 38px; border-radius: 50%; border: 2.5px solid var(--line); display: grid; place-items: center; font-family: var(--display); font-size: 1.15rem; color: var(--on-accent); }
+.host.a .dot { background: var(--lime); } .host.b .dot { background: var(--cyan); }
+.host b { font-family: var(--display); font-weight: 400; font-size: 1.2rem; line-height: 1.2; }
+.host p { color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
 
-.refs { border-top: 1px solid var(--line); padding-top: 12px; }
-.refs summary { cursor: pointer; font-weight: 600; color: var(--accent); list-style: none; display: flex; align-items: center; gap: 8px; }
+/* Ask us: a speech bubble */
+.ask {
+  position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px;
+  background: var(--cyan); color: var(--on-accent); border: 3px solid var(--line); border-radius: 26px;
+  padding: 20px 22px; box-shadow: 6px 6px 0 var(--shade);
+}
+.ask::after {
+  content: ""; position: absolute; left: 44px; bottom: -22px; width: 30px; height: 22px; background: var(--cyan);
+  clip-path: polygon(0 0, 100% 0, 10% 100%); filter: drop-shadow(0 3px 0 var(--line));
+}
+.ask .mic { flex: none; width: 54px; height: 54px; border-radius: 50%; background: var(--yellow); border: 2.5px solid var(--line); display: grid; place-items: center; }
+.ask .mic svg { width: 26px; height: 26px; }
+.ask p { flex: 1 1 15rem; min-width: 0; }
+.ask strong { display: block; font-family: var(--display); font-weight: 400; font-size: 1.45rem; line-height: 1.15; }
+.ask span { font-weight: 600; }
+.ask .pill { background: var(--yellow); }
+
+/* Next episode */
+.next { display: grid; gap: 8px; justify-items: start; border: 3px dashed var(--line); border-radius: 20px; padding: 22px; background: color-mix(in srgb, var(--surface) 60%, transparent); }
+.next h2 { font-size: 1.7rem; }
+.next p { color: var(--muted); font-weight: 600; }
+
+/* Archive */
+.archive { display: grid; gap: 26px; }
+.archive-head { display: grid; gap: 10px; justify-items: start; }
+.archive-head h2 { font-size: clamp(2rem, 6vw, 2.5rem); }
+.archive-head p { color: var(--muted); max-width: 40rem; }
+
+.ep {
+  background: var(--surface); border: 3px solid var(--line); border-radius: 20px; padding: 22px;
+  display: grid; gap: 14px; box-shadow: 6px 6px 0 var(--accent, var(--lime)), 6px 6px 0 3px var(--shade);
+}
+.ep:nth-of-type(odd) { --accent: var(--cyan); }
+.ep:nth-of-type(even) { --accent: var(--pink); }
+.ep-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; color: var(--muted); font-weight: 700; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.ep-meta .num {
+  font-family: var(--comic); font-weight: 400; font-size: 1.1rem; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1;
+  color: var(--on-accent); background: var(--lime); border: 2px solid var(--line); border-radius: 6px; padding: 5px 9px 4px; transform: rotate(-2deg);
+}
+.ep-meta span:last-child::before { content: ""; display: inline-block; width: 0.55em; height: 0.55em; margin-right: 6px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--line); vertical-align: 0.05em; }
+.ep h3 { font-size: clamp(1.6rem, 5vw, 2rem); line-height: 1.1; }
+.ep ul { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; }
+.ep > ul li { position: relative; padding-left: 28px; }
+.ep > ul li::before { content: ""; position: absolute; left: 2px; top: 0.42em; width: 14px; height: 14px; background: var(--accent); border: 2px solid var(--line); clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+audio { width: 100%; display: block; border-radius: 999px; border: 2.5px solid var(--line); background: var(--soft); }
+.fine { font-size: 0.88rem; color: var(--muted); }
+
+.refs { border-top: 2.5px dashed color-mix(in srgb, var(--line) 35%, transparent); padding-top: 12px; }
+.refs summary { cursor: pointer; font-weight: 800; list-style: none; display: flex; align-items: center; gap: 10px; }
 .refs summary::-webkit-details-marker { display: none; }
-.refs summary::before { content: "+"; font-family: var(--mono); width: 1ch; }
+.refs summary::before { content: "+"; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--yellow); color: var(--on-accent); border: 2px solid var(--line); font-weight: 800; line-height: 1; flex: none; }
 .refs[open] summary::before { content: "\2212"; }
-.refs summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
-.refs .cnt { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); font-weight: 500; }
-.refs-body { display: grid; gap: 14px; padding-top: 12px; }
-.ref-group h4 { margin: 0 0 4px; font-family: var(--body); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-.ref-group ul { list-style: none; padding: 0; gap: 4px; }
-.ref-group a { color: var(--ink); text-decoration-color: var(--accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
-.ref-group a:hover { color: var(--accent); }
+.refs .cnt { font-size: 0.78rem; font-weight: 800; color: var(--on-accent); background: var(--soft); border: 1.5px solid var(--line); border-radius: 999px; padding: 0 8px; }
+:root[data-theme="dark"] .refs .cnt { color: var(--text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .refs .cnt { color: var(--text); } }
+.refs-body { display: grid; gap: 14px; padding-top: 14px; }
+.ref-group h4 { margin: 0 0 4px; font-family: var(--body); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ref-group ul { gap: 4px; }
+.ref-group a { color: var(--text); text-decoration-color: var(--accent); text-decoration-thickness: 2px; overflow-wrap: anywhere; }
+.ref-group a:hover { color: var(--link); }
 
-.ask { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
-.ask p { min-width: 0; flex: 1 1 16rem; }
-.ask strong { display: block; font-family: var(--display); font-size: 1.15rem; font-weight: 800; }
-.ask span { color: var(--muted); font-size: 0.95rem; }
-.ask-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--accent); color: var(--surface); font-weight: 600; text-decoration: none; border-radius: 999px; padding: 10px 18px; white-space: nowrap; }
-.ask-btn::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
-.ask-btn:hover { filter: brightness(1.08); }
-.ask-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-.ask-btn.is-soon { background: var(--line); color: var(--muted); }
-.ask-btn.is-soon::before { background: var(--muted); }
-.ep-ask { justify-self: start; color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
+.ep-ask { justify-self: start; display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: var(--text); text-decoration: none; border: 2px solid var(--line); border-radius: 999px; padding: 6px 14px; background: var(--soft); }
+.ep-ask svg { width: 16px; height: 16px; }
+.ep-ask:hover { background: var(--yellow); color: var(--on-accent); }
 
-footer { border-top: 1px solid var(--line); padding-top: 20px; font-size: 0.85rem; color: var(--muted); display: grid; gap: 6px; }
-@media (max-width: 480px) { .wrap { padding-inline: 16px; padding-block: 32px 48px; gap: 36px; } .ep { padding: 20px 16px; } }
+footer { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; border-top: 3px solid var(--line); padding-top: 22px; font-size: 0.9rem; color: var(--muted); }
+footer img { grid-row: span 2; width: 56px; height: 56px; }
+.bits { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.2em; color: color-mix(in srgb, var(--lime) 70%, var(--muted)); grid-column: 1 / -1; overflow: hidden; white-space: nowrap; }
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ep { transition: transform .15s; } .ep:hover { transform: translate(-2px, -2px); }
+}
+@media (max-width: 520px) {
+  body { font-size: 16px; }
+  .wrap { padding-inline: 16px; gap: 36px; }
+  .brand span { font-size: 1rem; }
+  .brand img { width: 42px; height: 42px; }
+  .ep { padding: 18px 16px; }
+  .art { border-radius: 16px; box-shadow: 5px 5px 0 var(--pink), 5px 5px 0 3px var(--shade); }
+  .ask { padding: 18px; }
+}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-mic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5M8.5 21.5h7"/></g></symbol>
+  <symbol id="i-bubble" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" d="M4 5.5h16v10H10l-5 4v-4H4z"/></symbol>
+</svg>
 
 <main class="wrap">
-  <header class="mast">
-    <span class="eyebrow">A weekly AI news show · about 15 minutes</span>
-    <h1>The Two <span class="hl">Hallucinating</span> PMs</h1>
-    <p class="tagline">We talk about AI trends that get <strong>outdated by Monday</strong> and <strong>obsolete by launch</strong>.</p>
-    <p class="hosts">With <b>Anant</b>, a hands-on PM who'd rather build it than read about it, and <b>Aman</b>, who wants to know who's paying and whether anyone will actually use it.</p>
+  <nav class="top" aria-label="Site">
+    <a class="brand" href="/"><img src="/img/logo-96.webp" width="48" height="48" alt=""><span>Two Hallucinating PMs</span></a>
+    <a class="pill" href="/ask" data-ask=""><svg aria-hidden="true"><use href="#i-mic"/></svg>Ask us</a>
+  </nav>
+
+  <header class="hero">
+    <figure class="art">
+      <picture>
+        <source type="image/webp" srcset="/img/hero-960.webp 960w, /img/hero-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 720px">
+        <img src="/img/hero-960.jpg" width="960" height="536" alt="Pop-art illustration of Anant and Aman at two microphones, their heads open and spilling neon swirls, a brain in sunglasses, floppy disks, a little robot and VR goggles, under a cloud reading Two Hallucinating PMs, Weekly AI Updates." fetchpriority="high">
+      </picture>
+    </figure>
+    <div class="intro">
+      <div class="stickers"><span class="sticker tilt-l">Weekly AI updates</span><span class="sticker lime tilt-r">About 15 minutes</span><span class="sticker cyan tilt-l">Free</span></div>
+      <h1>Two <span class="pop">Hallucinating</span> PMs</h1>
+      <p class="tagline">We talk about AI trends that get <mark class="lime">outdated by Monday</mark> and <mark class="pink">obsolete by launch</mark>.</p>
+    </div>
+    <div class="hosts">
+      <div class="host a"><span class="dot" aria-hidden="true">An</span><b>Anant</b><p>A hands-on PM who'd rather build it than read about it. Show him a demo and he asks when he can get access.</p></div>
+      <div class="host b"><span class="dot" aria-hidden="true">Am</span><b>Aman</b><p>Philosophy, history and books. He wants to know who's paying and whether anyone will actually use it.</p></div>
+    </div>
   </header>
 
   <section class="ask" aria-label="Ask the hosts">
+    <span class="mic" aria-hidden="true"><svg><use href="#i-mic"/></svg></span>
     <p><strong>Got a question or a follow-up?</strong><span>Record a quick voice note or type it, with or without your name. We pick a few for the next episode.</span></p>
-    <a class="ask-btn" href="/ask" data-ask="">Ask us</a>
+    <a class="pill" href="/ask" data-ask="">Ask us</a>
   </section>
 
   <section class="next" aria-labelledby="next-title">
-    <span class="badge">Coming soon</span>
+    <span class="sticker pink tilt-l">Coming soon</span>
     <h2 id="next-title">Episode 1</h2>
     <p>The first episode with Anant and Aman is in the works. It will show up here, at the top of this page, when it's ready.</p>
   </section>
 
   <section class="archive" aria-labelledby="archive-title">
     <div class="archive-head">
-      <span class="eyebrow">From the archive</span>
+      <span class="sticker cyan tilt-r">From the archive</span>
       <h2 id="archive-title">The pilots</h2>
       <p>Before the show had its name or its hosts, we made two test episodes under the working title <em>Terms and Conditions</em>, voiced by two AI stand-in hosts, Mara and Theo. They're here so you can hear where it started.</p>
     </div>
@@ -163,7 +276,7 @@ footer { border-top: 1px solid var(--line); padding-top: 20px; font-size: 0.85re
       <li><a href="https://news.harvard.edu/gazette/story/2026/09/why-ai-hasnt-triggered-mass-layoffs-yet/" target="_blank" rel="noopener">Harvard Gazette: Why AI hasn&#x27;t triggered mass layoffs, yet</a></li>
       </ul></div>
       </div></details>
-      <a class="ep-ask" href="/ask?ep=pilot-2" data-ask="pilot-2">Ask about this episode</a>
+      <a class="ep-ask" href="/ask?ep=pilot-2" data-ask="pilot-2"><svg aria-hidden="true"><use href="#i-bubble"/></svg>Ask about this episode</a>
     </article>
 
     <article class="ep" aria-labelledby="p1-title" data-ep="pilot-1">
@@ -197,13 +310,15 @@ footer { border-top: 1px solid var(--line); padding-top: 20px; font-size: 0.85re
       <li><a href="https://www.cnbc.com/2026/09/30/hawley-openai-sam-altman-rogue-ai.html" target="_blank" rel="noopener">CNBC: Hawley and the Altman no-show</a></li>
       </ul></div>
       </div></details>
-      <a class="ep-ask" href="/ask?ep=pilot-1" data-ask="pilot-1">Ask about this episode</a>
+      <a class="ep-ask" href="/ask?ep=pilot-1" data-ask="pilot-1"><svg aria-hidden="true"><use href="#i-bubble"/></svg>Ask about this episode</a>
     </article>
   </section>
 
   <footer>
+    <img src="/img/logo-96.webp" width="56" height="56" alt="">
     <p>The pilots were researched and fact-checked with Claude and voiced with NotebookLM. News in them is as of the week each was made.</p>
     <p class="fine">Made by Anant and Aman for friends and family.</p>
+    <span class="bits" aria-hidden="true">01010100 01110111 01101111 00100000 01010000 01001101 01110011 01010100 01110111 01101111</span>
   </footer>
 </main>
 

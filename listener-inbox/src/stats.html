@@ -4,46 +4,50 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Listener Stats</title>
+<title>Listener Stats · 2PM</title>
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap">
 <style>
-/* Hosts-only stats: headline tiles, the listening funnel, per-episode drop-off, then daily traffic. One hue for every bar. */
+/* Hosts-only stats in the show's pop-art look: headline tiles, the listening funnel, per-episode drop-off, then daily traffic. One hue (cyan) for every bar. */
 :root {
-  --bg: #f4f5f9; --surface: #ffffff; --ink: #161a2c; --muted: #5b6078; --line: #dcdfea;
-  --bar: #2f4de0; --bar-soft: #dfe4fb; --marker: #ffe066; --bad: #c62f3a;
-  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
-  --body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --bg: #fbf3e2; --dots: rgba(21, 19, 31, 0.07); --surface: #fffaf0; --ink: #15131f; --muted: #5a566b; --line: #15131f; --shade: #15131f;
+  --bar: #0f8fc7; --bar-soft: #e6dcc4; --btn: #ffe83a; --btn-ink: #15131f; --bad: #c4136f; --pink: #ff3ea5; --lime: #b4f01c;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --comic: "Bangers", "Impact", sans-serif;
+  --body: "Nunito", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #10121c; --surface: #191c2a; --ink: #eceef6; --muted: #a2a7bf; --line: #2c3045;
-    --bar: #8fa2ff; --bar-soft: #262c48; --marker: #e8c53a; --bad: #ff6b74; color-scheme: dark; }
+  :root { --bg: #1b1f2c; --dots: rgba(255, 255, 255, 0.05); --surface: #252a3a; --ink: #f5efe0; --muted: #b5b8ca; --line: #0b0c12; --shade: #0b0c12;
+    --bar: #18b6f6; --bar-soft: #343a4e; --bad: #ff6fbd; color-scheme: dark; }
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+body { margin: 0; background-color: var(--bg); background-image: radial-gradient(var(--dots) 1.2px, transparent 1.6px); background-size: 14px 14px; color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
 .wrap { max-width: 60rem; margin: 0 auto; padding-inline: 18px; padding-block: 36px 56px; display: grid; gap: 28px; }
-h1 { font-family: var(--display); font-weight: 800; font-size: clamp(1.8rem, 6vw, 2.4rem); margin: 0; line-height: 1.1; }
-h2 { font-family: var(--display); font-weight: 800; font-size: 1.2rem; margin: 0 0 12px; }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(1.8rem, 6vw, 2.4rem); margin: 0; line-height: 1.1; }
+h2 { font-family: var(--display); font-weight: 400; font-size: 1.2rem; margin: 0 0 12px; }
 p { margin: 0; }
 .muted { color: var(--muted); }
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-.eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
+.eyebrow { justify-self: start; font-family: var(--comic); font-size: 1.05rem; letter-spacing: 0.06em; line-height: 1; text-transform: uppercase; color: #15131f; background: var(--lime); border: 2px solid var(--line); border-radius: 6px; padding: 6px 10px 5px; box-shadow: 2px 2px 0 var(--shade); transform: rotate(-2deg); }
+.wrap > *, #out > * { min-width: 0; }
+.panel { background: var(--surface); border: 2.5px solid var(--line); border-radius: 18px; box-shadow: 4px 4px 0 var(--shade); padding: 18px; min-width: 0; }
 .login { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.login input { flex: 1 1 14rem; font: inherit; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+.login input { flex: 1 1 14rem; font: inherit; color: var(--ink); background: var(--bg); border: 2.5px solid var(--line); border-radius: 10px; padding: 9px 12px; }
 .login input:focus { outline: none; border-color: var(--bar); }
-button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 10px 16px; background: var(--bar); color: var(--surface); cursor: pointer; }
+button { font: inherit; font-weight: 800; border: 2.5px solid var(--line); border-radius: 999px; padding: 9px 18px; background: var(--btn); color: var(--btn-ink); cursor: pointer; box-shadow: 3px 3px 0 var(--shade); }
 button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-button.ghost { background: transparent; color: var(--bar); padding: 6px 8px; }
+button.ghost { background: transparent; color: var(--ink); border-color: transparent; box-shadow: none; padding: 6px 8px; text-decoration: underline; text-underline-offset: 3px; }
 .err { color: var(--bad); font-weight: 500; }
 
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 12px; }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 2px; }
-.tile .n { font-family: var(--display); font-weight: 800; font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile { background: var(--surface); border: 2.5px solid var(--line); border-radius: 16px; box-shadow: 4px 4px 0 var(--shade); padding: 14px 16px; display: grid; gap: 2px; }
+.tile .n { font-family: var(--display); font-weight: 400; font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .tile .k { font-size: 0.85rem; color: var(--muted); }
 
 .funnel { display: grid; gap: 8px; }
@@ -66,6 +70,8 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
 .day:hover i, .day:focus i { filter: brightness(1.15); }
 .day .tip { position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); font-size: 0.78rem; padding: 4px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none; opacity: 0; }
 .day:hover .tip, .day:focus .tip { opacity: 1; }
+.day:nth-child(-n+3) .tip { left: 0; transform: none; }
+.day:nth-last-child(-n+3) .tip { left: auto; right: 0; transform: none; }
 .axis { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); font-family: var(--mono); margin-top: 6px; }
 .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 12px; }
 .kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; }
@@ -76,7 +82,8 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
 <body>
 <main class="wrap">
   <header style="display:grid;gap:8px">
-    <span class="eyebrow">The Two Hallucinating PMs · hosts only</span>
+    <a href="/" style="display:inline-flex;align-items:center;gap:10px;color:inherit;text-decoration:none;font-family:var(--display);font-size:1.05rem"><img src="/img/logo-96.webp" width="44" height="44" alt="">Two Hallucinating PMs</a>
+    <span class="eyebrow">Hosts only</span>
     <h1>Listener stats</h1>
     <p class="muted" id="since">Who's listening, how far they get, and who comes back.</p>
   </header>
