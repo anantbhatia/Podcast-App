@@ -40,9 +40,10 @@ Promoted ideas get woven in; the top 3 new listener asks get a "You asked" segme
 ## 3. Host writers
 Use one subagent through the Agent tool. Tell it to stay off every `mcp__hearthbot__` tool and to send no messages. It writes `script.md` from the brief and the show bible. Requirements:
 - **Opening:** brief intros from Anant and Aman, then exactly "Let's do this: Two Hallucinating PMs." followed by [THEME HIT], then exactly "We talk about AI trends that get Outdated by Monday and Obsolete by Launch."
-- Speaker labels ANANT: and AMAN:, with stage cues in [brackets]. About 2,100 to 2,300 spoken words, which is roughly 15 minutes.
+- Speaker labels ANANT: and AMAN:, with stage cues in [brackets]. About 2,100 to 2,300 spoken words (tags don't count), which is roughly 15 minutes.
 - The hosts sound like themselves as the bible describes them: Anant's demo-first questions and ad-tech instincts; Aman's "I looked into it…", his scale and who-pays questions, and his history and literature references.
 - Natural interruptions, real disagreement, no padding, no generic AI banter.
+- **Delivery tags (ElevenLabs v3/v4).** The writer reads `/mnt/project-files/research/elevenlabs-prompting-guide.md` section 3 first and follows it. Emotion comes from how the line is written, then from tags. Open nearly every line with a square-bracket voice direction ([excited], [dry], [deadpan], [laughs], [jumping in], [sighs], [short pause]); tags are free text but must describe the VOICE, never a gesture or sound (no [nodding], [rubbing hands], [music]), because v4 can render ambiguous tags as sound effects. Use ellipses for pauses, CAPS for one or two stressed words in a line, and a line ending in a dash for a cut-off answered by the next speaker's "[jumping in] —…". Jabs land when the receiving line reacts. Use [short pause] instead of [beat]; never SSML <break> tags. Production cues ([THEME HIT]) go on a line of their own. Aim for high-energy conversational delivery: Anant quick and animated, Aman calm, dry and measured.
 
 ## 4. Fact-check
 Use a separate subagent through the Agent tool, under the same rules about tools and messages. It produces `factcheck.md`:
@@ -80,7 +81,7 @@ Set the three agent docs to done.
 Email ONE message from Anant's Gmail to anantbhatia@gmail.com and agoyal@shashi.ai only. Subject: "Episode <N> script ready for review: <title>". Body: the title options, a three-line summary of the episode, the number of claims cut or softened by the fact-check, and the dashboard link. Send nothing to anyone else.
 
 ## Revisions
-Hosts can also edit `scriptMd` by hand on the Studio; each save appends {by, at} to the episode's `edits`. Before revising or moving to audio, compare `scriptMd` with episodes/ep<NN>/script.md. Fact-check every factual claim in lines a host added or changed, save the hand-edited version as script.md, and keep the hosts' wording unless a claim is wrong. If one is wrong, say so in the reply instead of quietly rewriting their line.
+Hosts can also edit `scriptMd` by hand on the Studio; each save appends {by, at} to the episode's `edits`. Before revising or moving to audio, compare `scriptMd` with episodes/ep<NN>/script.md. Fact-check every factual claim in lines a host added or changed, save the hand-edited version as script.md, and keep the hosts' wording unless a claim is wrong. If one is wrong, say so in the reply instead of quietly rewriting their line. Add delivery tags to hand-edited lines that lack them, without changing their words.
 If the trigger message says it's a revision, read `episodes/ep<NN>.feedback`, revise the script to address it, and rerun the fact-check on the changed lines. Update the episode doc with status "review" and a fresh updatedAt, then email the same two addresses: "Episode <N> script revised".
 
 ## Rules
