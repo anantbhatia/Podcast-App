@@ -1,6 +1,7 @@
-"""Render a two-host episode script with ElevenLabs v3 text-to-dialogue.
+"""Render a two-host episode script with ElevenLabs text-to-dialogue (v3 or v4).
 
-Same script format as render_episode.py (`MARA: text` / `THEO: text`, `##`
+Same script format as render_episode.py (`ANANT: text` / `AMAN: text`, or the
+pilots' `MARA:` / `THEO:`, with `##`
 and `###` headings), but v3 performs the lines as one conversation, so
 `[laughs]` and other audio tags are kept and a line ending in an em-dash is
 sent as-is for the model to play as a cut-off. `[DEEPER: ...]` notes are not
@@ -21,15 +22,17 @@ import urllib.request
 from pathlib import Path
 
 API = "https://api.elevenlabs.io/v1/text-to-dialogue"
-MODEL = "eleven_v3"
-# Default voices usable on the free tier (library voices need a paid plan).
+MODEL = "eleven_v3"   # or eleven_v4 via --model
 VOICES = {
+    "ANANT": "2VlXj8B3IygUVWIq1EAC",  # Anant's instant clone
+    "AMAN": "Nj6ChQDqm6Ghv0E6HlCu",   # Aman's instant clone
+    # Pilot hosts, default voices usable on the free tier.
     "MARA": "FGY2WhTYpPnrIDTdsKH5",  # Laura: high energy, conversational
     "THEO": "iP95p4xoKVk53GoZ742B",  # Chris: warm, quick, conversational
 }
 MAX_CHARS = 2500     # keep each request well under the v3 per-request limit
 SECTION_GAP = 1.0    # seconds of silence between sections
-LINE_RE = re.compile(r"^(MARA|THEO):\s*(.+)$")
+LINE_RE = re.compile(rf"^({'|'.join(VOICES)}):\s*(.+)$")
 HEADING_RE = re.compile(r"^#{2,3}\s+(.+)$")
 
 
@@ -71,9 +74,9 @@ def chunk(lines):
         yield batch
 
 
-def request(lines, key: str, seed: int | None, stability: float | None) -> bytes:
+def request(lines, key: str, seed: int | None, stability: float | None, model: str) -> bytes:
     body = {
-        "model_id": MODEL,
+        "model_id": model,
         "inputs": [{"text": t, "voice_id": VOICES[s]} for s, t in lines],
     }
     if seed is not None:
@@ -122,16 +125,17 @@ def main():
     ap.add_argument("--start-at", help="start at the heading that starts with this")
     ap.add_argument("--stop-at", help="stop before the heading that starts with this")
     ap.add_argument("--seed", type=int, help="fix the seed for a repeatable take")
+    ap.add_argument("--model", default=MODEL, help="eleven_v3 (default) or eleven_v4")
     ap.add_argument("--stability", type=float, default=0.0,
                     help="v3 stability: 0.0 creative (default, most expressive), 0.5 natural, 1.0 robust")
     ap.add_argument("--voice", action="append", default=[], metavar="HOST=VOICE_ID",
-                    help="override a host's voice, e.g. --voice MARA=cgSgspJ2msm6clMCkdW9")
+                    help="override a host's voice, e.g. --voice ANANT=<voice id>")
     ap.add_argument("--dry-run", action="store_true", help="print sections and character count only")
     a = ap.parse_args()
     for override in a.voice:
         host, _, voice_id = override.partition("=")
         if host.upper() not in VOICES or not voice_id:
-            sys.exit(f"bad --voice {override!r}; expected MARA=<id> or THEO=<id>")
+            sys.exit(f"bad --voice {override!r}; expected HOST=<id> for one of {sorted(VOICES)}")
         VOICES[host.upper()] = voice_id
 
     sections = parse_sections(a.script.read_text(), a.start_at, a.stop_at)
@@ -150,7 +154,7 @@ def main():
             for ci, batch in enumerate(chunk(lines)):
                 print(f"rendering {title} ({ci + 1})...")
                 p = Path(tmp) / f"{si:02d}_{ci:02d}.mp3"
-                p.write_bytes(request(batch, key, a.seed, a.stability))
+                p.write_bytes(request(batch, key, a.seed, a.stability, a.model))
                 parts.append((p, ci == 0))
         join(parts, a.out)
     print(f"wrote {a.out}")
