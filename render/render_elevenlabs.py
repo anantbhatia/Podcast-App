@@ -22,7 +22,7 @@ import urllib.request
 from pathlib import Path
 
 API = "https://api.elevenlabs.io/v1/text-to-dialogue"
-MODEL = "eleven_v3"   # or eleven_v4 via --model
+MODEL = "eleven_v4"   # Anant picked v4 over v3 for the clones (2026-10-13)
 VOICES = {
     "ANANT": "2VlXj8B3IygUVWIq1EAC",  # Anant's instant clone
     "AMAN": "Nj6ChQDqm6Ghv0E6HlCu",   # Aman's instant clone
@@ -30,10 +30,16 @@ VOICES = {
     "MARA": "FGY2WhTYpPnrIDTdsKH5",  # Laura: high energy, conversational
     "THEO": "iP95p4xoKVk53GoZ742B",  # Chris: warm, quick, conversational
 }
-MAX_CHARS = 2500     # keep each request well under the v3 per-request limit
+MAX_CHARS = 2500     # well under the v3 (5k) and v4 (10k) per-request limits
 SECTION_GAP = 1.0    # seconds of silence between sections
 LINE_RE = re.compile(rf"^({'|'.join(VOICES)}):\s*(.+)$")
 HEADING_RE = re.compile(r"^#{2,3}\s+(.+)$")
+# Names the voices get wrong, rewritten only in the text sent to the model.
+# v4 reads IPA between slashes; v3 needs phonetic spellings instead.
+PRONOUNCE = {
+    "eleven_v4": {"Anant": "/əˈnənt/", "Anthropic": "/ænˈθrɑːpɪk/"},
+    "eleven_v3": {"Anant": "Uh-nunt"},
+}
 
 
 def parse_sections(script: str, start_at: str | None, stop_at: str | None):
@@ -74,10 +80,16 @@ def chunk(lines):
         yield batch
 
 
+def pronounce(text: str, model: str) -> str:
+    for word, said in PRONOUNCE.get(model, {}).items():
+        text = re.sub(rf"\b{word}\b", said, text)
+    return text
+
+
 def request(lines, key: str, seed: int | None, stability: float | None, model: str) -> bytes:
     body = {
         "model_id": model,
-        "inputs": [{"text": t, "voice_id": VOICES[s]} for s, t in lines],
+        "inputs": [{"text": pronounce(t, model), "voice_id": VOICES[s]} for s, t in lines],
     }
     if seed is not None:
         body["seed"] = seed
@@ -125,7 +137,7 @@ def main():
     ap.add_argument("--start-at", help="start at the heading that starts with this")
     ap.add_argument("--stop-at", help="stop before the heading that starts with this")
     ap.add_argument("--seed", type=int, help="fix the seed for a repeatable take")
-    ap.add_argument("--model", default=MODEL, help="eleven_v3 (default) or eleven_v4")
+    ap.add_argument("--model", default=MODEL, help="eleven_v4 (default) or eleven_v3")
     ap.add_argument("--stability", type=float, default=0.0,
                     help="v3 stability: 0.0 creative (default, most expressive), 0.5 natural, 1.0 robust")
     ap.add_argument("--voice", action="append", default=[], metavar="HOST=VOICE_ID",
