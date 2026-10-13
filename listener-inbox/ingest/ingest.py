@@ -6,7 +6,7 @@ After a note is saved, it is marked done on the worker so it isn't pulled again.
 Transcription runs locally with faster-whisper, so it costs nothing per note.
 
 Usage:
-  INBOX_URL=https://hpm-listener-inbox.<account>.workers.dev INBOX_TOKEN=... \
+  INBOX_URL=https://listen.<account>.workers.dev INBOX_TOKEN=... \
     python3 ingest.py --out /mnt/project-files/listeners/inbox
 """
 import argparse

@@ -16,7 +16,7 @@ npx wrangler login
 npx wrangler kv namespace create INBOX   # paste the id into wrangler.toml
 npx wrangler d1 create hpm-stats         # paste the database_id into wrangler.toml
 npx wrangler secret put INBOX_TOKEN     # any long random string
-npx wrangler deploy                     # prints https://hpm-listener-inbox.<account>.workers.dev
+npx wrangler deploy                     # prints https://listen.<account>.workers.dev
 ```
 Then put `INBOX_URL` (the printed URL) and `INBOX_TOKEN` in the Claude cloud environment for the routine.
 
