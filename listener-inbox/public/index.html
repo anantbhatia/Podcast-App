@@ -129,6 +129,11 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 .next h2 { font-size: 1.7rem; }
 .next p { color: var(--muted); font-weight: 600; }
 
+.latest { display: grid; gap: 14px; justify-items: start; }
+.latest .ep { justify-self: stretch; }
+.latest .ep.ep-new { --accent: var(--lime); }
+.ep.ep-new .ep-meta .num { background: var(--yellow); }
+
 /* Archive */
 .archive { display: grid; gap: 26px; }
 .archive-head { display: grid; gap: 10px; justify-items: start; }
@@ -226,10 +231,48 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     <a class="pill" href="/ask" data-ask="">Ask us</a>
   </section>
 
-  <section class="next" aria-labelledby="next-title">
-    <span class="sticker pink tilt-l">Coming soon</span>
-    <h2 id="next-title">Episode 1</h2>
-    <p>The first episode with Anant and Aman is in the works. It will show up here, at the top of this page, when it's ready.</p>
+  <section class="latest" aria-labelledby="latest-title">
+    <span class="sticker pink tilt-l" id="latest-title">New this week</span>
+    <article class="ep ep-new" aria-labelledby="e1-title" data-ep="ep01">
+      <div class="ep-meta"><span class="num">Episode 1</span><span>Week of Oct 12, 2026</span><span>17:47</span></div>
+      <h3 id="e1-title">The Agent Did What?</h3>
+      <ul>
+        <li>An Anthropic test agent sent a made-up tip to the Philadelphia police's unsolved-murders site in July, and the police only heard why in October.</li>
+        <li>Poppy, the standard Meta and Sierra proposed for letting AI agents into your accounts, and why Amazon isn't on the list.</li>
+        <li>Which revenue is real? OpenAI's roughly $50 billion versus the $68 billion headline, and why AI stocks fell.</li>
+        <li>Two predictions on the record, so we can score them later.</li>
+      </ul>
+      <audio controls preload="none" src="audio/ep01-the-agent-did-what.mp3"></audio>
+      <details class="refs"><summary>Sources and further reading <span class="cnt">20</span></summary><div class="refs-body">
+      <div class="ref-group"><h4>The agent did what?</h4><ul>
+      <li><a href="https://www.anthropic.com/research/investigating-unintended-model-actions" target="_blank" rel="noopener">Anthropic: Investigating unintended model actions in our evaluations and internal use</a></li>
+      <li><a href="https://6abc.com/post/anthropic-ai-model-submitted-false-tip-unsolved-murder-philadelphia-police-say/19925243/" target="_blank" rel="noopener">6abc Philadelphia: Anthropic AI model submitted false tip on unsolved murder, Philadelphia police say</a></li>
+      <li><a href="https://www.usnews.com/news/us/articles/2026-10-09/anthropic-ai-model-submits-false-homicide-tip-to-police-website" target="_blank" rel="noopener">Reuters via US News: Anthropic AI model submits false homicide tip to police website</a></li>
+      <li><a href="https://www.inquirer.com/crime/anthropic-artificial-intelligence-philadelphia-police-false-homicide-tip-20261009.html" target="_blank" rel="noopener">The Philadelphia Inquirer: Anthropic AI model sent a false homicide tip to Philadelphia police</a></li>
+      <li><a href="https://www.npr.org/2026/09/26/nx-s1-5981979/openai-us-government-websites-misbehavior" target="_blank" rel="noopener">NPR: OpenAI says its agents interacted with US government websites in unexpected ways</a></li>
+      </ul></div>
+      <div class="ref-group"><h4>Poppy, the Personal Agent Protocol</h4><ul>
+      <li><a href="https://sierra.ai/blog/introducing-personal-agent-protocol" target="_blank" rel="noopener">Sierra: Introducing the Personal Agent Protocol</a></li>
+      <li><a href="https://sierra.ai/blog/poppy" target="_blank" rel="noopener">Sierra: Poppy draft 0.1</a></li>
+      <li><a href="https://thepaypers.com/payments/news/meta-and-sierra-develop-personal-agent-protocol-for-ai-agents" target="_blank" rel="noopener">The Paypers: Meta and Sierra develop Personal Agent Protocol for AI agents</a></li>
+      <li><a href="https://thenextweb.com/news/personal-agent-protocol-sierra-meta" target="_blank" rel="noopener">The Next Web: Personal Agent Protocol: Sierra and Meta</a></li>
+      <li><a href="https://www.pymnts.com/news/artificial-intelligence/2026/meta-sierra-poppy-lets-customers-set-limits-ai-agents/" target="_blank" rel="noopener">PYMNTS: Meta and Sierra&#x27;s Poppy Lets Customers Set Limits for AI Agents</a></li>
+      <li><a href="https://www.adweek.com/commerce/amazon-locks-out-metas-muse-in-agentic-shopping-standoff/" target="_blank" rel="noopener">Adweek: Amazon locks out Meta&#x27;s Muse in agentic shopping standoff</a></li>
+      <li><a href="https://letsdatascience.com/news/amazon-blocks-meta-muse-as-shopify-enables-checkout-85276e25" target="_blank" rel="noopener">Let&#x27;s Data Science: Amazon Blocks Meta&#x27;s Muse as Shopify Opens Shop Pay Checkout</a></li>
+      <li><a href="https://dev.to/benjifisher/what-is-poppyjson-a-personal-agent-protocol-example-and-how-to-validate-yours-3d5m" target="_blank" rel="noopener">DEV Community: What Is poppy.json?</a></li>
+      </ul></div>
+      <div class="ref-group"><h4>Which revenue is real?</h4><ul>
+      <li><a href="https://www.cnbc.com/2026/10/08/open-ai-revenue-nvidia-oracle-coreweave.html" target="_blank" rel="noopener">CNBC: Nvidia, Oracle, CoreWeave and other AI stocks sink on OpenAI revenue report</a></li>
+      <li><a href="https://techcrunch.com/2026/10/08/openais-revenue-is-reportedly-20-billion-less-than-previously-projected/" target="_blank" rel="noopener">TechCrunch: OpenAI&#x27;s revenue is reportedly $20 billion less than previously projected</a></li>
+      <li><a href="https://thenextweb.com/news/openai-revenue-70bn-year-end-50bn-september" target="_blank" rel="noopener">The Next Web: OpenAI revenue: $70bn year-end target, $50bn in September</a></li>
+      <li><a href="https://www.bloomberg.com/news/articles/2026-10-07/broadcom-plans-50-billion-financing-for-openai-chips-wsj-says" target="_blank" rel="noopener">Bloomberg: Broadcom plans $50 billion financing for OpenAI chips, WSJ says</a></li>
+      <li><a href="https://finance.yahoo.com/sectors/technology/articles/apollo-blackstone-back-anthropics-35-155215932.html" target="_blank" rel="noopener">Reuters via Yahoo Finance: Apollo, Blackstone back Anthropic&#x27;s $35 billion capacity expansion</a></li>
+      <li><a href="https://www.techtimes.com/articles/328625/20261006/broadcom-anthropics-chip-supplier-lender-debt-guarantor-60-billion-syndication-begins.htm" target="_blank" rel="noopener">Tech Times: Broadcom, Anthropic&#x27;s chip supplier, lender and debt guarantor: $60 billion syndication begins</a></li>
+      <li><a href="https://dart.deloitte.com/USDART/home/codification/revenue/asc606-10/roadmap-revenue-recognition/appendix-c-summary-issues-addressed-in/c-9-principal-versus-agent-considerations" target="_blank" rel="noopener">Deloitte: Principal versus agent considerations (ASC 606)</a></li>
+      </ul></div>
+      </div></details>
+      <a class="ep-ask" href="/ask?ep=ep01" data-ask="ep01"><svg aria-hidden="true"><use href="#i-bubble"/></svg>Ask about this episode</a>
+    </article>
   </section>
 
   <section class="archive" aria-labelledby="archive-title">

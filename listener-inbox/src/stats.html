@@ -138,7 +138,7 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
   const fmt = (x) => n(x).toLocaleString();
   const pct = (a, b) => (n(b) ? Math.round((100 * n(a)) / n(b)) + "%" : "–");
   const mins = (s) => (n(s) >= 60 ? `${Math.floor(n(s) / 60)}m ${String(n(s) % 60).padStart(2, "0")}s` : `${n(s)}s`);
-  const NAMES = { "pilot-1": "Pilot 1 · Cancel Anytime", "pilot-2": "Pilot 2 · Assume All Risks" };
+  const NAMES = { "ep01": "Episode 1 · The Agent Did What?", "pilot-1": "Pilot 1 · Cancel Anytime", "pilot-2": "Pilot 2 · Assume All Risks" };
   let pw = ""; try { pw = localStorage.getItem("hpm-stats-pw") || ""; } catch {}
 
   async function load() {
