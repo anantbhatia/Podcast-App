@@ -156,7 +156,29 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 .ep ul { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; }
 .ep > ul li { position: relative; padding-left: 28px; }
 .ep > ul li::before { content: ""; position: absolute; left: 2px; top: 0.42em; width: 14px; height: 14px; background: var(--accent); border: 2px solid var(--line); clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
-audio { width: 100%; display: block; border-radius: 999px; border: 2.5px solid var(--line); background: var(--soft); }
+/* Player: one big play/pause button and a progress bar on every card. */
+.player { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; align-items: center; }
+.play { width: 76px; height: 76px; padding: 0; border-radius: 50%; border: 3px solid var(--line); background: var(--yellow); color: var(--on-accent); cursor: pointer; display: grid; place-items: center; box-shadow: 4px 4px 0 var(--shade); transition: transform .1s, box-shadow .1s, background .15s; }
+.play:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--shade); }
+.play:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--shade); }
+.play svg { width: 34px; height: 34px; }
+.play .i-pause, .is-playing .play .i-play { display: none; }
+.is-playing .play .i-pause { display: block; }
+.is-playing .play { background: var(--pink); }
+.play.nudge { animation: nudge 1.3s ease-in-out infinite; }
+@keyframes nudge { 50% { box-shadow: 4px 4px 0 var(--shade), 0 0 0 12px color-mix(in srgb, var(--yellow) 55%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .play.nudge { animation: none; } }
+.scrub { display: grid; gap: 6px; min-width: 0; }
+.seek { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer; --p: 0%; }
+.seek::-webkit-slider-runnable-track { height: 16px; border-radius: 999px; box-shadow: inset 0 0 0 2.5px var(--line); background: linear-gradient(to right, var(--lime) var(--p), var(--soft) var(--p)); }
+.seek::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -4px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--line); box-shadow: 2px 2px 0 var(--shade); }
+.seek::-moz-range-track { height: 16px; border-radius: 999px; box-shadow: inset 0 0 0 2.5px var(--line); background: linear-gradient(to right, var(--lime) var(--p), var(--soft) var(--p)); }
+.seek::-moz-range-thumb { width: 24px; height: 24px; box-sizing: border-box; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--line); box-shadow: 2px 2px 0 var(--shade); }
+.seek:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; border-radius: 999px; }
+.times { display: flex; justify-content: space-between; font-weight: 800; font-size: 0.9rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+.is-playing .times .cur { color: var(--text); }
+.player noscript a { grid-column: 1 / -1; font-weight: 800; }
+#player-audio { display: none; }
 .fine { font-size: 0.88rem; color: var(--muted); }
 
 .refs { border-top: 2.5px dashed color-mix(in srgb, var(--line) 35%, transparent); padding-top: 12px; }
@@ -186,6 +208,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
 }
 @media (max-width: 520px) {
   body { font-size: 16px; }
+  .play { width: 64px; height: 64px; } .play svg { width: 28px; height: 28px; } .player { gap: 8px 12px; }
   .wrap { padding-inline: 16px; gap: 36px; }
   .brand span { font-size: 1rem; }
   .brand img { width: 42px; height: 42px; }
@@ -199,6 +222,8 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-mic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5M8.5 21.5h7"/></g></symbol>
   <symbol id="i-bubble" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" d="M4 5.5h16v10H10l-5 4v-4H4z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4.5v15l13-7.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z"/></symbol>
 </svg>
 
 <main class="wrap">
@@ -233,7 +258,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
 
   <section class="latest" aria-labelledby="latest-title">
     <span class="sticker pink tilt-l" id="latest-title">New this week</span>
-    <article class="ep ep-new" aria-labelledby="e1-title" data-ep="ep01">
+    <article class="ep ep-new" aria-labelledby="e1-title" data-ep="ep01" data-src="audio/ep01-the-agent-did-what.mp3" data-dur="1067">
       <div class="ep-meta"><span class="num">Episode 1</span><span>Week of Oct 12, 2026</span><span>17:47</span></div>
       <h3 id="e1-title">The Agent Did What?</h3>
       <ul>
@@ -242,7 +267,14 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
         <li>Which revenue is real? OpenAI's roughly $50 billion versus the $68 billion headline, and why AI stocks fell.</li>
         <li>Two predictions on the record, so we can score them later.</li>
       </ul>
-      <audio controls preload="none" src="audio/ep01-the-agent-did-what.mp3"></audio>
+      <div class="player">
+        <button type="button" class="play" aria-label="Play"><svg class="i-play" aria-hidden="true"><use href="#i-play"/></svg><svg class="i-pause" aria-hidden="true"><use href="#i-pause"/></svg></button>
+        <div class="scrub">
+          <input type="range" class="seek" min="0" max="1000" value="0" step="1" aria-label="Position in the episode">
+          <div class="times"><span class="cur">0:00</span><span class="dur">17:47</span></div>
+        </div>
+        <noscript><a href="audio/ep01-the-agent-did-what.mp3">Download the MP3</a></noscript>
+      </div>
       <details class="refs"><summary>Sources and further reading <span class="cnt">20</span></summary><div class="refs-body">
       <div class="ref-group"><h4>The agent did what?</h4><ul>
       <li><a href="https://www.anthropic.com/research/investigating-unintended-model-actions" target="_blank" rel="noopener">Anthropic: Investigating unintended model actions in our evaluations and internal use</a></li>
@@ -283,10 +315,14 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   </footer>
 </main>
 
+<audio id="player-audio" preload="metadata"></audio>
 <script>
-// Listening stats for the hosts. Sends small anonymous events to /api/event:
-// page view, play, pause, how far into the episode (25/50/75/100%), and Ask clicks.
-// A random id in this browser recognizes repeat visits; nothing else about the listener is stored.
+// One shared audio element plays every episode, so finishing one can start the next
+// (a separate player per card would be refused on iPhones). Each card has its own big
+// play button and progress bar, painted from the shared element while that episode is loaded.
+// Listening stats for the hosts go to /api/event: page view, play, pause, how far into the
+// episode (25/50/75/100%), and Ask clicks. A random id in this browser recognizes repeat
+// visits; nothing else about the listener is stored.
 (() => {
   let vid = null;
   try { vid = localStorage.getItem("hpm-listener"); if (!vid) { vid = crypto.randomUUID(); localStorage.setItem("hpm-listener", vid); } } catch {}
@@ -299,23 +335,131 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     fetch("/api/event", { method: "POST", body, headers: { "content-type": "application/json" }, keepalive: true }).catch(() => {});
   }
   send("view", "");
-  document.querySelectorAll("article[data-ep]").forEach((art) => {
-    const ep = art.dataset.ep, audio = art.querySelector("audio");
-    if (!audio) return;
-    const hit = new Set();
-    let listened = 0, last = null;
-    const pos = () => ({ t: Math.round(audio.currentTime || 0), d: Math.round(audio.duration || 0) });
-    audio.addEventListener("play", () => { last = audio.currentTime; send("play", ep, pos()); });
-    audio.addEventListener("pause", () => { if (!audio.ended) send("pause", ep, Object.assign(pos(), { l: Math.round(listened) })); });
-    audio.addEventListener("seeked", () => { last = audio.currentTime; });
-    audio.addEventListener("timeupdate", () => {
-      if (last !== null && !audio.paused) { const dt = audio.currentTime - last; if (dt > 0 && dt < 2) listened += dt; }
-      last = audio.currentTime;
-      const d = audio.duration; if (!d || !isFinite(d)) return;
-      // "complete" means they actually listened to 95% of it, not that they skipped to the end.
-      for (const q of [25, 50, 75, 95]) if (!hit.has(q) && listened >= d * q / 100) { hit.add(q); send(q === 95 ? "complete" : "q" + q, ep, Object.assign(pos(), { l: Math.round(listened) })); }
+
+  const audio = document.getElementById("player-audio");
+  const fmt = (s) => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  const cards = [...document.querySelectorAll("article[data-ep]")].map((art, i) => ({
+    i, art, ep: art.dataset.ep, src: art.dataset.src, dur: +art.dataset.dur || 0,
+    title: (art.querySelector("h3") || {}).textContent || "",
+    btn: art.querySelector(".play"), seek: art.querySelector(".seek"), curEl: art.querySelector(".cur"), durEl: art.querySelector(".dur"),
+    pos: 0, want: null, listened: 0, last: null, hit: new Set(),
+  })).filter((c) => c.src && c.btn && c.seek);
+  let cur = null;      // the card whose episode is loaded in the player
+  let live = null;     // the card a "play" was sent for and no "pause" yet
+  let dragging = null; // the card whose bar is being dragged
+  const stat = (c) => ({ t: Math.round(audio.currentTime || 0), d: Math.round(audio.duration || c.dur || 0), l: Math.round(c.listened) });
+
+  function paint(c) {
+    const active = c === cur, playing = active && !audio.paused && !audio.ended;
+    c.art.classList.toggle("is-playing", playing);
+    c.btn.setAttribute("aria-label", playing ? "Pause" : "Play");
+    const d = (active && isFinite(audio.duration) && audio.duration) || c.dur;
+    const t = active && c.want == null && audio.readyState >= 2 ? audio.currentTime : c.pos;
+    if (dragging !== c) {
+      c.seek.value = d ? Math.round((1000 * t) / d) : 0;
+      c.seek.style.setProperty("--p", (d ? (100 * t) / d : 0) + "%");
+      c.curEl.textContent = fmt(t);
+    }
+    c.durEl.textContent = fmt(d);
+  }
+  const paintAll = () => cards.forEach(paint);
+
+  // Load c's episode into the player without starting it.
+  function select(c) {
+    if (cur === c) return;
+    if (cur) { cur.pos = audio.ended ? 0 : cur.want != null ? cur.want : audio.currentTime; cur.want = null; }
+    if (live) { send("pause", live.ep, stat(live)); live = null; }
+    cur = c; c.last = null; c.want = c.pos > 0.5 ? c.pos : null;
+    // "#t=" asks the browser to start at that offset (media fragments); trySeek covers browsers that ignore it.
+    audio.src = c.want != null ? c.src + "#t=" + c.want.toFixed(1) : c.src;
+    if ("mediaSession" in navigator) {
+      try { navigator.mediaSession.metadata = new MediaMetadata({ title: c.title, artist: "Two Hallucinating PMs", artwork: [{ src: "/icon-512.png", sizes: "512x512", type: "image/png" }] }); } catch {}
+    }
+    paintAll();
+  }
+  function play(c) {
+    select(c);
+    cards.forEach((x) => x.btn.classList.remove("nudge"));
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => paintAll());
+  }
+
+  cards.forEach((c) => {
+    c.btn.addEventListener("click", () => (cur === c && !audio.paused && !audio.ended ? audio.pause() : play(c)));
+    const target = () => (c.seek.value / 1000) * ((cur === c && audio.duration) || c.dur);
+    c.seek.addEventListener("input", () => { dragging = c; c.curEl.textContent = fmt(target()); c.seek.style.setProperty("--p", c.seek.value / 10 + "%"); });
+    c.seek.addEventListener("change", () => {
+      dragging = null;
+      const t = target();
+      c.pos = t; c.last = t; c.want = t;
+      if (cur !== c) select(c); else trySeek();
+      paint(c);
     });
+    paint(c);
   });
+
+  audio.addEventListener("play", () => { if (cur) { cur.last = audio.currentTime; live = cur; send("play", cur.ep, stat(cur)); } paintAll(); });
+  audio.addEventListener("pause", () => { if (live && !audio.ended) send("pause", live.ep, stat(live)); live = null; paintAll(); });
+  audio.addEventListener("seeked", () => {
+    if (!cur) return;
+    cur.last = audio.currentTime;
+    if (cur.want != null && Math.abs(audio.currentTime - cur.want) < 0.5) cur.want = null;
+  });
+  audio.addEventListener("loadedmetadata", () => { if (cur) { cur.dur = audio.duration || cur.dur; paint(cur); } });
+  // A wanted position (resume, or a drag on the bar) is applied once the file is seekable there.
+  // Chrome reports an empty seekable range for a while after a load, and a seek then lands at 0.
+  function trySeek() {
+    const c = cur; if (!c || c.want == null || audio.readyState < 2) return;
+    if (Math.abs(audio.currentTime - c.want) <= 0.5) { c.want = null; return; } // already there
+    const d = audio.duration;
+    if (d && isFinite(d) && c.want >= d - 0.5) { c.want = null; return; }
+    const r = audio.seekable; if (!r.length || r.end(r.length - 1) < c.want) return;
+    if (!audio.seeking) { try { audio.currentTime = c.want; } catch {} }
+  }
+  ["loadeddata", "canplay", "progress", "durationchange"].forEach((ev) => audio.addEventListener(ev, trySeek));
+  audio.addEventListener("timeupdate", () => {
+    const c = cur; if (!c) return;
+    if (c.want != null) { trySeek(); return; } // position not settled yet
+    if (audio.readyState < 2) return; // a src change queues a stray timeupdate at 0
+    if (c.last !== null && !audio.paused) { const dt = audio.currentTime - c.last; if (dt > 0 && dt < 2) c.listened += dt; }
+    c.last = audio.currentTime; c.pos = audio.currentTime;
+    paint(c);
+    marks(c);
+  });
+  // "complete" means they actually listened to 95% of it, not that they skipped to the end.
+  function marks(c) {
+    const d = audio.duration; if (!d || !isFinite(d)) return;
+    for (const q of [25, 50, 75, 95]) if (!c.hit.has(q) && c.listened >= (d * q) / 100) { c.hit.add(q); send(q === 95 ? "complete" : "q" + q, c.ep, stat(c)); }
+  }
+  // When an episode finishes, the next one down the page starts.
+  audio.addEventListener("ended", () => {
+    const c = cur; if (!c) return;
+    if (c.last !== null) { const dt = audio.duration - c.last; if (dt > 0 && dt < 2) c.listened += dt; }
+    marks(c);
+    c.pos = 0; c.want = null; paintAll();
+    const next = cards[cur.i + 1];
+    if (next) { next.art.scrollIntoView({ behavior: "smooth", block: "center" }); play(next); }
+  });
+
+  // Start the newest episode on arrival. Phones and some browsers refuse sound before a tap;
+  // then the big button pulses until the listener taps it.
+  if (cards[0]) {
+    select(cards[0]);
+    const p = audio.play();
+    if (p && p.catch) p.catch((e) => {
+      if (e && e.name === "AbortError") return;
+      cards[0].btn.classList.add("nudge"); paintAll();
+      // The first tap on open space counts as "play"; taps on links, buttons and bars do their own thing.
+      const onTap = (ev) => {
+        if (ev.target.closest("a, button, input, summary, details")) return;
+        document.removeEventListener("click", onTap, true);
+        if (!live && cur === cards[0] && audio.paused) play(cards[0]);
+      };
+      document.addEventListener("click", onTap, true);
+      audio.addEventListener("play", () => document.removeEventListener("click", onTap, true), { once: true });
+    });
+  }
+
   document.querySelectorAll("a[data-ask]").forEach((a) => a.addEventListener("click", () => send("ask_click", a.dataset.ask)));
 })();
 </script>
