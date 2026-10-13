@@ -418,7 +418,7 @@ td.url{overflow-wrap:anywhere;max-width:340px}
 <script>
 const STAGES=["Ideas","Research","Brief","Script","Your review","Audio","Final review","Ready to send"];
 const STATE_LABEL={idle:"Idle",working:"Working",waiting:"Waiting on you",done:"Done",failed:"Failed"};
-const SCRIPT_TRIGGER="trig_01UYsgEmJwy7PLJNbdANDNfn";
+const SCRIPT_TRIGGER="trig_01UYsgEmJwy7PLJNbdANDNfn",RENDER_TRIGGER="trig_01KJxKfo2jaXQppvhXv9ezc5";
 const S={traits:[],episodes:[],digests:[],agents:[],show:null,ideas:[],sources:[],asks:[],contacts:[],me:null,canWrite:true,names:{}};
 let db=null,user=null,mcp=null;
 const $=id=>document.getElementById(id);
@@ -551,7 +551,7 @@ function renderEpisode(){
 }
 function renderReview(ep,force){
   if(editing&&!force)return;
-  const lab={review:"Waiting for your review",revising:"Revising",approved:"Approved"};
+  const lab={review:"Waiting for your review",revising:"Revising",approved:"Approved, rendering audio",audio_review:"Audio ready to review"};
   $("ep-status").textContent=ep?(lab[ep.status]||ep.status||"Draft"):"No draft yet";
   if(!ep){$("review-body").innerHTML=`<div class="empty">The draft lands here when the script run finishes. One approval from either of you is enough.</div>`;return}
   const views=[["scriptMd","Script"],["factcheckMd","Fact-check"],["briefMd","Producer brief"]];
@@ -567,16 +567,18 @@ function renderReview(ep,force){
     <div class="go"><button class="btn" type="button" id="save-edit">Save my edits</button><button class="btn ghost" type="button" id="cancel-edit">Cancel</button><span class="hint">Saving replaces the draft for both of you. The fact-check didn't see your edits; new facts get checked when the script goes back to the writers or before audio.</span></div>`
     :`<div class="digest" id="ep-text"></div>${canAct&&subView==="scriptMd"?`<div><button class="btn ghost" type="button" id="start-edit">Edit the script yourself</button></div>`:""}`}
     ${canAct&&!editing?`<label class="field"><span>What should change?</span><textarea id="fb-text" placeholder="e.g. Aman's history bit runs long; cut the Copilot story; punch up the opening."></textarea></label>
-    <div class="go"><button class="btn" type="button" id="approve">Approve script</button><button class="btn ghost" type="button" id="revise">Request changes</button><span class="hint">Approving moves the episode on to audio. Requested changes go back to the writers and you both get an email when the revision is ready.</span></div>`:""}
+    <div class="go"><button class="btn" type="button" id="approve">Approve script</button><button class="btn ghost" type="button" id="revise">Request changes</button><span class="hint">Approving starts the audio render with your cloned voices (about $1). Requested changes go back to the writers and you both get an email when the revision is ready.</span></div>`:""}
+    ${S.canWrite&&ep.status==="approved"?`<div class="go"><button class="btn ghost" type="button" id="render-audio" ${(S.show?.renderRequested&&now()-S.show.renderRequested.at<2*3600e3)?"disabled":""}>Render audio</button><span class="hint">${(S.show?.renderRequested&&now()-S.show.renderRequested.at<2*3600e3)?"Render started "+ago(S.show.renderRequested.at)+"; watch the Audio card in the Control room.":"Approving starts the audio render on its own. Use this if it didn't start, or to render again (about $1 a take)."}</span></div>`:""}
+    ${ep.status==="audio_review"&&ep.audio?`<div class="note">Audio rendered: ${Math.floor((ep.audio.durationSec||0)/60)}:${String(Math.round((ep.audio.durationSec||0)%60)).padStart(2,"0")} on ${esc(ep.audio.model||"Eleven v4")}. It's in your email to review.</div>`:""}
     ${fb.length?`<div class="fb"><div class="label">Feedback so far</div><ul>${fb.map(f=>`<li><b>${esc(nameOf(f.by))}</b> · ${ago(f.at)}: ${esc(f.text)}</li>`).join("")}</ul></div>`:""}
   </div>`;
   if(editing)$("script-edit").value=editing.text;else $("ep-text").textContent=ep[subView]||"Not written yet.";
   if((ep.edits||[]).length&&!editing){const l=ep.edits[ep.edits.length-1];$("ep-text").insertAdjacentHTML("beforebegin",`<div class="note">Last edited by hand by ${esc(nameOf(l.by))} ${ago(l.at)}</div>`)}
 }
 /* Starting a run goes through the Claude Code Remote connector, which only works from the account that owns the routine */
-async function fireScript(text){
+async function fireScript(text,trigger){
   if(!mcp)return "unavailable";
-  try{await mcp.callTool("Claude Code Remote","fire_trigger",{trigger_id:SCRIPT_TRIGGER,text});return "ok"}
+  try{await mcp.callTool("Claude Code Remote","fire_trigger",{trigger_id:trigger||SCRIPT_TRIGGER,text});return "ok"}
   catch(e){return (e&&e.code)||"upstream_error"}
 }
 const FIRE_MSG={
@@ -674,8 +676,14 @@ document.addEventListener("click",async e=>{
     if(ok){editing=null;toast("Edits saved");renderReview(curEp(),true)}else e.target.disabled=false;return}
   if(e.target.id==="approve"){e.target.disabled=true;
     if(await guard(async()=>{await db.doc("episodes/"+ep.id).update({status:"approved",approvedBy:S.me,approvedAt:now(),updatedAt:now()});
-      await db.doc("show/current").update({stage:"Audio",title:(ep.titleOptions||[])[0]||S.show?.title||"",waitingOn:"Voice clones and the ElevenLabs plan before audio can render",note:"Script approved"+(S.myName?" by "+S.myName:"")})}))toast("Script approved");
+      await db.doc("show/current").update({stage:"Audio",title:(ep.titleOptions||[])[0]||S.show?.title||"",waitingOn:"The audio render (Eleven v4, about $1)",note:"Script approved"+(S.myName?" by "+S.myName:"")+"; rendering the audio",renderRequested:{by:S.me,at:now()}})})){
+      const r=await fireScript(`Render Episode ${S.show?.episode||1} (episodes/${ep.id}), approved on the Studio.`,RENDER_TRIGGER);
+      if(r==="ok")toast("Script approved. The audio render is starting.");else banner("Script approved. "+(FIRE_MSG[r]||"The audio render didn't start.").replace(/^Saved\.\s*/,"").replace("press the button","press Render audio on This week's episode"))}
     else e.target.disabled=false}
+  if(e.target.id==="render-audio"){e.target.disabled=true;
+    await guard(()=>db.doc("show/current").update({stage:"Audio",waitingOn:"The audio render (Eleven v4, about $1)",note:"Rendering the audio",renderRequested:{by:S.me,at:now()}}));
+    const r=await fireScript(`Render Episode ${S.show?.episode||1} (episodes/${ep.id}), requested with Render audio on the Studio.`,RENDER_TRIGGER);
+    if(r==="ok")toast("Audio render starting");else{e.target.disabled=false;banner((FIRE_MSG[r]||"The audio render didn't start.").replace(/^Saved\.\s*/,"").replace("press the button","press Render audio"))}}
   if(e.target.id==="revise"){const text=($("fb-text")?.value||"").trim();if(!text){toast("Say what should change first");return}
     e.target.disabled=true;
     const ok=await guard(async()=>{await db.doc("episodes/"+ep.id).update({status:"revising",feedback:[...(ep.feedback||[]),{by:S.me,at:now(),text}],updatedAt:now()});
