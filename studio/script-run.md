@@ -80,6 +80,7 @@ Set the three agent docs to done.
 Email ONE message from Anant's Gmail to anantbhatia@gmail.com and agoyal@shashi.ai only. Subject: "Episode <N> script ready for review: <title>". Body: the title options, a three-line summary of the episode, the number of claims cut or softened by the fact-check, and the dashboard link. Send nothing to anyone else.
 
 ## Revisions
+Hosts can also edit `scriptMd` by hand on the Studio; each save appends {by, at} to the episode's `edits`. Before revising or moving to audio, compare `scriptMd` with episodes/ep<NN>/script.md. Fact-check every factual claim in lines a host added or changed, save the hand-edited version as script.md, and keep the hosts' wording unless a claim is wrong. If one is wrong, say so in the reply instead of quietly rewriting their line.
 If the trigger message says it's a revision, read `episodes/ep<NN>.feedback`, revise the script to address it, and rerun the fact-check on the changed lines. Update the episode doc with status "review" and a fresh updatedAt, then email the same two addresses: "Episode <N> script revised".
 
 ## Rules

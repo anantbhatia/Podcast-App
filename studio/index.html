@@ -178,7 +178,7 @@ td.url{overflow-wrap:anywhere;max-width:340px}
       <div class="fact"><span class="label">Episode</span><b id="f-ep" class="mono">–</b></div>
       <div class="fact"><span class="label">Promote cut-off</span><b id="f-cut">Wednesday night</b></div>
       <div class="fact"><span class="label">Next research run</span><b id="f-next">–</b></div>
-      <div class="fact"><span class="label">Listeners</span><b><a href="https://claude.ai/artifact/5v2PzFMDq1tUbyGd2fpgj6" target="_blank" rel="noopener">Listening page ↗</a></b></div>
+      <div class="fact"><span class="label">Listeners</span><b><a href="https://hpm-listener-inbox.listener-inbox.workers.dev" target="_blank" rel="noopener">Listening page ↗</a> · <a href="https://hpm-listener-inbox.listener-inbox.workers.dev/stats" target="_blank" rel="noopener">Stats ↗</a></b></div>
       <div class="who" id="who"><span class="dot"></span><span>Connecting…</span></div>
     </div>
   </header>
@@ -532,7 +532,7 @@ function renderDigests(){
 $("dg-pick").addEventListener("change",renderDigests);
 const epId=n=>"ep"+String(n||1).padStart(2,"0");
 const curEp=()=>S.episodes.find(e=>e.id===epId(S.show?.episode));
-let subView="scriptMd";
+let subView="scriptMd",editing=null;
 function renderEpisode(){
   const sh=S.show||{};const dg=S.digests[0];const leads=(dg&&dg.leads)||[];const pick=sh.leadPick;
   $("lead-from").textContent=dg?"From the "+(dg.day?dg.day+" ":"")+(dg.date||dg.id)+" digest":"";
@@ -549,23 +549,29 @@ function renderEpisode(){
     :"Starts the producer, host writers and fact-checker. You'll both get an email when the draft is ready to review.";
   renderReview(ep);
 }
-function renderReview(ep){
+function renderReview(ep,force){
+  if(editing&&!force)return;
   const lab={review:"Waiting for your review",revising:"Revising",approved:"Approved"};
   $("ep-status").textContent=ep?(lab[ep.status]||ep.status||"Draft"):"No draft yet";
   if(!ep){$("review-body").innerHTML=`<div class="empty">The draft lands here when the script run finishes. One approval from either of you is enough.</div>`;return}
   const views=[["scriptMd","Script"],["factcheckMd","Fact-check"],["briefMd","Producer brief"]];
   const fb=(ep.feedback||[]).slice().reverse();
-  const canAct=S.canWrite&&ep.status==="review";
+  const rq=(S.show||{}).scriptRequested;const stalled=ep.status==="revising"&&!(rq&&now()-rq.at<30*60e3);
+  const canAct=S.canWrite&&(ep.status==="review"||stalled);
   $("review-body").innerHTML=`<div style="display:grid;gap:12px">
     ${(ep.titleOptions||[]).length?`<div><div class="label">Title options</div><ol class="titles">${ep.titleOptions.map(t=>`<li>${esc(t)}</li>`).join("")}</ol></div>`:""}
     <div class="label" style="text-transform:none;letter-spacing:0;font-weight:400">${ep.lead?"Lead: "+esc(ep.lead)+" · ":""}${ep.wordCount?esc(ep.wordCount)+" words · ":""}updated ${ago(ep.updatedAt)}${ep.status==="approved"&&ep.approvedBy?" · approved by "+esc(nameOf(ep.approvedBy)):""}</div>
+    ${ep.status==="revising"?`<div class="note">${stalled?"The requested revision hasn't come back. You can still edit the script yourself, approve it, or request changes again.":"Your requested changes are with the writers. Approve, edit and Request changes come back when the revision lands (you'll both get an email)."}</div>`:""}
     <div class="subtabs">${views.map(([k,l])=>`<button type="button" class="btn ghost" data-view="${k}" aria-pressed="${subView===k}">${l}</button>`).join("")}</div>
-    <div class="digest" id="ep-text"></div>
-    ${canAct?`<label class="field"><span>What should change?</span><textarea id="fb-text" placeholder="e.g. Aman's history bit runs long; cut the Copilot story; punch up the opening."></textarea></label>
+    ${editing?`<label class="field"><span>Edit the script. Keep the ANANT: and AMAN: labels at the start of each line.</span><textarea id="script-edit" style="min-height:480px;font-family:var(--font-mono);font-size:13px"></textarea></label>
+    <div class="go"><button class="btn" type="button" id="save-edit">Save my edits</button><button class="btn ghost" type="button" id="cancel-edit">Cancel</button><span class="hint">Saving replaces the draft for both of you. The fact-check didn't see your edits; new facts get checked when the script goes back to the writers or before audio.</span></div>`
+    :`<div class="digest" id="ep-text"></div>${canAct&&subView==="scriptMd"?`<div><button class="btn ghost" type="button" id="start-edit">Edit the script yourself</button></div>`:""}`}
+    ${canAct&&!editing?`<label class="field"><span>What should change?</span><textarea id="fb-text" placeholder="e.g. Aman's history bit runs long; cut the Copilot story; punch up the opening."></textarea></label>
     <div class="go"><button class="btn" type="button" id="approve">Approve script</button><button class="btn ghost" type="button" id="revise">Request changes</button><span class="hint">Approving moves the episode on to audio. Requested changes go back to the writers and you both get an email when the revision is ready.</span></div>`:""}
     ${fb.length?`<div class="fb"><div class="label">Feedback so far</div><ul>${fb.map(f=>`<li><b>${esc(nameOf(f.by))}</b> · ${ago(f.at)}: ${esc(f.text)}</li>`).join("")}</ul></div>`:""}
   </div>`;
-  $("ep-text").textContent=ep[subView]||"Not written yet.";
+  if(editing)$("script-edit").value=editing.text;else $("ep-text").textContent=ep[subView]||"Not written yet.";
+  if((ep.edits||[]).length&&!editing){const l=ep.edits[ep.edits.length-1];$("ep-text").insertAdjacentHTML("beforebegin",`<div class="note">Last edited by hand by ${esc(nameOf(l.by))} ${ago(l.at)}</div>`)}
 }
 /* Starting a run goes through the Claude Code Remote connector, which only works from the account that owns the routine */
 async function fireScript(text){
@@ -656,8 +662,16 @@ $("write-script").addEventListener("click",async e=>{
     if(r!=="upstream_error"&&r!=="server_unavailable")await guard(()=>db.doc("show/current").update({scriptRequested:null}));
     renderEpisode()}
 });
+const spokenWords=t=>t.split("\n").filter(l=>/^(ANANT|AMAN):/.test(l)).map(l=>l.replace(/^(ANANT|AMAN):/,"").replace(/\[[^\]]*\]/g,"")).join(" ").split(/\s+/).filter(Boolean).length;
 document.addEventListener("click",async e=>{
   const ep=curEp();if(!ep)return;
+  if(e.target.id==="start-edit"){editing={text:ep.scriptMd||"",base:ep.updatedAt};renderReview(ep,true);$("script-edit").focus();return}
+  if(e.target.id==="cancel-edit"){editing=null;renderReview(ep,true);return}
+  if(e.target.id==="save-edit"){const text=$("script-edit").value;editing.text=text;
+    if(ep.updatedAt!==editing.base&&!confirm("The draft changed since you started editing (someone else saved, or a revision landed). Save yours over it anyway?"))return;
+    e.target.disabled=true;
+    const ok=await guard(()=>db.doc("episodes/"+ep.id).update({scriptMd:text,wordCount:spokenWords(text),edits:[...(ep.edits||[]),{by:S.me,at:now()}],updatedAt:now()}));
+    if(ok){editing=null;toast("Edits saved");renderReview(curEp(),true)}else e.target.disabled=false;return}
   if(e.target.id==="approve"){e.target.disabled=true;
     if(await guard(async()=>{await db.doc("episodes/"+ep.id).update({status:"approved",approvedBy:S.me,approvedAt:now(),updatedAt:now()});
       await db.doc("show/current").update({stage:"Audio",title:(ep.titleOptions||[])[0]||S.show?.title||"",waitingOn:"Voice clones and the ElevenLabs plan before audio can render",note:"Script approved"+(S.myName?" by "+S.myName:"")})}))toast("Script approved");
