@@ -91,7 +91,7 @@ Listeners can leave their email on the listening page, or turn on a notification
    curl -sS -X POST -H "Authorization: Bearer $INBOX_TOKEN" -H "content-type: application/json" \
      --data '{"ep":"ep02","title":"New episode: <title>","body":"<the description, one line>","url":"/#ep02"}' "$INBOX_URL/api/push/send"
    ```
-   The answer counts `sent`, `gone` (browsers that dropped their subscription; removed), `failed` (retried on the next call, up to three times for this episode), `pending` (still to do) and `total`. Each browser gets the message once per episode, so re-running is safe. A 503 means the push key isn't set on the worker yet (the one-time step in `DEPLOY.md`); the emails still go out.
+   The answer counts `sent`, `gone` (browsers that dropped their subscription; removed), `failed` (retried on the next call, up to three times for this episode), `pending` (still to do, the retries included) and `total`. Each browser gets the message once per episode, so re-running is safe. A 503 means the push key isn't set on the worker yet (the one-time step in `DEPLOY.md`); the emails still go out.
 
 The hosts see both counts on `/stats` and the email list under them. `/unsubscribe` is the page behind the link in every email; it asks for one click before removing the sign-up (so mail scanners that open links can't), and takes a typed address for someone who lost the link. Browser notifications are turned off from the page's "Turn off" link.
 

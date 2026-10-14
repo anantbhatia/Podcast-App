@@ -527,6 +527,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
       if (!res.ok) throw Object.assign(new Error(data.error || ""), { server: true });
       flag(true); pushState(true);
     } catch (e) {
+      flag(false); // never remember "on" when the worker doesn't have the subscription; the button comes back next visit
       // The worker's own message (such as the daily cap) is shown; a browser's error isn't readable, so a plain line instead.
       say(e.server && e.message ? e.message : "Couldn't switch notifications on in this browser. Try again, or use the email box.");
     } finally { pushBtn.disabled = false; }

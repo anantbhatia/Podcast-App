@@ -168,7 +168,7 @@ const told = (m, ep) => (m.notified || []).includes(ep) || (m.fail && m.fail.ep 
 // Hosts only. POST /api/push/send { ep, title, body, url }: pushes to every browser not yet
 // told about ep, up to BATCH per call; call again until `pending` is 0. A push service
 // answering 404 or 410 means the browser dropped the subscription, so it is removed; other
-// failures are retried on later calls, up to TRIES times for the episode.
+// failures count as pending and are retried on later calls, up to TRIES times for the episode.
 export async function pushSend(request, env) {
   const b = await body(request);
   if (!b || !SLUG.test(b.ep || "") || typeof b.title !== "string" || !b.title.trim()) return json({ error: "Send { ep, title, body, url }." }, 400);
@@ -221,9 +221,11 @@ export async function pushSend(request, env) {
       result.sent++;
     } else {
       // 4xx other than 429 won't change on a retry (a key the service doesn't know, a bad subscription).
-      const n = rec.fail && rec.fail.ep === b.ep ? rec.fail.n : 0;
-      await store(env, name, { ...rec, fail: { ep: b.ep, n: status >= 400 && status < 500 && status !== 429 ? TRIES : n + 1, status } });
+      const n = (rec.fail && rec.fail.ep === b.ep ? rec.fail.n : 0) + 1;
+      const fail = { ep: b.ep, n: status >= 400 && status < 500 && status !== 429 ? TRIES : n, status };
+      await store(env, name, { ...rec, fail });
       result.failed++;
+      if (fail.n < TRIES) result.pending++; // still owed the message: the next call tries again
     }
   }
   return json(result);

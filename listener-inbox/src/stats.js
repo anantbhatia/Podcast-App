@@ -3,6 +3,9 @@
 // itself), the episode, and how far they got.
 
 const TYPES = new Set(["view", "play", "pause", "q25", "q50", "q75", "complete", "ask_click", "ask_submit", "subscribe", "push"]);
+// Recorded by the worker itself (a note saved, a sign-up stored), never taken from a page's POST:
+// the daily sign-up caps count them, so anyone could otherwise block sign-ups with a few requests.
+const INTERNAL = new Set(["ask_submit", "subscribe", "push"]);
 const EP = /^[a-z0-9-]{0,60}$/;
 const ID = /^[a-zA-Z0-9-]{8,64}$/;
 
@@ -41,7 +44,7 @@ export async function recordEvent(request, env, override) {
       return new Response(null, { status: 400 });
     }
   }
-  if (!TYPES.has(e.type) || !EP.test(e.ep || "")) return new Response(null, { status: 400 });
+  if (!TYPES.has(e.type) || (!override && INTERNAL.has(e.type)) || !EP.test(e.ep || "")) return new Response(null, { status: 400 });
   if (!env.DB) return new Response(null, { status: 204 });
   await ensureSchema(env);
   const now = new Date();
