@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Checks public/episodes.json before a deploy: every episode has what the page needs
+// Checks episodes.json before a deploy: every episode has what the page needs
 // (the Studio's publish payload fields, see ADD-EPISODE.md) and its MP3 is in public/audio.
 // wrangler runs this as the build step (wrangler.toml), so a bad entry stops
 // `wrangler deploy` and `wrangler dev` with the reasons listed.
@@ -10,13 +10,13 @@ import { problems, sorted, label, audioFile, seconds, clock } from "../src/episo
 
 const MAX_AUDIO = 25 * 1024 * 1024; // Workers static assets refuse larger files
 const root = fileURLToPath(new URL("..", import.meta.url));
-const file = `${root}public/episodes.json`;
+const file = `${root}episodes.json`;
 
 let list;
 try {
   list = JSON.parse(readFileSync(file, "utf8"));
 } catch (e) {
-  console.error(`public/episodes.json could not be read as JSON: ${e.message}`);
+  console.error(`episodes.json could not be read as JSON: ${e.message}`);
   process.exit(1);
 }
 
@@ -29,7 +29,7 @@ for (const e of Array.isArray(list) ? list : []) {
   }
 }
 if (errors.length) {
-  console.error(`public/episodes.json has ${errors.length} problem${errors.length > 1 ? "s" : ""}:`);
+  console.error(`episodes.json has ${errors.length} problem${errors.length > 1 ? "s" : ""}:`);
   for (const m of errors) console.error(`  - ${m}`);
   console.error("Fix them (see ADD-EPISODE.md) and run again.");
   process.exit(1);

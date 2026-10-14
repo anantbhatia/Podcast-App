@@ -1,12 +1,12 @@
 # Publishing an episode
 
-The listening page is built from `public/episodes.json`, and an entry in it is the Studio's publish payload (the JSON object after `Publish requested from the Studio:`, defined in `/mnt/project-files/dashboard/publish-payload.md`). Publishing is three steps, and any session can do them; nothing in the page's HTML needs touching.
+The listening page is built from `episodes.json` (in `listener-inbox/`, next to `wrangler.toml`), and an entry in it is the Studio's publish payload (the JSON object after `Publish requested from the Studio:`, defined in `/mnt/project-files/dashboard/publish-payload.md`). Publishing is three steps, and any session can do them; nothing in the page's HTML needs touching.
 
 1. **Copy the MP3 into `public/audio/`**, keeping its file name: `cp "<the payload's mp3 path>" public/audio/`. (96 kbps mono keeps it around 13 MB; the hard cap is 25 MiB.)
-2. **Append the payload object to the array in `public/episodes.json`**, as it is. Order doesn't matter; the page sorts by `episode`, newest first.
+2. **Append the payload object to the array in `episodes.json`**, as it is. The file is not served; the site publishes only the fields the page uses at `/episodes.json`, so the Studio link, requester id and local path in the payload stay private. Order doesn't matter; the page sorts by `episode`, newest first.
 3. **Check and deploy**, following `DEPLOY.md`, only after Anant says "deploy". `wrangler deploy` (and `--dry-run`, and `wrangler dev`) first runs `node scripts/check-episodes.mjs`, which stops with the reasons listed if an entry is incomplete or its MP3 isn't in `public/audio`.
 
-Then open https://listen.2hallucinatingpms.workers.dev and confirm the new episode is the "New this week" card and plays. Each episode has an anchor named after its slug, so the link to one is `https://listen.2hallucinatingpms.workers.dev/#ep02`. https://listen.2hallucinatingpms.workers.dev/episodes.json shows the deployed data.
+Then open https://listen.2hallucinatingpms.workers.dev and confirm the new episode is the "New this week" card and plays. Each episode has an anchor named after its slug, so the link to one is `https://listen.2hallucinatingpms.workers.dev/#ep02`. https://listen.2hallucinatingpms.workers.dev/episodes.json shows what was deployed.
 
 ## The entry
 
@@ -45,7 +45,7 @@ Then open https://listen.2hallucinatingpms.workers.dev and confirm the new episo
 | `durationSec` | Length in seconds. Shown on the card and the player before the audio loads. |
 | `description` | One line about the episode. Shown on the card when there is no `summary`. |
 | `summary` | Optional but better: a list of one-sentence bullets for the card, usually one per story (Episode 1 has four). Plain text; it is escaped, so no HTML. |
-| `sources` | What listeners can read, grouped by story: `{ "story", "refs": [{ "title", "outlet", "url" }] }`. Shown as "Outlet: Headline" under the story's name. Every episode lists its sources (Anant's rule), and only ones the fact-check stands behind: leave low-confidence ones out of the payload, since the page shows every ref it is given (`verified` is kept but not read). |
+| `sources` | What listeners can read, grouped by story: `{ "story", "refs": [{ "title", "outlet", "url" }] }`. Shown as "Outlet: Headline" under the story's name. Every episode lists its sources (Anant's rule), and only ones the fact-check stands behind: leave low-confidence ones out of the payload, since the page shows every ref it is given. `verified` is kept but not read: `false` there means the fact-check confirmed the page through search instead of opening it, not that it is doubtful. |
 | `askPath`, `studio`, `requestedBy`, `requestedAt` | Carried along, not used; the Ask link is built from `slug`. |
 | `label` | Optional. Replaces the "Episode N" badge text, for a special or a pilot. |
 

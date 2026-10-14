@@ -1,6 +1,7 @@
 // Site for The Two Hallucinating PMs, on Cloudflare's free tier.
 // - "/" is the listening page, built from src/index.html and the episodes in
-//   public/episodes.json (see ADD-EPISODE.md); /audio/* are the MP3s in public/audio.
+//   episodes.json (see ADD-EPISODE.md); /audio/* are the MP3s in public/audio, and
+//   /episodes.json is the public view of that file.
 // - "/ask" is the recorder. Notes go to Workers KV; recordings expire after 90 days.
 //   The ingest script (ingest/ingest.py) reads the inbox with INBOX_TOKEN,
 //   transcribes voice notes, and marks each item done.
@@ -9,8 +10,8 @@
 import pageTemplate from "./index.html";
 import recorderPage from "./recorder.html";
 import statsTemplate from "./stats.html";
-import episodes from "../public/episodes.json";
-import { listeningPage, statsPage } from "./episodes.mjs";
+import episodes from "../episodes.json";
+import { listeningPage, statsPage, feed } from "./episodes.mjs";
 import { recordEvent, getStats } from "./stats.js";
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // about 10 minutes of phone audio
@@ -28,7 +29,7 @@ function html(body, extra = {}, request) {
 // The episodes don't change between deploys, so both pages are built once per worker instance.
 let pages = null;
 function built() {
-  return pages || (pages = { listening: listeningPage(pageTemplate, episodes), stats: statsPage(statsTemplate, episodes) });
+  return pages || (pages = { listening: listeningPage(pageTemplate, episodes), stats: statsPage(statsTemplate, episodes), feed: JSON.stringify(feed(episodes)) });
 }
 
 export default {
@@ -39,6 +40,9 @@ export default {
     const read = request.method === "GET" || request.method === "HEAD";
     if (read && (pathname === "/" || pathname === "/index.html")) {
       return html(built().listening, {}, request);
+    }
+    if (request.method === "GET" && pathname === "/episodes.json") {
+      return new Response(built().feed, { headers: { "content-type": "application/json", "cache-control": "no-cache" } });
     }
     // Audio comes through here so seeking works on every phone.
     if (read && pathname.startsWith("/audio/")) {

@@ -1,7 +1,8 @@
-// Episodes come from public/episodes.json; this turns them into the cards on the
-// listening page and the names on the stats page. An entry is the Studio's publish
-// payload (fields in ADD-EPISODE.md), so publishing an episode is copying the MP3 to
-// public/audio, appending that object to the JSON and deploying.
+// Episodes come from episodes.json (next to wrangler.toml, not in public/, because the
+// Studio's payload carries internal ids); this turns them into the cards on the listening
+// page, the names on the stats page and the public feed at /episodes.json. An entry is
+// the Studio's publish payload (fields in ADD-EPISODE.md), so publishing an episode is
+// copying the MP3 to public/audio, appending that object to the JSON and deploying.
 // Shared by the worker and scripts/check-episodes.mjs, so it must stay plain JavaScript
 // with no Workers or Node APIs.
 
@@ -92,6 +93,17 @@ export function problems(list, audioExists) {
   return errors;
 }
 
+// What /episodes.json shows: the fields the page uses, nothing from the Studio's side.
+export function feed(list) {
+  return sorted(list).map((e) => ({
+    episode: e.episode, slug: e.slug, label: e.label, title: e.title, date: e.date, durationSec: seconds(e.durationSec),
+    audio: `audio/${audioFile(e)}`, description: e.description, summary: e.summary,
+    sources: (Array.isArray(e.sources) ? e.sources : []).map((g) => ({
+      story: g.story, refs: (Array.isArray(g.refs) ? g.refs : []).map((r) => ({ title: r.title, outlet: r.outlet, url: r.url })),
+    })),
+  }));
+}
+
 // { ep01: "Episode 1 · The Agent Did What?" } for the stats page.
 export function names(list) {
   return Object.fromEntries(sorted(list).map((e) => [e.slug, `${label(e)} · ${e.title}`]));
@@ -151,10 +163,13 @@ ${rest.map((e) => card(e, false)).join("\n\n")}
   return out;
 }
 
-// Fills the placeholders in src/index.html and src/stats.html.
+// Fills the placeholders in src/index.html and src/stats.html. The replacement is a
+// function so that "$" sequences in episode text ("$$", "$&") are kept as written.
 export function listeningPage(template, list) {
-  return template.replace("<!-- EPISODES -->", sections(list));
+  const html = sections(list);
+  return template.replace("<!-- EPISODES -->", () => html);
 }
 export function statsPage(template, list) {
-  return template.replace("/*EPISODE_NAMES*/{}", JSON.stringify(names(list)).replace(/</g, "\\u003c"));
+  const json = JSON.stringify(names(list)).replace(/</g, () => "\\u003c");
+  return template.replace("/*EPISODE_NAMES*/{}", () => json);
 }
