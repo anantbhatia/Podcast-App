@@ -1,12 +1,16 @@
 // Site for The Two Hallucinating PMs, on Cloudflare's free tier.
-// - "/" and /audio/* are the listening page and episodes (static files in public/).
+// - "/" is the listening page, built from src/index.html and the episodes in
+//   public/episodes.json (see ADD-EPISODE.md); /audio/* are the MP3s in public/audio.
 // - "/ask" is the recorder. Notes go to Workers KV; recordings expire after 90 days.
 //   The ingest script (ingest/ingest.py) reads the inbox with INBOX_TOKEN,
 //   transcribes voice notes, and marks each item done.
 // - "/api/event" takes anonymous listening events into D1; "/stats" shows them
 //   to the hosts (same INBOX_TOKEN as the password).
+import pageTemplate from "./index.html";
 import recorderPage from "./recorder.html";
-import statsPage from "./stats.html";
+import statsTemplate from "./stats.html";
+import episodes from "../public/episodes.json";
+import { listeningPage, statsPage } from "./episodes.mjs";
 import { recordEvent, getStats } from "./stats.js";
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // about 10 minutes of phone audio
@@ -15,10 +19,16 @@ const AUDIO_TTL = 90 * 24 * 60 * 60;
 const MAX_NAME = 80;
 const KINDS = new Set(["question", "followup", "feedback"]);
 
-function html(body, extra = {}) {
-  return new Response(body, {
+function html(body, extra = {}, request) {
+  return new Response(request && request.method === "HEAD" ? null : body, {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache", ...extra },
   });
+}
+
+// The episodes don't change between deploys, so both pages are built once per worker instance.
+let pages = null;
+function built() {
+  return pages || (pages = { listening: listeningPage(pageTemplate, episodes), stats: statsPage(statsTemplate, episodes) });
 }
 
 export default {
@@ -26,9 +36,12 @@ export default {
     const url = new URL(request.url);
     const { pathname } = url;
 
-    // The listening page is a static file served before the worker runs.
+    const read = request.method === "GET" || request.method === "HEAD";
+    if (read && (pathname === "/" || pathname === "/index.html")) {
+      return html(built().listening, {}, request);
+    }
     // Audio comes through here so seeking works on every phone.
-    if ((request.method === "GET" || request.method === "HEAD") && pathname.startsWith("/audio/")) {
+    if (read && pathname.startsWith("/audio/")) {
       return serveAudio(request, env);
     }
     if (request.method === "GET" && (pathname === "/ask" || pathname === "/ask/")) {
@@ -36,7 +49,7 @@ export default {
       return html(recorderPage, { "permissions-policy": "microphone=(self)" });
     }
     if (request.method === "GET" && (pathname === "/stats" || pathname === "/stats/")) {
-      return html(statsPage, { "x-robots-tag": "noindex" });
+      return html(built().stats, { "x-robots-tag": "noindex" });
     }
 
     if (request.method === "POST" && pathname === "/api/submit") {

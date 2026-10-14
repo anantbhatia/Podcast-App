@@ -1,6 +1,6 @@
 # Listener site
 
-The show's public site on Cloudflare's free tier: the listening page (`public/`), the recorder at `/ask`, listening stats for the hosts at `/stats`, and the listener inbox.
+The show's public site on Cloudflare's free tier: the listening page (built by the worker from `src/index.html` and `public/episodes.json`), the recorder at `/ask`, listening stats for the hosts at `/stats`, and the listener inbox.
 
 Where listeners of The Two Hallucinating PMs send questions, follow-ups and feedback, by voice or text, with or without their name.
 
@@ -32,6 +32,6 @@ INBOX_URL=http://127.0.0.1:8787 INBOX_TOKEN=testtoken python3 ingest/ingest.py -
 The listening page sends anonymous events to `/api/event`: page view, play, pause, 25/50/75% and finished (95% actually listened, not skipped), and Ask clicks; the recorder logs each sent question. Each event keeps a random per-browser id (for repeat visitors), a salted SHA-256 of the IP address (never the address), the episode, device type and country. Stored in D1 (`events` table, created on first use). Hosts open `/stats` and enter the INBOX_TOKEN; `/api/stats` returns the same numbers as JSON.
 
 ## Adding an episode
-Put the MP3 (96k mono) in `public/audio/`. In `public/index.html`, move the current episode's `<article>` out of the "New this week" section into an "Earlier episodes" section below it (newest first; one shared player plays them in page order, so when an episode ends the next one down starts), and add the new episode as an `<article class="ep ep-new" data-ep="<slug>" data-src="audio/<file>.mp3" data-dur="<seconds>">` with the same player markup, its summary, its sources grouped by story, and an "Ask about this episode" link to `/ask?ep=<slug>`. Add the slug's name to `NAMES` in `src/stats.html`, then `npx wrangler deploy`.
+See `ADD-EPISODE.md`: put the MP3 in `public/audio/`, add one entry to `public/episodes.json`, deploy (`DEPLOY.md`). The worker builds the listening page from `src/index.html` and that file, and the stats page takes its episode names from it; `scripts/check-episodes.mjs` runs before every deploy and refuses an incomplete entry or a missing MP3.
 
-The page tries to start the newest episode on arrival; browsers that refuse sound before a tap show a pulsing Play button instead, and the first tap on open space starts it.
+The page tries to start the newest episode on arrival; browsers that refuse sound before a tap show a pulsing Play button instead, and the first tap on open space starts it. When an episode ends, the next one down the page starts.

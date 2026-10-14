@@ -2,7 +2,12 @@ name = "listen"
 main = "src/worker.js"
 compatibility_date = "2025-09-01"
 
-# The recorder page is bundled into the worker as text.
+# Before every deploy (and dev), make sure public/episodes.json is complete and
+# each episode's MP3 is in public/audio. See ADD-EPISODE.md.
+[build]
+command = "node scripts/check-episodes.mjs"
+
+# The page templates are bundled into the worker as text.
 [[rules]]
 type = "Text"
 globs = ["**/*.html"]
@@ -15,13 +20,14 @@ fallthrough = false
 binding = "INBOX"
 id = "1212616bf67a4ed98b994872e445ff1e"
 
-# Listening page and episode audio, served as static files.
+# Episode audio and images, served as static files. The listening page itself is
+# built by the worker from src/index.html and public/episodes.json.
 # Audio goes through the worker first so it can answer Range requests
 # (iPhones need them to play and seek); static assets alone don't.
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = ["/audio/*"]
+run_worker_first = ["/", "/audio/*"]
 
 # Listening stats. Create once with:
 #   npx wrangler d1 create hpm-stats
