@@ -1,11 +1,12 @@
 [
   {
+    "episode": 1,
     "slug": "ep01",
-    "number": 1,
     "title": "The Agent Did What?",
     "date": "2026-10-12",
-    "duration": 1067,
-    "audio": "ep01-the-agent-did-what.mp3",
+    "mp3": "/mnt/project-files/episodes/ep01/ep01-the-agent-did-what.mp3",
+    "durationSec": 1067,
+    "description": "An Anthropic test agent sent a false homicide tip to the Philadelphia police, Poppy wants to be the standard for letting agents into your accounts, and which AI revenue is real.",
     "summary": [
       "An Anthropic test agent sent a made-up tip to the Philadelphia police's unsolved-murders site in July, and the police only heard why in October.",
       "Poppy, the standard Meta and Sierra proposed for letting AI agents into your accounts, and why Amazon isn't on the list.",
@@ -15,99 +16,140 @@
     "sources": [
       {
         "story": "The agent did what?",
-        "links": [
+        "refs": [
           {
-            "title": "Anthropic: Investigating unintended model actions in our evaluations and internal use",
-            "url": "https://www.anthropic.com/research/investigating-unintended-model-actions"
+            "title": "Investigating unintended model actions in our evaluations and internal use",
+            "outlet": "Anthropic",
+            "url": "https://www.anthropic.com/research/investigating-unintended-model-actions",
+            "verified": true
           },
           {
-            "title": "6abc Philadelphia: Anthropic AI model submitted false tip on unsolved murder, Philadelphia police say",
-            "url": "https://6abc.com/post/anthropic-ai-model-submitted-false-tip-unsolved-murder-philadelphia-police-say/19925243/"
+            "title": "Anthropic AI model submitted false tip on unsolved murder, Philadelphia police say",
+            "outlet": "6abc Philadelphia",
+            "url": "https://6abc.com/post/anthropic-ai-model-submitted-false-tip-unsolved-murder-philadelphia-police-say/19925243/",
+            "verified": true
           },
           {
-            "title": "Reuters via US News: Anthropic AI model submits false homicide tip to police website",
-            "url": "https://www.usnews.com/news/us/articles/2026-10-09/anthropic-ai-model-submits-false-homicide-tip-to-police-website"
+            "title": "Anthropic AI model submits false homicide tip to police website",
+            "outlet": "Reuters via US News",
+            "url": "https://www.usnews.com/news/us/articles/2026-10-09/anthropic-ai-model-submits-false-homicide-tip-to-police-website",
+            "verified": true
           },
           {
-            "title": "The Philadelphia Inquirer: Anthropic AI model sent a false homicide tip to Philadelphia police",
-            "url": "https://www.inquirer.com/crime/anthropic-artificial-intelligence-philadelphia-police-false-homicide-tip-20261009.html"
+            "title": "Anthropic AI model sent a false homicide tip to Philadelphia police",
+            "outlet": "The Philadelphia Inquirer",
+            "url": "https://www.inquirer.com/crime/anthropic-artificial-intelligence-philadelphia-police-false-homicide-tip-20261009.html",
+            "verified": true
           },
           {
-            "title": "NPR: OpenAI says its agents interacted with US government websites in unexpected ways",
-            "url": "https://www.npr.org/2026/09/26/nx-s1-5981979/openai-us-government-websites-misbehavior"
+            "title": "OpenAI says its agents interacted with US government websites in unexpected ways",
+            "outlet": "NPR",
+            "url": "https://www.npr.org/2026/09/26/nx-s1-5981979/openai-us-government-websites-misbehavior",
+            "verified": true
           }
         ]
       },
       {
         "story": "Poppy, the Personal Agent Protocol",
-        "links": [
+        "refs": [
           {
-            "title": "Sierra: Introducing the Personal Agent Protocol",
-            "url": "https://sierra.ai/blog/introducing-personal-agent-protocol"
+            "title": "Introducing the Personal Agent Protocol",
+            "outlet": "Sierra",
+            "url": "https://sierra.ai/blog/introducing-personal-agent-protocol",
+            "verified": true
           },
           {
-            "title": "Sierra: Poppy draft 0.1",
-            "url": "https://sierra.ai/blog/poppy"
+            "title": "Poppy draft 0.1",
+            "outlet": "Sierra",
+            "url": "https://sierra.ai/blog/poppy",
+            "verified": true
           },
           {
-            "title": "The Paypers: Meta and Sierra develop Personal Agent Protocol for AI agents",
-            "url": "https://thepaypers.com/payments/news/meta-and-sierra-develop-personal-agent-protocol-for-ai-agents"
+            "title": "Meta and Sierra develop Personal Agent Protocol for AI agents",
+            "outlet": "The Paypers",
+            "url": "https://thepaypers.com/payments/news/meta-and-sierra-develop-personal-agent-protocol-for-ai-agents",
+            "verified": true
           },
           {
-            "title": "The Next Web: Personal Agent Protocol: Sierra and Meta",
-            "url": "https://thenextweb.com/news/personal-agent-protocol-sierra-meta"
+            "title": "Personal Agent Protocol: Sierra and Meta",
+            "outlet": "The Next Web",
+            "url": "https://thenextweb.com/news/personal-agent-protocol-sierra-meta",
+            "verified": true
           },
           {
-            "title": "PYMNTS: Meta and Sierra's Poppy Lets Customers Set Limits for AI Agents",
-            "url": "https://www.pymnts.com/news/artificial-intelligence/2026/meta-sierra-poppy-lets-customers-set-limits-ai-agents/"
+            "title": "Meta and Sierra's Poppy Lets Customers Set Limits for AI Agents",
+            "outlet": "PYMNTS",
+            "url": "https://www.pymnts.com/news/artificial-intelligence/2026/meta-sierra-poppy-lets-customers-set-limits-ai-agents/",
+            "verified": true
           },
           {
-            "title": "Adweek: Amazon locks out Meta's Muse in agentic shopping standoff",
-            "url": "https://www.adweek.com/commerce/amazon-locks-out-metas-muse-in-agentic-shopping-standoff/"
+            "title": "Amazon locks out Meta's Muse in agentic shopping standoff",
+            "outlet": "Adweek",
+            "url": "https://www.adweek.com/commerce/amazon-locks-out-metas-muse-in-agentic-shopping-standoff/",
+            "verified": true
           },
           {
-            "title": "Let's Data Science: Amazon Blocks Meta's Muse as Shopify Opens Shop Pay Checkout",
-            "url": "https://letsdatascience.com/news/amazon-blocks-meta-muse-as-shopify-enables-checkout-85276e25"
+            "title": "Amazon Blocks Meta's Muse as Shopify Opens Shop Pay Checkout",
+            "outlet": "Let's Data Science",
+            "url": "https://letsdatascience.com/news/amazon-blocks-meta-muse-as-shopify-enables-checkout-85276e25",
+            "verified": true
           },
           {
-            "title": "DEV Community: What Is poppy.json?",
-            "url": "https://dev.to/benjifisher/what-is-poppyjson-a-personal-agent-protocol-example-and-how-to-validate-yours-3d5m"
+            "title": "What Is poppy.json?",
+            "outlet": "DEV Community",
+            "url": "https://dev.to/benjifisher/what-is-poppyjson-a-personal-agent-protocol-example-and-how-to-validate-yours-3d5m",
+            "verified": true
           }
         ]
       },
       {
         "story": "Which revenue is real?",
-        "links": [
+        "refs": [
           {
-            "title": "CNBC: Nvidia, Oracle, CoreWeave and other AI stocks sink on OpenAI revenue report",
-            "url": "https://www.cnbc.com/2026/10/08/open-ai-revenue-nvidia-oracle-coreweave.html"
+            "title": "Nvidia, Oracle, CoreWeave and other AI stocks sink on OpenAI revenue report",
+            "outlet": "CNBC",
+            "url": "https://www.cnbc.com/2026/10/08/open-ai-revenue-nvidia-oracle-coreweave.html",
+            "verified": true
           },
           {
-            "title": "TechCrunch: OpenAI's revenue is reportedly $20 billion less than previously projected",
-            "url": "https://techcrunch.com/2026/10/08/openais-revenue-is-reportedly-20-billion-less-than-previously-projected/"
+            "title": "OpenAI's revenue is reportedly $20 billion less than previously projected",
+            "outlet": "TechCrunch",
+            "url": "https://techcrunch.com/2026/10/08/openais-revenue-is-reportedly-20-billion-less-than-previously-projected/",
+            "verified": true
           },
           {
-            "title": "The Next Web: OpenAI revenue: $70bn year-end target, $50bn in September",
-            "url": "https://thenextweb.com/news/openai-revenue-70bn-year-end-50bn-september"
+            "title": "OpenAI revenue: $70bn year-end target, $50bn in September",
+            "outlet": "The Next Web",
+            "url": "https://thenextweb.com/news/openai-revenue-70bn-year-end-50bn-september",
+            "verified": true
           },
           {
-            "title": "Bloomberg: Broadcom plans $50 billion financing for OpenAI chips, WSJ says",
-            "url": "https://www.bloomberg.com/news/articles/2026-10-07/broadcom-plans-50-billion-financing-for-openai-chips-wsj-says"
+            "title": "Broadcom plans $50 billion financing for OpenAI chips, WSJ says",
+            "outlet": "Bloomberg",
+            "url": "https://www.bloomberg.com/news/articles/2026-10-07/broadcom-plans-50-billion-financing-for-openai-chips-wsj-says",
+            "verified": true
           },
           {
-            "title": "Reuters via Yahoo Finance: Apollo, Blackstone back Anthropic's $35 billion capacity expansion",
-            "url": "https://finance.yahoo.com/sectors/technology/articles/apollo-blackstone-back-anthropics-35-155215932.html"
+            "title": "Apollo, Blackstone back Anthropic's $35 billion capacity expansion",
+            "outlet": "Reuters via Yahoo Finance",
+            "url": "https://finance.yahoo.com/sectors/technology/articles/apollo-blackstone-back-anthropics-35-155215932.html",
+            "verified": true
           },
           {
-            "title": "Tech Times: Broadcom, Anthropic's chip supplier, lender and debt guarantor: $60 billion syndication begins",
-            "url": "https://www.techtimes.com/articles/328625/20261006/broadcom-anthropics-chip-supplier-lender-debt-guarantor-60-billion-syndication-begins.htm"
+            "title": "Broadcom, Anthropic's chip supplier, lender and debt guarantor: $60 billion syndication begins",
+            "outlet": "Tech Times",
+            "url": "https://www.techtimes.com/articles/328625/20261006/broadcom-anthropics-chip-supplier-lender-debt-guarantor-60-billion-syndication-begins.htm",
+            "verified": true
           },
           {
-            "title": "Deloitte: Principal versus agent considerations (ASC 606)",
-            "url": "https://dart.deloitte.com/USDART/home/codification/revenue/asc606-10/roadmap-revenue-recognition/appendix-c-summary-issues-addressed-in/c-9-principal-versus-agent-considerations"
+            "title": "Principal versus agent considerations (ASC 606)",
+            "outlet": "Deloitte",
+            "url": "https://dart.deloitte.com/USDART/home/codification/revenue/asc606-10/roadmap-revenue-recognition/appendix-c-summary-issues-addressed-in/c-9-principal-versus-agent-considerations",
+            "verified": true
           }
         ]
       }
-    ]
+    ],
+    "askPath": "/ask?ep=ep01"
   }
 ]

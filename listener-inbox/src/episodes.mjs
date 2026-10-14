@@ -1,6 +1,7 @@
 // Episodes come from public/episodes.json; this turns them into the cards on the
-// listening page and the names on the stats page. Publishing an episode is adding
-// the MP3 to public/audio, adding one entry to the JSON and deploying (ADD-EPISODE.md).
+// listening page and the names on the stats page. An entry is the Studio's publish
+// payload (fields in ADD-EPISODE.md), so publishing an episode is copying the MP3 to
+// public/audio, appending that object to the JSON and deploying.
 // Shared by the worker and scripts/check-episodes.mjs, so it must stay plain JavaScript
 // with no Workers or Node APIs.
 
@@ -40,11 +41,16 @@ export function weekOf(date) {
   return `Week of ${MONTHS[t.getUTCMonth()]} ${t.getUTCDate()}, ${t.getUTCFullYear()}`;
 }
 
-export const label = (e) => (typeof e.label === "string" && e.label.trim()) || `Episode ${e.number}`;
+export const label = (e) => (typeof e.label === "string" && e.label.trim()) || `Episode ${e.episode}`;
+// The MP3's name in public/audio: "audio" when given, else the file name of the Studio's "mp3" path.
+export const audioFile = (e) => (typeof e.audio === "string" && e.audio) || (typeof e.mp3 === "string" ? e.mp3.split("/").pop() : "");
+const text = (s) => typeof s === "string" && s.trim();
+// "Outlet: Headline", or the headline alone.
+const refText = (r) => (text(r.outlet) ? `${r.outlet.trim()}: ${r.title}` : r.title);
 
 // Newest first: that is the card that autoplays, and when it ends the next one down plays.
 export function sorted(list) {
-  return [...(Array.isArray(list) ? list : [])].sort((a, b) => (b.number - a.number) || String(b.date).localeCompare(String(a.date)));
+  return [...(Array.isArray(list) ? list : [])].sort((a, b) => (b.episode - a.episode) || String(b.date).localeCompare(String(a.date)));
 }
 
 // Everything a publish must get right, as a list of messages (empty when fine).
@@ -52,30 +58,34 @@ export function sorted(list) {
 export function problems(list, audioExists) {
   const errors = [];
   if (!Array.isArray(list)) return ["episodes.json must be a JSON array of episodes"];
-  const slugs = new Set(), numbers = new Set();
+  const slugs = new Set(), numbers = new Set(), files = new Set();
   list.forEach((e, i) => {
     const at = `episode ${i + 1}${e && typeof e.slug === "string" ? ` (${e.slug})` : ""}`;
     const bad = (msg) => errors.push(`${at}: ${msg}`);
     if (!e || typeof e !== "object" || Array.isArray(e)) return bad("must be an object");
     if (!SLUG.test(e.slug || "")) bad(`slug must be 1-60 lowercase letters, digits or dashes, like "ep02"`);
     else if (slugs.has(e.slug)) bad("slug is used twice"); else slugs.add(e.slug);
-    if (!Number.isInteger(e.number) || e.number < 1) bad("number must be a whole number from 1 (1, 2, 3...)");
-    else if (numbers.has(e.number)) bad("number is used twice"); else numbers.add(e.number);
-    if (typeof e.title !== "string" || !e.title.trim()) bad("title is missing");
-    if (!parseDate(e.date)) bad(`date must be a real date written YYYY-MM-DD`);
-    if (seconds(e.duration) == null) bad(`duration must be seconds (1067) or "m:ss" (17:47)`);
-    if (!AUDIO_FILE.test(e.audio || "")) bad(`audio must be the MP3's file name in public/audio, like "ep02-title.mp3"`);
-    else if (audioExists && !audioExists(e.audio)) bad(`public/audio/${e.audio} is not there`);
-    if (!Array.isArray(e.summary) || !e.summary.length || !e.summary.every((s) => typeof s === "string" && s.trim())) bad("summary must be a list of one or more sentences (strings)");
-    if (!Array.isArray(e.sources) || !e.sources.length) bad("sources must list at least one story with its links (every episode shows its sources)");
+    if (!Number.isInteger(e.episode) || e.episode < 1) bad("episode must be the episode number as a whole number (1, 2, 3...)");
+    else if (numbers.has(e.episode)) bad("episode number is used twice"); else numbers.add(e.episode);
+    if (!text(e.title)) bad("title is missing");
+    if (!parseDate(e.date)) bad("date must be a real date written YYYY-MM-DD");
+    if (seconds(e.durationSec) == null) bad("durationSec must be the length in seconds (1067)");
+    const file = audioFile(e);
+    if (!AUDIO_FILE.test(file)) bad(`audio must be the MP3's file name in public/audio, like "ep02-title.mp3" (or mp3 must end in that name)`);
+    else if (files.has(file)) bad(`audio file ${file} is used twice`);
+    else { files.add(file); if (audioExists && !audioExists(file)) bad(`public/audio/${file} is not there`); }
+    const bullets = e.summary !== undefined;
+    if (bullets && (!Array.isArray(e.summary) || !e.summary.length || !e.summary.every(text))) bad("summary must be a list of one or more sentences (strings)");
+    if (!bullets && !text(e.description)) bad("description (one line about the episode) or summary (a list of bullets) is needed");
+    if (!Array.isArray(e.sources) || !e.sources.length) bad("sources must list at least one story with its refs (every episode shows its sources)");
     else e.sources.forEach((g, j) => {
       const where = `sources[${j}]`;
-      if (!g || typeof g !== "object") return bad(`${where} must be an object with story and links`);
-      if (typeof g.story !== "string" || !g.story.trim()) bad(`${where}.story (the story's name) is missing`);
-      if (!Array.isArray(g.links) || !g.links.length) return bad(`${where}.links must list at least one link`);
-      g.links.forEach((l, k) => {
-        if (!l || typeof l.title !== "string" || !l.title.trim()) bad(`${where}.links[${k}].title is missing`);
-        if (!l || typeof l.url !== "string" || !/^https?:\/\/\S+$/.test(l.url)) bad(`${where}.links[${k}].url must start with http:// or https://`);
+      if (!g || typeof g !== "object" || Array.isArray(g)) return bad(`${where} must be an object with story and refs`);
+      if (!text(g.story)) bad(`${where}.story (the story's name) is missing`);
+      if (!Array.isArray(g.refs) || !g.refs.length) return bad(`${where}.refs must list at least one link`);
+      g.refs.forEach((r, k) => {
+        if (!r || typeof r !== "object" || !text(r.title)) bad(`${where}.refs[${k}].title (the headline) is missing`);
+        if (!r || typeof r.url !== "string" || !/^https?:\/\/\S+$/.test(r.url)) bad(`${where}.refs[${k}].url must start with http:// or https://`);
       });
     });
   });
@@ -88,24 +98,27 @@ export function names(list) {
 }
 
 function card(e, newest) {
-  const dur = seconds(e.duration) || 0;
-  const links = (e.sources || []).reduce((n, g) => n + (g.links || []).length, 0);
+  const dur = seconds(e.durationSec) || 0, file = audioFile(e);
+  const links = (e.sources || []).reduce((n, g) => n + (Array.isArray(g.refs) ? g.refs.length : 0), 0);
   const sources = (e.sources || []).map((g) => `      <div class="ref-group"><h4>${esc(g.story)}</h4><ul>
-${(g.links || []).map((l) => `      <li><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.title)}</a></li>`).join("\n")}
+${(Array.isArray(g.refs) ? g.refs : []).map((r) => `      <li><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(refText(r))}</a></li>`).join("\n")}
       </ul></div>`).join("\n");
-  return `    <article class="ep${newest ? " ep-new" : ""}" aria-labelledby="${esc(e.slug)}-title" data-ep="${esc(e.slug)}" data-src="audio/${esc(e.audio)}" data-dur="${dur}">
+  const about = Array.isArray(e.summary) && e.summary.length
+    ? `      <ul>
+${e.summary.map((s) => `        <li>${esc(s)}</li>`).join("\n")}
+      </ul>`
+    : `      <p class="ep-desc">${esc(e.description)}</p>`;
+  return `    <article class="ep${newest ? " ep-new" : ""}" id="${esc(e.slug)}" aria-labelledby="${esc(e.slug)}-title" data-ep="${esc(e.slug)}" data-src="audio/${esc(file)}" data-dur="${dur}">
       <div class="ep-meta"><span class="num">${esc(label(e))}</span><span>${esc(weekOf(e.date))}</span><span>${clock(dur)}</span></div>
       <h3 id="${esc(e.slug)}-title">${esc(e.title)}</h3>
-      <ul>
-${(e.summary || []).map((s) => `        <li>${esc(s)}</li>`).join("\n")}
-      </ul>
+${about}
       <div class="player">
         <button type="button" class="play" aria-label="Play"><svg class="i-play" aria-hidden="true"><use href="#i-play"/></svg><svg class="i-pause" aria-hidden="true"><use href="#i-pause"/></svg></button>
         <div class="scrub">
           <input type="range" class="seek" min="0" max="1000" value="0" step="1" aria-label="Position in the episode">
           <div class="times"><span class="cur">0:00</span><span class="dur">${clock(dur)}</span></div>
         </div>
-        <noscript><a href="audio/${esc(e.audio)}">Download the MP3</a></noscript>
+        <noscript><a href="audio/${esc(file)}">Download the MP3</a></noscript>
       </div>
 ${links ? `      <details class="refs"><summary>Sources and further reading <span class="cnt">${links}</span></summary><div class="refs-body">
 ${sources}
