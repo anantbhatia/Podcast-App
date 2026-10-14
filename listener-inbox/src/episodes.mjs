@@ -1,8 +1,8 @@
-// Episodes come from episodes.json (next to wrangler.toml, not in public/, because the
-// Studio's payload carries internal ids); this turns them into the cards on the listening
-// page, the names on the stats page and the public feed at /episodes.json. An entry is
-// the Studio's publish payload (fields in ADD-EPISODE.md), so publishing an episode is
-// copying the MP3 to public/audio, appending that object to the JSON and deploying.
+// Episodes come from episodes.json (next to wrangler.toml); this turns them into the
+// cards on the listening page, the names on the stats page and the feed at /episodes.json.
+// An entry is the public part of the Studio's publish payload, written by
+// scripts/add-episode.mjs (fields in ADD-EPISODE.md). The repo is public, so the
+// payload's Studio link, requester id and /mnt path never go in; problems() refuses them.
 // Shared by the worker and scripts/check-episodes.mjs, so it must stay plain JavaScript
 // with no Workers or Node APIs.
 
@@ -43,8 +43,9 @@ export function weekOf(date) {
 }
 
 export const label = (e) => (typeof e.label === "string" && e.label.trim()) || `Episode ${e.episode}`;
-// The MP3's name in public/audio: "audio" when given, else the file name of the Studio's "mp3" path.
-export const audioFile = (e) => (typeof e.audio === "string" && e.audio) || (typeof e.mp3 === "string" ? e.mp3.split("/").pop() : "");
+export const audioFile = (e) => (typeof e.audio === "string" ? e.audio : "");
+// Payload fields that must not be stored: a local path, the Studio's link and the requester.
+export const PRIVATE = ["mp3", "studio", "requestedBy", "requestedAt"];
 const text = (s) => typeof s === "string" && s.trim();
 // "Outlet: Headline", or the headline alone.
 const refText = (r) => (text(r.outlet) ? `${r.outlet.trim()}: ${r.title}` : r.title);
@@ -71,8 +72,10 @@ export function problems(list, audioExists) {
     if (!text(e.title)) bad("title is missing");
     if (!parseDate(e.date)) bad("date must be a real date written YYYY-MM-DD");
     if (seconds(e.durationSec) == null) bad("durationSec must be the length in seconds (1067)");
+    const kept = PRIVATE.filter((k) => k in e);
+    if (kept.length) bad(`${kept.join(", ")} must not be stored (the repo is public); add the episode with node scripts/add-episode.mjs, which keeps only the page's fields`);
     const file = audioFile(e);
-    if (!AUDIO_FILE.test(file)) bad(`audio must be the MP3's file name in public/audio, like "ep02-title.mp3" (or mp3 must end in that name)`);
+    if (!AUDIO_FILE.test(file)) bad(`audio must be the MP3's file name in public/audio, like "ep02-title.mp3"`);
     else if (files.has(file)) bad(`audio file ${file} is used twice`);
     else { files.add(file); if (audioExists && !audioExists(file)) bad(`public/audio/${file} is not there`); }
     const bullets = e.summary !== undefined;
