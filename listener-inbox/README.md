@@ -28,8 +28,11 @@ curl -F kind=question -F text="hello" http://127.0.0.1:8787/api/submit
 INBOX_URL=http://127.0.0.1:8787 INBOX_TOKEN=testtoken python3 ingest/ingest.py --out /tmp/notes
 ```
 
+## Email subscribers
+The listening page has an email sign-up ("Get the next episode by email"). `POST /api/subscribe` stores the address in the inbox KV namespace (`subs/<token>`, with an index by hashed address so each address signs up once); `/unsubscribe?t=<token>` is the link in every email, and `/unsubscribe` without a token takes a typed address. Hosts list sign-ups with `GET /api/subscribers?ep=<slug>` (those not yet emailed about that episode, each with its unsubscribe link) and mark them with `POST /api/notified {ep, emails}`; both need `INBOX_TOKEN`. The worker never sends email: the publishing session does, from Anant's Gmail, as the last step in `ADD-EPISODE.md`.
+
 ## Listening stats
-The listening page sends anonymous events to `/api/event`: page view, play, pause, 25/50/75% and finished (95% actually listened, not skipped), and Ask clicks; the recorder logs each sent question. Each event keeps a random per-browser id (for repeat visitors), a salted SHA-256 of the IP address (never the address), the episode, device type and country. Stored in D1 (`events` table, created on first use). Hosts open `/stats` and enter the INBOX_TOKEN; `/api/stats` returns the same numbers as JSON.
+The listening page sends anonymous events to `/api/event`: page view, play, pause, 25/50/75% and finished (95% actually listened, not skipped), Ask clicks and email sign-ups (no address is stored there); the recorder logs each sent question. Each event keeps a random per-browser id (for repeat visitors), a salted SHA-256 of the IP address (never the address), the episode, device type and country. Stored in D1 (`events` table, created on first use). Hosts open `/stats` and enter the INBOX_TOKEN; `/api/stats` returns the same numbers as JSON.
 
 ## Adding an episode
 See `ADD-EPISODE.md`: save the Studio's publish payload to a file, run `node scripts/add-episode.mjs <file>` (copies the MP3 into `public/audio/` and adds the entry to `episodes.json` with only the public fields), deploy (`DEPLOY.md`). The worker builds the listening page from `src/index.html` and `episodes.json`, and the stats page takes its episode names from it; `scripts/check-episodes.mjs` runs before every deploy and refuses an incomplete entry, a missing MP3 or private payload fields.

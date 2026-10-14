@@ -2,7 +2,7 @@
 // listener's browser keeps, a salted hash of the IP address (never the address
 // itself), the episode, and how far they got.
 
-const TYPES = new Set(["view", "play", "pause", "q25", "q50", "q75", "complete", "ask_click", "ask_submit"]);
+const TYPES = new Set(["view", "play", "pause", "q25", "q50", "q75", "complete", "ask_click", "ask_submit", "subscribe"]);
 const EP = /^[a-z0-9-]{0,60}$/;
 const ID = /^[a-zA-Z0-9-]{8,64}$/;
 

@@ -123,6 +123,15 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
       <div class="panel"><h2>Where</h2><dl class="kv" id="countries"></dl></div>
     </section>
 
+    <section class="panel">
+      <h2>Email subscribers</h2>
+      <p class="note" style="margin:0 0 10px">People who asked to be emailed when a new episode is up. Each publish emails the ones not yet told about that episode (see ADD-EPISODE.md).</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Email</th><th>Since</th><th>Told about</th></tr></thead>
+        <tbody id="subs"></tbody>
+      </table></div>
+    </section>
+
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <button type="button" class="ghost" id="refresh">Refresh</button>
       <span class="note" id="gen"></span>
@@ -150,6 +159,7 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
     try { localStorage.setItem("hpm-stats-pw", pw); } catch {}
     render(await res.json());
     $("login").hidden = true; $("out").hidden = false;
+    loadSubscribers().catch(() => {});
   }
 
   function render(d) {
@@ -158,7 +168,7 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
     const tiles = [
       [t.visitors, "Unique visitors"], [t.uniqueIps, "Unique IP addresses"], [t.listeners, "Pressed play"],
       [t.plays, "Plays"], [t.pauses, "Pauses"], [t.returningVisitors, "Came back another day"],
-      [t.multiEpisodeListeners, "Listened to 2+ episodes"], [t.askSubmits, "Questions sent"],
+      [t.multiEpisodeListeners, "Listened to 2+ episodes"], [t.askSubmits, "Questions sent"], [d.subscribers, "Email subscribers"],
     ];
     $("tiles").innerHTML = tiles.map(([v, k]) => `<div class="tile"><span class="n">${fmt(v)}</span><span class="k">${k}</span></div>`).join("");
 
@@ -194,6 +204,15 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
     $("devices").innerHTML = `<dt>Phone</dt><dd>${fmt(dv.mobile)}</dd><dt>Computer</dt><dd>${fmt(dv.desktop)}</dd>`;
     $("countries").innerHTML = (d.countries || []).length ? d.countries.map((c) => `<dt>${esc(c.country)}</dt><dd>${fmt(c.visitors)}</dd>`).join("") : `<dt>No visits yet</dt><dd></dd>`;
     $("gen").textContent = "Updated " + new Date(d.generatedAt).toLocaleTimeString();
+  }
+
+  async function loadSubscribers() {
+    const res = await fetch("/api/subscribers", { headers: { authorization: "Bearer " + pw } });
+    if (!res.ok) { $("subs").innerHTML = `<tr><td colspan="3" class="muted" style="text-align:left">Couldn't load the list.</td></tr>`; return; }
+    const d = await res.json();
+    $("subs").innerHTML = d.items.length ? d.items.map((s) =>
+      `<tr><td style="text-align:left">${esc(s.email)}</td><td>${new Date(s.since).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td><td>${esc(s.notified.join(", ") || "–")}</td></tr>`).join("")
+      : `<tr><td colspan="3" class="muted" style="text-align:left">No sign-ups yet.</td></tr>`;
   }
 
   $("login").addEventListener("submit", (e) => { e.preventDefault(); pw = $("pw").value.trim(); if (pw) load(); });

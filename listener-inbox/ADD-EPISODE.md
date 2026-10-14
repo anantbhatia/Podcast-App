@@ -57,6 +57,37 @@ The repository is public, so `episodes.json` never carries the payload's `mp3` p
 - The stats page (`/stats`) names episodes from the same file, so nothing there needs editing.
 - Nothing is cached beyond a deploy: the worker builds the page from the file when it starts.
 
+## Tell subscribers
+
+Listeners can leave their email on the listening page ("Get the next episode by email"). The worker keeps those addresses in the inbox KV namespace; it can't send mail, so the email goes out as part of each publish, after the deploy is checked. `INBOX_URL` and `INBOX_TOKEN` are in the cloud environment; never print the token, and keep the address list in a temporary file, not in the thread.
+
+1. List who is still to be told about this episode:
+   ```sh
+   curl -sS -H "Authorization: Bearer $INBOX_TOKEN" "$INBOX_URL/api/subscribers?ep=ep02" > /tmp/subs.json
+   ```
+   Each item has `email`, `since`, `notified` (episodes already emailed) and `unsubscribe` (that person's own link). `pending` is how many are left for this episode; `count` is everyone.
+2. For each item, send one email from Anant's Gmail through the Gmail connector, to that one address only (never several subscribers in one To or Cc line, since each has a different unsubscribe link):
+   - Subject: `New episode: <title> (Two Hallucinating PMs)`
+   - Body, plain text:
+     ```
+     Episode <N> of Two Hallucinating PMs is up: <title>
+
+     <summary bullets, one per line, or the description>
+
+     Listen: https://listen.2hallucinatingpms.workers.dev/#<slug>
+     Got a question for the show? https://listen.2hallucinatingpms.workers.dev/ask?ep=<slug>
+
+     You get this because you signed up on the listening page. To stop: <that item's unsubscribe link>
+     ```
+3. Mark them told, so a re-run of the publish doesn't email anyone twice:
+   ```sh
+   curl -sS -X POST -H "Authorization: Bearer $INBOX_TOKEN" -H "content-type: application/json" \
+     --data '{"ep":"ep02","emails":["<each address that was emailed>"]}' "$INBOX_URL/api/notified"
+   ```
+   The answer says how many were `marked`. If sending stopped partway, run step 1 again: it lists only the ones not yet marked.
+
+The hosts see the list and the count on `/stats`. `/unsubscribe` is the page behind the link in every email (it also takes an address typed in, for someone who lost the link).
+
 ## If a check fails
 
 Both scripts print each problem with the episode it belongs to, for example `episode 2 (ep02): public/audio/ep02-who-pays-for-agents.mp3 is not there`. Fix the payload or the file and run again; `node scripts/check-episodes.mjs` prints `episodes.json: 2 episodes OK, newest ep02 (...)` when the deploy can go ahead.

@@ -142,35 +142,38 @@ ${sources}
     </article>`;
 }
 
-// The "New this week" section with the newest episode, then "Earlier episodes" with the rest.
-export function sections(list) {
-  const [newest, ...rest] = sorted(list);
+// The "New this week" section with the newest episode.
+export function latest(list) {
+  const [newest] = sorted(list);
   if (!newest) {
     return `  <section class="latest" aria-labelledby="latest-title">
     <span class="sticker pink tilt-l" id="latest-title">Coming soon</span>
     <div class="next"><h2>Episode 1 is on its way.</h2><p>Ask us something in the meantime and we may answer it on air.</p></div>
   </section>`;
   }
-  let out = `  <section class="latest" aria-labelledby="latest-title">
+  return `  <section class="latest" aria-labelledby="latest-title">
     <span class="sticker pink tilt-l" id="latest-title">New this week</span>
 ${card(newest, true)}
   </section>`;
-  if (rest.length) {
-    out += `
+}
 
-  <section class="archive" aria-labelledby="archive-title">
+// "Earlier episodes" with the rest, or nothing.
+export function earlier(list) {
+  const rest = sorted(list).slice(1);
+  if (!rest.length) return "";
+  return `  <section class="archive" aria-labelledby="archive-title">
     <div class="archive-head"><span class="sticker cyan tilt-r" id="archive-title">Earlier episodes</span></div>
 ${rest.map((e) => card(e, false)).join("\n\n")}
   </section>`;
-  }
-  return out;
 }
+
+export const sections = (list) => [latest(list), earlier(list)].filter(Boolean).join("\n\n");
 
 // Fills the placeholders in src/index.html and src/stats.html. The replacement is a
 // function so that "$" sequences in episode text ("$$", "$&") are kept as written.
 export function listeningPage(template, list) {
-  const html = sections(list);
-  return template.replace("<!-- EPISODES -->", () => html);
+  const a = latest(list), b = earlier(list);
+  return template.replace("<!-- EPISODES:LATEST -->", () => a).replace("<!-- EPISODES:EARLIER -->\n", () => (b ? b + "\n" : ""));
 }
 export function statsPage(template, list) {
   const json = JSON.stringify(names(list)).replace(/</g, () => "\\u003c");

@@ -126,6 +126,29 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 .ask .pill { background: var(--yellow); }
 
 /* Next episode */
+.pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.pill.lime { background: var(--lime); }
+
+/* Subscribe box: email sign-up for new episodes (the worker keeps the addresses; see ADD-EPISODE.md). */
+.subscribe {
+  position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px 20px;
+  background: var(--pink); color: var(--on-accent); border: 3px solid var(--line); border-radius: 26px;
+  padding: 20px 22px; box-shadow: 6px 6px 0 var(--shade);
+}
+.subscribe .bell { flex: none; width: 54px; height: 54px; border-radius: 50%; background: var(--yellow); border: 2.5px solid var(--line); display: grid; place-items: center; }
+.subscribe .bell svg { width: 26px; height: 26px; }
+.sub-form, .sub-done { flex: 1 1 15rem; min-width: 0; display: grid; gap: 8px; margin: 0; }
+.subscribe strong { display: block; font-family: var(--display); font-weight: 400; font-size: 1.45rem; line-height: 1.15; }
+.subscribe span { font-weight: 600; }
+.sub-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.sub-row input[type=email] { flex: 1 1 14rem; min-width: 0; font: inherit; font-weight: 600; color: var(--text); background: var(--surface); border: 2.5px solid var(--line); border-radius: 999px; padding: 9px 16px; box-shadow: 3px 3px 0 var(--shade); }
+.sub-row input[type=email]:focus { outline: none; box-shadow: 3px 3px 0 var(--cyan); }
+.sub-row input::placeholder { color: var(--muted); }
+.sub-row .pill { background: var(--yellow); cursor: pointer; font: inherit; font-weight: 800; }
+.sub-row .pill:disabled { opacity: 0.7; cursor: default; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.sub-msg { margin: 0; color: var(--on-accent); background: var(--yellow); border: 2px solid var(--line); border-radius: 10px; padding: 6px 12px; font-weight: 700; justify-self: start; }
+
 .next { display: grid; gap: 8px; justify-items: start; border: 3px dashed var(--line); border-radius: 20px; padding: 22px; background: color-mix(in srgb, var(--surface) 60%, transparent); }
 .next h2 { font-size: 1.7rem; }
 .next p { color: var(--muted); font-weight: 600; }
@@ -214,6 +237,8 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   .wrap { padding-inline: 16px; gap: 36px; }
   .brand span { font-size: 1rem; }
   .brand img { width: 42px; height: 42px; }
+  .pill { padding: 7px 12px; font-size: 0.95rem; }
+  .subscribe { padding: 18px 16px; }
   .ep { padding: 18px 16px; }
   .art { border-radius: 16px; box-shadow: 5px 5px 0 var(--pink), 5px 5px 0 3px var(--shade); }
   .ask { padding: 18px; }
@@ -226,12 +251,13 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   <symbol id="i-bubble" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" d="M4 5.5h16v10H10l-5 4v-4H4z"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4.5v15l13-7.5z"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 21h4M12 3v1.5"/></g></symbol>
 </svg>
 
 <main class="wrap">
   <nav class="top" aria-label="Site">
     <a class="brand" href="/"><img src="/img/logo-96.webp" width="48" height="48" alt=""><span>Two Hallucinating PMs</span></a>
-    <a class="pill" href="/ask" data-ask=""><svg aria-hidden="true"><use href="#i-mic"/></svg>Ask us</a>
+    <span class="pills"><a class="pill lime" href="#subscribe"><svg aria-hidden="true"><use href="#i-bell"/></svg>Subscribe</a><a class="pill" href="/ask" data-ask=""><svg aria-hidden="true"><use href="#i-mic"/></svg>Ask us</a></span>
   </nav>
 
   <header class="hero">
@@ -258,7 +284,24 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     <a class="pill" href="/ask" data-ask="">Ask us</a>
   </section>
 
-<!-- EPISODES -->
+<!-- EPISODES:LATEST -->
+
+  <section class="subscribe" id="subscribe" aria-labelledby="subscribe-title">
+    <span class="bell" aria-hidden="true"><svg><use href="#i-bell"/></svg></span>
+    <form class="sub-form" id="sub-form" method="post" action="/api/subscribe" novalidate>
+      <strong id="subscribe-title">Get the next episode by email</strong>
+      <span>One email when a new episode is up, nothing else. Unsubscribe with one tap.</span>
+      <div class="sub-row">
+        <input type="email" name="email" id="sub-email" required autocomplete="email" inputmode="email" placeholder="you@example.com" aria-label="Your email address" maxlength="254">
+        <input type="text" class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit" class="pill">Subscribe</button>
+      </div>
+      <p class="sub-msg" id="sub-msg" role="alert" hidden></p>
+    </form>
+    <p class="sub-done" id="sub-done" role="status" hidden><strong>You're in.</strong><span>We'll email you when the next episode is up.</span></p>
+  </section>
+
+<!-- EPISODES:EARLIER -->
 
   <footer>
     <img src="/img/logo-96.webp" width="56" height="56" alt="">
@@ -414,6 +457,28 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   }
 
   document.querySelectorAll("a[data-ask]").forEach((a) => a.addEventListener("click", () => send("ask_click", a.dataset.ask)));
+
+  // Email sign-up. The address goes to the worker (never into the stats); a flag in this
+  // browser remembers that this person already signed up.
+  const form = document.getElementById("sub-form"), done = document.getElementById("sub-done"), msg = document.getElementById("sub-msg");
+  const subscribed = () => { form.hidden = true; done.hidden = false; };
+  try { if (localStorage.getItem("hpm-subscribed")) subscribed(); } catch {}
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault(); msg.hidden = true;
+    const email = form.email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { msg.textContent = "That doesn't look like an email address."; msg.hidden = false; form.email.focus(); return; }
+    const btn = form.querySelector("button"); btn.disabled = true;
+    try {
+      const fd = new FormData(form); fd.set("email", email); fd.set("ep", cards[0] ? cards[0].ep : ""); if (vid) fd.set("listenerId", vid);
+      const res = await fetch("/api/subscribe", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't sign you up. Try again in a minute.");
+      try { localStorage.setItem("hpm-subscribed", email); } catch {}
+      subscribed();
+    } catch (e) {
+      msg.textContent = e.message; msg.hidden = false;
+    } finally { btn.disabled = false; }
+  });
 })();
 </script>
 </body>
