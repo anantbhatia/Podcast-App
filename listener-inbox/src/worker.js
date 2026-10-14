@@ -9,6 +9,8 @@
 //   to the hosts (same INBOX_TOKEN as the password).
 // - "/api/subscribe" and "/unsubscribe" are the email sign-ups for new episodes
 //   (src/subscribe.mjs); the hosts list them at /api/subscribers.
+// - "/api/push/*" are the browser notifications (src/push.mjs, public/sw.js): the page
+//   subscribes with the site's public key, and the hosts call /api/push/send at a publish.
 import pageTemplate from "./index.html";
 import recorderPage from "./recorder.html";
 import statsTemplate from "./stats.html";
@@ -16,7 +18,8 @@ import unsubscribeTemplate from "./unsubscribe.html";
 import episodes from "../episodes.json";
 import { listeningPage, statsPage, feed } from "./episodes.mjs";
 import { recordEvent, getStats } from "./stats.js";
-import { subscribe, unsubscribeByToken, unsubscribeByEmail, listSubscribers, markNotified, subscriberCount } from "./subscribe.mjs";
+import { subscribe, signupExists, unsubscribeByEmail, listSubscribers, markNotified, subscriberCount } from "./subscribe.mjs";
+import { publicKey, pushSubscribe, pushUnsubscribe, pushSend, pushCount } from "./push.mjs";
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // about 10 minutes of phone audio
 const MAX_TEXT = 2000;
@@ -30,10 +33,16 @@ function html(body, extra = {}, request) {
   });
 }
 
-// The episodes don't change between deploys, so both pages are built once per worker instance.
+// The episodes (and the push key, a secret bound at deploy) don't change between deploys,
+// so both pages are built once per worker instance. The listening page carries the public
+// push key; without the secret the attribute is empty and the page hides the button.
 let pages = null;
-function built() {
-  return pages || (pages = { listening: listeningPage(pageTemplate, episodes), stats: statsPage(statsTemplate, episodes), feed: JSON.stringify(feed(episodes)) });
+function built(env) {
+  return pages || (pages = {
+    listening: listeningPage(pageTemplate, episodes).replace("<!-- PUSH:KEY -->", () => publicKey(env) || ""),
+    stats: statsPage(statsTemplate, episodes),
+    feed: JSON.stringify(feed(episodes)),
+  });
 }
 
 export default {
@@ -43,10 +52,10 @@ export default {
 
     const read = request.method === "GET" || request.method === "HEAD";
     if (read && (pathname === "/" || pathname === "/index.html")) {
-      return html(built().listening, {}, request);
+      return html(built(env).listening, {}, request);
     }
     if (request.method === "GET" && pathname === "/episodes.json") {
-      return new Response(built().feed, { headers: { "content-type": "application/json", "cache-control": "no-cache" } });
+      return new Response(built(env).feed, { headers: { "content-type": "application/json", "cache-control": "no-cache" } });
     }
     // Audio comes through here so seeking works on every phone.
     if (read && pathname.startsWith("/audio/")) {
@@ -57,7 +66,7 @@ export default {
       return html(recorderPage, { "permissions-policy": "microphone=(self)" });
     }
     if (request.method === "GET" && (pathname === "/stats" || pathname === "/stats/")) {
-      return html(built().stats, { "x-robots-tag": "noindex" });
+      return html(built(env).stats, { "x-robots-tag": "noindex" });
     }
 
     if (request.method === "POST" && pathname === "/api/submit") {
@@ -75,10 +84,22 @@ export default {
     if (read && (pathname === "/unsubscribe" || pathname === "/unsubscribe/")) {
       return unsubscribePage(request, env);
     }
+    if (pathname.startsWith("/api/push/")) {
+      if (request.method === "GET" && pathname === "/api/push/key") {
+        const key = publicKey(env);
+        return key ? json({ key }) : json({ error: "Browser notifications aren't set up on this site yet: VAPID_PRIVATE_KEY is not set on the worker (see DEPLOY.md)." }, 503);
+      }
+      if (request.method === "POST" && pathname === "/api/push/subscribe") return pushSubscribe(request, env, ctx);
+      if (request.method === "POST" && pathname === "/api/push/unsubscribe") return pushUnsubscribe(request, env);
+      if (request.method === "POST" && pathname === "/api/push/send") {
+        return authorized(request, env) ? pushSend(request, env) : json({ error: "unauthorized" }, 401);
+      }
+    }
     if (request.method === "GET" && pathname === "/api/stats") {
       if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
       const stats = await getStats(env);
       stats.subscribers = await subscriberCount(env);
+      stats.pushSubscribers = await pushCount(env);
       return json(stats);
     }
     if (pathname === "/api/subscribers" || pathname === "/api/notified") {
@@ -98,41 +119,50 @@ export default {
   },
 };
 
-// The link in every episode email removes that sign-up; without a token the page
-// offers a form for the address instead.
+// The link in every episode email opens this page, which asks for one click before the
+// sign-up is removed (over POST), so a mail scanner that opens every link in an email can't
+// unsubscribe anyone. Opening the page changes nothing. Without a token it offers a form
+// for the address instead.
 async function unsubscribePage(request, env) {
   const token = new URL(request.url).searchParams.get("t");
   const headers = { "x-robots-tag": "noindex" };
-  if (token) {
-    const removed = await unsubscribeByToken(env, token);
-    const body = removed
-      ? `    <h1>You're unsubscribed.</h1>
-    <p>No more episode emails to this address. If that was a slip, sign up again on the <a href="/">listening page</a>.</p>`
-      : `    <h1>That link is spent.</h1>
+  let body;
+  if (token && (await signupExists(env, token))) {
+    body = `    <h1>Unsubscribe?</h1>
+    <p class="muted">One tap and the address this link was emailed to gets no more episode emails.</p>
+${unsubscribeForm(`<input type="hidden" name="t" value="${token}">`, "Yes, unsubscribe")}`;
+  } else if (token) {
+    body = `    <h1>That link is spent.</h1>
     <p class="muted">The address on it was already removed, or the link is incomplete. To unsubscribe another way, enter the address below.</p>
-${unsubscribeForm}`;
-    return html(unsubscribeTemplate.replace("<!-- BODY -->", () => body), headers, request);
-  }
-  return html(unsubscribeTemplate.replace("<!-- BODY -->", () => `    <h1>Unsubscribe</h1>
+${unsubscribeForm(emailField, "Unsubscribe")}`;
+  } else {
+    body = `    <h1>Unsubscribe</h1>
     <p class="muted">Enter the address you signed up with and we stop emailing it about new episodes.</p>
-${unsubscribeForm}`), headers, request);
+${unsubscribeForm(emailField, "Unsubscribe")}`;
+  }
+  return html(unsubscribeTemplate.replace("<!-- BODY -->", () => body), headers, request);
 }
-const unsubscribeForm = `    <form id="f" method="post" action="/api/unsubscribe" style="display:grid;gap:12px">
-      <input type="email" name="email" required autocomplete="email" inputmode="email" placeholder="you@example.com" aria-label="Your email address">
+const emailField = `<input type="email" name="email" required autocomplete="email" inputmode="email" placeholder="you@example.com" aria-label="Your email address">`;
+// `field` is the hidden token (validated hex) or the address input; the script shows the answer in place.
+const unsubscribeForm = (field, label) => `    <form id="f" method="post" action="/api/unsubscribe" style="display:grid;gap:12px">
+      ${field}
       <input type="text" class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <p class="err" id="err" role="alert" hidden></p>
-      <button type="submit">Unsubscribe</button>
+      <button type="submit">${label}</button>
     </form>
     <script>
       const f = document.getElementById("f"), err = document.getElementById("err");
       f.addEventListener("submit", async (e) => {
         e.preventDefault(); err.hidden = true;
+        const btn = f.querySelector("button"); btn.disabled = true;
         try {
           const res = await fetch("/api/unsubscribe", { method: "POST", body: new FormData(f) });
           const data = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(data.error || "Couldn't do that. Try again in a minute.");
-          f.outerHTML = "<p>Done. That address gets no more episode emails.</p>";
-        } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+          f.outerHTML = data.removed === false
+            ? '<p>That link was already used. To unsubscribe another address, <a href="/unsubscribe">enter it here</a>.</p>'
+            : '<p>Done. That address gets no more episode emails. If that was a slip, sign up again on the <a href="/">listening page</a>.</p>';
+        } catch (ex) { err.textContent = ex.message; err.hidden = false; btn.disabled = false; }
       });
     </script>`;
 

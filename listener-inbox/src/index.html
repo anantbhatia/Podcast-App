@@ -20,6 +20,7 @@
 <link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
+<meta name="hpm-push-key" content="<!-- PUSH:KEY -->">
 <link rel="preload" as="image" href="/img/hero-960.webp" imagesrcset="/img/hero-960.webp 960w, /img/hero-1600.webp 1600w" imagesizes="(max-width: 760px) 100vw, 720px">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -148,6 +149,12 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 .sub-row .pill:disabled { opacity: 0.7; cursor: default; }
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .sub-msg { margin: 0; color: var(--on-accent); background: var(--yellow); border: 2px solid var(--line); border-radius: 10px; padding: 6px 12px; font-weight: 700; justify-self: start; }
+/* Browser notifications, under the email form; hidden until the page knows the site's push key and the browser can do push. */
+.push { flex: 1 1 100%; display: grid; gap: 8px; justify-items: start; border-top: 2.5px dashed var(--line); padding-top: 12px; }
+.push .pill { background: var(--lime); cursor: pointer; font: inherit; font-weight: 800; }
+.push .pill:disabled { opacity: 0.7; cursor: default; }
+.push p { margin: 0; font-weight: 600; }
+.push .linkish { background: none; border: 0; padding: 0; margin: 0; font: inherit; font-weight: 800; color: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 
 .next { display: grid; gap: 8px; justify-items: start; border: 3px dashed var(--line); border-radius: 20px; padding: 22px; background: color-mix(in srgb, var(--surface) 60%, transparent); }
 .next h2 { font-size: 1.7rem; }
@@ -289,7 +296,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   <section class="subscribe" id="subscribe" aria-labelledby="subscribe-title">
     <span class="bell" aria-hidden="true"><svg><use href="#i-bell"/></svg></span>
     <form class="sub-form" id="sub-form" method="post" action="/api/subscribe" novalidate>
-      <strong id="subscribe-title">Get the next episode by email</strong>
+      <strong id="subscribe-title">Know when the next episode is up</strong>
       <span>One email when a new episode is up, nothing else. Unsubscribe with one tap.</span>
       <div class="sub-row">
         <input type="email" name="email" id="sub-email" required autocomplete="email" inputmode="email" placeholder="you@example.com" aria-label="Your email address" maxlength="254">
@@ -299,6 +306,13 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
       <p class="sub-msg" id="sub-msg" role="alert" hidden></p>
     </form>
     <p class="sub-done" id="sub-done" role="status" hidden><strong>You're in.</strong><span>We'll email you when the next episode is up.</span></p>
+    <div class="push" id="push" hidden>
+      <span>No email? A notification on this device works too.</span>
+      <button type="button" class="pill" id="push-btn"><svg aria-hidden="true"><use href="#i-bell"/></svg>Notify me in this browser</button>
+      <p id="push-on" role="status" hidden>Notifications are on in this browser. <button type="button" class="linkish" id="push-off">Turn off</button></p>
+      <p id="push-hint" hidden>On an iPhone or iPad, add this page to your Home Screen first (Share, then "Add to Home Screen"); the button appears when you open it from there.</p>
+      <p class="sub-msg" id="push-msg" role="alert" hidden></p>
+    </div>
   </section>
 
 <!-- EPISODES:EARLIER -->
@@ -479,6 +493,72 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
       msg.textContent = e.message; msg.hidden = false;
     } finally { btn.disabled = false; }
   });
+
+  // Browser notifications. The page carries the site's public push key (empty until the key is
+  // set on the worker, see DEPLOY.md); /sw.js shows the notification. iPhones only allow push
+  // for pages added to the Home Screen, so they get a hint instead of the button.
+  const pushBox = document.getElementById("push"), pushBtn = document.getElementById("push-btn"), pushOn = document.getElementById("push-on"), pushOff = document.getElementById("push-off"), pushHint = document.getElementById("push-hint"), pushMsg = document.getElementById("push-msg");
+  const pushKey = (document.querySelector('meta[name="hpm-push-key"]') || {}).content || "";
+  const keyBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  const apple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const installed = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const pushAble = Boolean(pushKey) && window.isSecureContext && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const say = (text) => { pushMsg.textContent = text; pushMsg.hidden = !text; };
+  const pushState = (on) => { pushOn.hidden = !on; pushBtn.hidden = on; };
+  const sameKey = (sub) => {
+    const k = sub.options && sub.options.applicationServerKey;
+    if (!k) return true;
+    const a = new Uint8Array(k), b = keyBytes(pushKey);
+    return a.length === b.length && a.every((x, i) => x === b[i]);
+  };
+  const flag = (on) => { try { if (on) localStorage.setItem("hpm-push", "1"); else localStorage.removeItem("hpm-push"); } catch {} };
+  async function enablePush() {
+    say(""); pushBtn.disabled = true;
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { say(perm === "denied" ? "Notifications are blocked for this site in your browser settings." : "No problem. The button is here whenever you want it."); return; }
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (sub && !sameKey(sub)) { await sub.unsubscribe(); sub = null; } // the site's key changed since
+      sub = sub || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(pushKey) });
+      const res = await fetch("/api/push/subscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...sub.toJSON(), ep: cards[0] ? cards[0].ep : "", listenerId: vid }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw Object.assign(new Error(data.error || ""), { server: true });
+      flag(true); pushState(true);
+    } catch (e) {
+      // The worker's own message (such as the daily cap) is shown; a browser's error isn't readable, so a plain line instead.
+      say(e.server && e.message ? e.message : "Couldn't switch notifications on in this browser. Try again, or use the email box.");
+    } finally { pushBtn.disabled = false; }
+  }
+  async function disablePush() {
+    pushOff.disabled = true;
+    try {
+      const reg = await navigator.serviceWorker.getRegistration("/sw.js");
+      const sub = reg && await reg.pushManager.getSubscription();
+      if (sub) {
+        fetch("/api/push/unsubscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
+        await sub.unsubscribe();
+      }
+    } catch {}
+    flag(false); pushOff.disabled = false; pushState(false); say("Notifications are off in this browser.");
+  }
+  if (pushAble) {
+    pushBox.hidden = false;
+    pushBtn.addEventListener("click", enablePush);
+    pushOff.addEventListener("click", disablePush);
+    let flagged = false; try { flagged = Boolean(localStorage.getItem("hpm-push")); } catch {}
+    if (flagged && Notification.permission === "granted") {
+      navigator.serviceWorker.getRegistration("/sw.js").then(async (reg) => {
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (sub && sameKey(sub)) pushState(true);
+        else if (sub) enablePush(); // the site's key changed: subscribe again with the new one, no prompt needed
+        else flag(false);
+      }).catch(() => {});
+    } else if (flagged) flag(false);
+  } else if (pushKey && apple && !installed) {
+    pushBox.hidden = false; pushBtn.hidden = true; pushHint.hidden = false;
+  }
 })();
 </script>
 </body>

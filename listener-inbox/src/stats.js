@@ -2,7 +2,7 @@
 // listener's browser keeps, a salted hash of the IP address (never the address
 // itself), the episode, and how far they got.
 
-const TYPES = new Set(["view", "play", "pause", "q25", "q50", "q75", "complete", "ask_click", "ask_submit", "subscribe"]);
+const TYPES = new Set(["view", "play", "pause", "q25", "q50", "q75", "complete", "ask_click", "ask_submit", "subscribe", "push"]);
 const EP = /^[a-z0-9-]{0,60}$/;
 const ID = /^[a-zA-Z0-9-]{8,64}$/;
 
@@ -55,6 +55,18 @@ export async function recordEvent(request, env, override) {
     /Mobi|Android|iPhone/i.test(ua) ? 1 : 0, request.cf?.country || null, e.voice ? 1 : 0,
   ).run();
   return new Response(null, { status: 204 });
+}
+
+// How many events of one type were recorded today (UTC); 0 without a database or table.
+// Sign-ups are capped per day with this, so a script can't fill the list or burn the KV write quota.
+export async function countToday(env, type) {
+  if (!env.DB) return 0;
+  try {
+    const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM events WHERE type = ? AND day = ?").bind(type, new Date().toISOString().slice(0, 10)).first();
+    return row ? Number(row.n) || 0 : 0;
+  } catch {
+    return 0;
+  }
 }
 
 const one = async (stmt) => (await stmt.first()) || {};

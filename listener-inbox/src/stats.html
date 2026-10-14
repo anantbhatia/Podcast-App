@@ -125,7 +125,7 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
 
     <section class="panel">
       <h2>Email subscribers</h2>
-      <p class="note" style="margin:0 0 10px">People who asked to be emailed when a new episode is up. Each publish emails the ones not yet told about that episode (see ADD-EPISODE.md).</p>
+      <p class="note" style="margin:0 0 10px">People who asked to be emailed when a new episode is up. Each publish emails the ones not yet told about that episode, and pushes a notification to every browser counted in the tile above (see ADD-EPISODE.md).</p>
       <div class="tablewrap"><table>
         <thead><tr><th>Email</th><th>Since</th><th>Told about</th></tr></thead>
         <tbody id="subs"></tbody>
@@ -168,7 +168,7 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
     const tiles = [
       [t.visitors, "Unique visitors"], [t.uniqueIps, "Unique IP addresses"], [t.listeners, "Pressed play"],
       [t.plays, "Plays"], [t.pauses, "Pauses"], [t.returningVisitors, "Came back another day"],
-      [t.multiEpisodeListeners, "Listened to 2+ episodes"], [t.askSubmits, "Questions sent"], [d.subscribers, "Email subscribers"],
+      [t.multiEpisodeListeners, "Listened to 2+ episodes"], [t.askSubmits, "Questions sent"], [d.subscribers, "Email subscribers"], [d.pushSubscribers, "Browsers with notifications on"],
     ];
     $("tiles").innerHTML = tiles.map(([v, k]) => `<div class="tile"><span class="n">${fmt(v)}</span><span class="k">${k}</span></div>`).join("");
 
