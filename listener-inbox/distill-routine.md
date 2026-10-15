@@ -82,7 +82,7 @@ The hosts choose in the Studio. The script writers use `show/listenerPicks` only
 
 ## 5. Report
 
-Update the Studio's `agents/watcher` card step by step (state, step, found, log) like the other agents, and post one line to the dashboard thread: how many new notes, and the two picks.
+The Studio has no card for this routine yet (`agents/watcher` belongs to the research run's Watcher lane since 2026-10-14, so don't write there). Until the dashboard thread adds one, post one line in the routine's own thread: how many new notes, and the two picks. If there were no new notes and the picks didn't change, finish quietly.
 
 ## Later: personal sections
 
