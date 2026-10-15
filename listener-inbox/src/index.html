@@ -21,7 +21,6 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="hpm-push-key" content="<!-- PUSH:KEY -->">
-<link rel="preload" as="image" href="/img/hero-960.webp" imagesrcset="/img/hero-960.webp 960w, /img/hero-1600.webp 1600w" imagesizes="(max-width: 760px) 100vw, 720px">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap">
@@ -58,7 +57,7 @@ body {
   background-image: radial-gradient(var(--dots) 1.2px, transparent 1.6px);
   background-size: 14px 14px;
 }
-h1, h2, h3 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; letter-spacing: 0.005em; }
+h1, h2 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; letter-spacing: 0.005em; }
 p { margin: 0; }
 a { color: var(--link); text-underline-offset: 3px; }
 :focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; border-radius: 6px; }
@@ -223,7 +222,7 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 :root[data-theme="dark"] .refs .cnt { color: var(--text); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .refs .cnt { color: var(--text); } }
 .refs-body { display: grid; gap: 14px; padding-top: 14px; }
-.ref-group h4 { margin: 0 0 4px; font-family: var(--body); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ref-group h3 { margin: 0 0 4px; font-family: var(--body); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .ref-group ul { gap: 4px; }
 .ref-group a { color: var(--text); text-decoration-color: var(--accent); text-decoration-thickness: 2px; overflow-wrap: anywhere; }
 .ref-group a:hover { color: var(--link); }
@@ -243,11 +242,11 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   body { font-size: 16px; }
   .play { width: 64px; height: 64px; } .play svg { width: 28px; height: 28px; } .player { gap: 8px 12px; }
   .wrap { padding-inline: 16px; gap: 36px; }
-  .brand span { font-size: 1rem; white-space: nowrap; }
+  .brand span { font-size: 1rem; }
   .brand img { width: 42px; height: 42px; }
   .pill { padding: 7px 12px; font-size: 0.95rem; }
   /* One short top bar: the nav pills keep their icons and their names for screen readers, the first screen keeps its room for Play. */
-  .top .pill { padding: 9px; } .top .pill svg { width: 20px; height: 20px; }
+  .top .pills { flex: none; } .top .pill { padding: 9px; } .top .pill svg { width: 20px; height: 20px; }
   .top .pill-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .subscribe { padding: 18px 16px; }
   .ep { padding: 18px 16px; }

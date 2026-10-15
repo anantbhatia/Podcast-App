@@ -115,7 +115,7 @@ export function names(list) {
 function card(e, newest) {
   const dur = seconds(e.durationSec) || 0, file = audioFile(e);
   const links = (e.sources || []).reduce((n, g) => n + (Array.isArray(g.refs) ? g.refs.length : 0), 0);
-  const sources = (e.sources || []).map((g) => `      <div class="ref-group"><h4>${esc(g.story)}</h4><ul>
+  const sources = (e.sources || []).map((g) => `      <div class="ref-group"><h3>${esc(g.story)}</h3><ul>
 ${(Array.isArray(g.refs) ? g.refs : []).map((r) => `      <li><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(refText(r))}</a></li>`).join("\n")}
       </ul></div>`).join("\n");
   const about = Array.isArray(e.summary) && e.summary.length
