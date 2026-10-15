@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Listener Stats · 2PM</title>
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Hosts-only stats in the show's pop-art look: headline tiles, the listening funnel, per-episode drop-off, then daily traffic. One hue (cyan) for every bar. */
+:root {
+  --bg: #fbf3e2; --dots: rgba(21, 19, 31, 0.07); --surface: #fffaf0; --ink: #15131f; --muted: #5a566b; --line: #15131f; --shade: #15131f;
+  --bar: #0f8fc7; --bar-soft: #e6dcc4; --btn: #ffe83a; --btn-ink: #15131f; --bad: #c4136f; --pink: #ff3ea5; --lime: #b4f01c;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --comic: "Bangers", "Impact", sans-serif;
+  --body: "Nunito", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #1b1f2c; --dots: rgba(255, 255, 255, 0.05); --surface: #252a3a; --ink: #f5efe0; --muted: #b5b8ca; --line: #0b0c12; --shade: #0b0c12;
+    --bar: #18b6f6; --bar-soft: #343a4e; --bad: #ff6fbd; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background-color: var(--bg); background-image: radial-gradient(var(--dots) 1.2px, transparent 1.6px); background-size: 14px 14px; color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 60rem; margin: 0 auto; padding-inline: 18px; padding-block: 36px 56px; display: grid; gap: 28px; }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(1.8rem, 6vw, 2.4rem); margin: 0; line-height: 1.1; }
+h2 { font-family: var(--display); font-weight: 400; font-size: 1.2rem; margin: 0 0 12px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { justify-self: start; font-family: var(--comic); font-size: 1.05rem; letter-spacing: 0.06em; line-height: 1; text-transform: uppercase; color: #15131f; background: var(--lime); border: 2px solid var(--line); border-radius: 6px; padding: 6px 10px 5px; box-shadow: 2px 2px 0 var(--shade); transform: rotate(-2deg); }
+.wrap > *, #out > * { min-width: 0; }
+.panel { background: var(--surface); border: 2.5px solid var(--line); border-radius: 18px; box-shadow: 4px 4px 0 var(--shade); padding: 18px; min-width: 0; }
+.login { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.login input { flex: 1 1 14rem; font: inherit; color: var(--ink); background: var(--bg); border: 2.5px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+.login input:focus { outline: none; border-color: var(--bar); }
+button { font: inherit; font-weight: 800; border: 2.5px solid var(--line); border-radius: 999px; padding: 9px 18px; background: var(--btn); color: var(--btn-ink); cursor: pointer; box-shadow: 3px 3px 0 var(--shade); }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+button.ghost { background: transparent; color: var(--ink); border-color: transparent; box-shadow: none; padding: 6px 8px; text-decoration: underline; text-underline-offset: 3px; }
+.err { color: var(--bad); font-weight: 500; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 2.5px solid var(--line); border-radius: 16px; box-shadow: 4px 4px 0 var(--shade); padding: 14px 16px; display: grid; gap: 2px; }
+.tile .n { font-family: var(--display); font-weight: 400; font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .k { font-size: 0.85rem; color: var(--muted); }
+
+.funnel { display: grid; gap: 8px; }
+.frow { display: grid; grid-template-columns: minmax(8rem, 11rem) 1fr 4.5rem; gap: 10px; align-items: center; }
+.track { height: 22px; background: var(--bar-soft); border-radius: 4px; overflow: hidden; }
+.fill { height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; min-width: 2px; }
+.frow .v { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 40rem; }
+th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.drop { display: inline-flex; gap: 2px; align-items: flex-end; height: 22px; vertical-align: middle; }
+.drop i { width: 10px; background: var(--bar); border-radius: 2px 2px 0 0; display: block; }
+
+.daily { display: flex; align-items: flex-end; gap: 4px; height: 120px; border-bottom: 1px solid var(--line); padding-top: 8px; position: relative; }
+.day { flex: 1; display: flex; align-items: flex-end; height: 100%; position: relative; }
+.day i { width: 100%; background: var(--bar); border-radius: 4px 4px 0 0; display: block; min-height: 2px; }
+.day:hover i, .day:focus i { filter: brightness(1.15); }
+.day .tip { position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); font-size: 0.78rem; padding: 4px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none; opacity: 0; }
+.day:hover .tip, .day:focus .tip { opacity: 1; }
+.day:nth-child(-n+3) .tip { left: 0; transform: none; }
+.day:nth-last-child(-n+3) .tip { left: auto; right: 0; transform: none; }
+.axis { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); font-family: var(--mono); margin-top: 6px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 12px; }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; font-family: var(--mono); text-align: right; }
+.note { font-size: 0.85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header style="display:grid;gap:8px">
+    <a href="/" style="display:inline-flex;align-items:center;gap:10px;color:inherit;text-decoration:none;font-family:var(--display);font-size:1.05rem"><img src="/img/logo-96.webp" width="44" height="44" alt="">Two Hallucinating PMs</a>
+    <span class="eyebrow">Hosts only</span>
+    <h1>Listener stats</h1>
+    <p class="muted" id="since">Who's listening, how far they get, and who comes back.</p>
+  </header>
+
+  <form class="panel login" id="login">
+    <label for="pw" class="muted" style="flex-basis:100%">Studio password</label>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Paste the inbox password">
+    <button type="submit">Show stats</button>
+    <p class="err" id="err" hidden style="flex-basis:100%"></p>
+  </form>
+
+  <div id="out" hidden style="display:grid;gap:28px">
+    <section class="tiles" id="tiles" aria-label="Totals"></section>
+
+    <section class="panel">
+      <h2>From visit to question</h2>
+      <div class="funnel" id="funnel"></div>
+      <p class="note" style="margin-top:10px">Each step counts people, not clicks. "Finished" means they actually listened to 95% of an episode.</p>
+    </section>
+
+    <section class="panel">
+      <h2>By episode</h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Episode</th><th>Listeners</th><th>Plays</th><th>Pauses</th><th>Avg listened</th><th>Reached 25 / 50 / 75%</th><th>Finished</th><th>Asks</th></tr></thead>
+        <tbody id="eps"></tbody>
+      </table></div>
+    </section>
+
+    <section class="panel">
+      <h2>Visitors per day</h2>
+      <div class="daily" id="daily" role="img" aria-label="Visitors per day, last 14 days"></div>
+      <div class="axis" id="axis"></div>
+    </section>
+
+    <section class="two">
+      <div class="panel"><h2>Devices</h2><dl class="kv" id="devices"></dl></div>
+      <div class="panel"><h2>Where</h2><dl class="kv" id="countries"></dl></div>
+    </section>
+
+    <section class="panel">
+      <h2>Email subscribers</h2>
+      <p class="note" style="margin:0 0 10px">People who asked to be emailed when a new episode is up. Each publish emails the ones not yet told about that episode, and pushes a notification to every browser counted in the tile above (see ADD-EPISODE.md).</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Email</th><th>Since</th><th>Told about</th></tr></thead>
+        <tbody id="subs"></tbody>
+      </table></div>
+    </section>
+
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button type="button" class="ghost" id="refresh">Refresh</button>
+      <span class="note" id="gen"></span>
+      <button type="button" class="ghost" id="logout" style="margin-left:auto">Forget password on this device</button>
+    </div>
+  </div>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const n = (x) => Number(x || 0);
+  const fmt = (x) => n(x).toLocaleString();
+  const pct = (a, b) => (n(b) ? Math.round((100 * n(a)) / n(b)) + "%" : "–");
+  const mins = (s) => (n(s) >= 60 ? `${Math.floor(n(s) / 60)}m ${String(n(s) % 60).padStart(2, "0")}s` : `${n(s)}s`);
+  // Episode names come from episodes.json (the worker fills them in); the pilots are no longer on the page but their plays are still counted.
+  const NAMES = Object.assign({ "pilot-1": "Pilot 1 · Cancel Anytime", "pilot-2": "Pilot 2 · Assume All Risks" }, /*EPISODE_NAMES*/{});
+  let pw = ""; try { pw = localStorage.getItem("hpm-stats-pw") || ""; } catch {}
+
+  async function load() {
+    $("err").hidden = true;
+    const res = await fetch("/api/stats", { headers: { authorization: "Bearer " + pw } });
+    if (res.status === 401) { $("err").textContent = "That password didn't work."; $("err").hidden = false; $("out").hidden = true; $("login").hidden = false; return; }
+    if (!res.ok) { $("err").textContent = "Couldn't load stats. Try Refresh in a minute."; $("err").hidden = false; return; }
+    try { localStorage.setItem("hpm-stats-pw", pw); } catch {}
+    render(await res.json());
+    $("login").hidden = true; $("out").hidden = false;
+    loadSubscribers().catch(() => {});
+  }
+
+  function render(d) {
+    const t = d.totals || {};
+    if (t.since) $("since").textContent = "Counting since " + new Date(t.since).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) + ".";
+    const tiles = [
+      [t.visitors, "Unique visitors"], [t.uniqueIps, "Unique IP addresses"], [t.listeners, "Pressed play"],
+      [t.plays, "Plays"], [t.pauses, "Pauses"], [t.returningVisitors, "Came back another day"],
+      [t.multiEpisodeListeners, "Listened to 2+ episodes"], [t.askSubmits, "Questions sent"], [d.subscribers, "Email subscribers"], [d.pushSubscribers, "Browsers with notifications on"],
+    ];
+    $("tiles").innerHTML = tiles.map(([v, k]) => `<div class="tile"><span class="n">${fmt(v)}</span><span class="k">${k}</span></div>`).join("");
+
+    const eps = d.episodes || [];
+    const sum = (k) => eps.reduce((a, e) => a + n(e[k]), 0);
+    const steps = [["Visited", t.visitors], ["Pressed play", t.listeners], ["Got halfway", sum("q50")], ["Finished", sum("completed")], ["Opened Ask us", null], ["Sent a question", t.askSubmits]];
+    steps[4][1] = t.askClicks;
+    const top = Math.max(1, n(steps[0][1]));
+    $("funnel").innerHTML = steps.map(([k, v], i) =>
+      `<div class="frow"><span>${k}</span><div class="track" title="${k}: ${fmt(v)}${i ? ` (${pct(v, steps[0][1])} of visitors)` : ""}"><div class="fill" style="width:${Math.min(100, (100 * n(v)) / top)}%"></div></div><span class="v">${fmt(v)}</span></div>`).join("");
+
+    $("eps").innerHTML = eps.length ? eps.map((e) => {
+      const L = Math.max(1, n(e.listeners));
+      const bars = [e.listeners, e.q25, e.q50, e.q75, e.completed].map((v, i) => `<i style="height:${Math.max(2, (22 * n(v)) / L)}px" title="${["Started", "25%", "50%", "75%", "Finished"][i]}: ${fmt(v)}"></i>`).join("");
+      return `<tr><td>${esc(NAMES[e.ep] || e.ep)}</td><td>${fmt(e.listeners)}</td><td>${fmt(e.plays)}</td><td>${fmt(e.pauses)}</td><td>${mins(e.avgListenSeconds)}</td>
+        <td><span class="drop" aria-hidden="true">${bars}</span> <span class="mono">${fmt(e.q25)} / ${fmt(e.q50)} / ${fmt(e.q75)}</span></td>
+        <td>${fmt(e.completed)} <span class="muted">(${pct(e.completed, e.listeners)})</span></td><td>${fmt(e.askSubmits)}</td></tr>`;
+    }).join("") : `<tr><td colspan="8" class="muted" style="text-align:left">No plays yet. Share the listening page link and numbers show up here.</td></tr>`;
+
+    // Last 14 days, including days with no visits.
+    const byDay = Object.fromEntries((d.daily || []).map((r) => [r.day, r]));
+    const days = [...Array(14)].map((_, i) => new Date(Date.now() - (13 - i) * 864e5).toISOString().slice(0, 10));
+    const maxV = Math.max(1, ...days.map((k) => n(byDay[k]?.visitors)));
+    $("daily").innerHTML = days.map((k) => {
+      const v = n(byDay[k]?.visitors), p = n(byDay[k]?.plays);
+      const label = new Date(k + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      return `<div class="day" tabindex="0"><i style="height:${(100 * v) / maxV}%"></i><span class="tip">${label}: ${v} visitors, ${p} plays</span></div>`;
+    }).join("");
+    const short = (k) => new Date(k + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    $("axis").innerHTML = `<span>${short(days[0])}</span><span>${short(days[13])}</span>`;
+
+    const dv = d.devices || {};
+    $("devices").innerHTML = `<dt>Phone</dt><dd>${fmt(dv.mobile)}</dd><dt>Computer</dt><dd>${fmt(dv.desktop)}</dd>`;
+    $("countries").innerHTML = (d.countries || []).length ? d.countries.map((c) => `<dt>${esc(c.country)}</dt><dd>${fmt(c.visitors)}</dd>`).join("") : `<dt>No visits yet</dt><dd></dd>`;
+    $("gen").textContent = "Updated " + new Date(d.generatedAt).toLocaleTimeString();
+  }
+
+  async function loadSubscribers() {
+    const res = await fetch("/api/subscribers", { headers: { authorization: "Bearer " + pw } });
+    if (!res.ok) { $("subs").innerHTML = `<tr><td colspan="3" class="muted" style="text-align:left">Couldn't load the list.</td></tr>`; return; }
+    const d = await res.json();
+    $("subs").innerHTML = d.items.length ? d.items.map((s) =>
+      `<tr><td style="text-align:left">${esc(s.email)}</td><td>${new Date(s.since).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td><td>${esc(s.notified.join(", ") || "–")}</td></tr>`).join("")
+      : `<tr><td colspan="3" class="muted" style="text-align:left">No sign-ups yet.</td></tr>`;
+  }
+
+  $("login").addEventListener("submit", (e) => { e.preventDefault(); pw = $("pw").value.trim(); if (pw) load(); });
+  $("refresh").addEventListener("click", load);
+  $("logout").addEventListener("click", () => { try { localStorage.removeItem("hpm-stats-pw"); } catch {} pw = ""; $("out").hidden = true; $("login").hidden = false; $("pw").value = ""; });
+  if (pw) load();
+})();
+</script>
+</body>
+</html>

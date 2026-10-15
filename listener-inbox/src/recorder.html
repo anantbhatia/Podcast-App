@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ask Us · Two Hallucinating PMs</title>
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#fbf3e2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f2c" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Pop-art comic look taken from the show art: cream paper with halftone dots, thick ink outlines,
+   hard offset shadows, and the logo's neon lime, cyan, pink and yellow. Dark mode is the logo's navy. */
+:root {
+  --paper: #fbf3e2; --dots: rgba(21, 19, 31, 0.07); --surface: #fffaf0; --ink: #15131f; --text: #15131f;
+  --muted: #5a566b; --line: #15131f; --shade: #15131f; --soft: #efe4cc;
+  --lime: #b4f01c; --cyan: #18b6f6; --pink: #ff3ea5; --yellow: #ffe83a; --purple: #4b3a9c;
+  --link: #4b3a9c; --on-accent: #15131f;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --comic: "Bangers", "Impact", "Arial Black", sans-serif;
+  --body: "Nunito", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1b1f2c; --dots: rgba(255, 255, 255, 0.05); --surface: #252a3a; --text: #f5efe0;
+    --muted: #b5b8ca; --line: #0b0c12; --shade: #0b0c12; --soft: #2f3547; --link: #6fd3ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1b1f2c; --dots: rgba(255, 255, 255, 0.05); --surface: #252a3a; --text: #f5efe0;
+  --muted: #b5b8ca; --line: #0b0c12; --shade: #0b0c12; --soft: #2f3547; --link: #6fd3ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; color: var(--text); font-family: var(--body); font-size: 17px; line-height: 1.55;
+  background-color: var(--paper); background-image: radial-gradient(var(--dots) 1.2px, transparent 1.6px); background-size: 14px 14px; }
+:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; border-radius: 6px; }
+.wrap { max-width: 34rem; margin: 0 auto; padding-inline: 18px; padding-block: max(16px, env(safe-area-inset-top)) 56px; display: grid; gap: 26px; }
+.back { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-family: var(--display); font-size: 1.05rem; justify-self: start; }
+.back img { width: 44px; height: 44px; filter: drop-shadow(2px 2px 0 var(--shade)); }
+.back:hover span { text-decoration: underline; text-underline-offset: 3px; }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2.4rem, 10vw, 3.2rem); line-height: 1.02; margin: 0; text-wrap: balance; }
+h1 .pop { color: var(--pink); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 3px 3px 0 var(--ink); }
+p { margin: 0; }
+.lede { color: var(--muted); font-weight: 600; }
+.sticker { justify-self: start; font-family: var(--comic); font-size: 1.05rem; letter-spacing: 0.06em; line-height: 1; text-transform: uppercase; color: var(--on-accent); background: var(--yellow); border: 2px solid var(--line); border-radius: 6px; padding: 6px 10px 5px; box-shadow: 2px 2px 0 var(--shade); transform: rotate(-2deg); }
+form { display: grid; gap: 24px; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; }
+legend, label.lbl { font-family: var(--display); font-weight: 400; font-size: 1.2rem; padding: 0; margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chips input { position: absolute; opacity: 0; pointer-events: none; }
+.chips label { border: 2.5px solid var(--line); border-radius: 999px; padding: 7px 16px; cursor: pointer; background: var(--surface); font-weight: 800; box-shadow: 3px 3px 0 var(--shade); transition: transform .1s, box-shadow .1s; }
+.chips input:checked + label { background: var(--lime); color: var(--on-accent); transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shade); }
+.chips input:focus-visible + label { outline: 3px solid var(--cyan); outline-offset: 3px; }
+
+.recorder { background: var(--cyan); color: var(--on-accent); border: 3px solid var(--line); border-radius: 24px; padding: 26px 18px 22px; display: grid; gap: 12px; justify-items: center; text-align: center; box-shadow: 6px 6px 0 var(--shade); }
+.rec-btn { width: 104px; height: 104px; border-radius: 50%; border: 3px solid var(--line); background: var(--pink); color: #fff; cursor: pointer; display: grid; place-items: center; box-shadow: 4px 4px 0 var(--ink); transition: transform .1s, box-shadow .1s; }
+.rec-btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+.rec-btn:focus-visible { outline: 3px solid var(--yellow); outline-offset: 4px; }
+.rec-btn .dot { width: 36px; height: 36px; border-radius: 50%; background: #fff; border: 2.5px solid var(--ink); transition: border-radius .15s, width .15s, height .15s; }
+.rec-btn.on .dot { width: 30px; height: 30px; border-radius: 7px; }
+.rec-btn.on { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 4px 4px 0 var(--ink), 0 0 0 12px color-mix(in srgb, var(--yellow) 70%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .rec-btn.on { animation: none; } }
+.timer { font-family: var(--display); font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.hint { font-weight: 600; font-size: 0.95rem; }
+.recorder audio { width: 100%; border-radius: 999px; border: 2.5px solid var(--line); }
+.fallback { display: grid; gap: 8px; justify-items: center; max-width: 100%; }
+.fallback input { max-width: 100%; }
+.link-btn { background: none; border: 0; color: var(--link); font: inherit; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px; }
+.recorder .link-btn { color: var(--on-accent); }
+
+textarea, input[type=text] { width: 100%; font: inherit; color: var(--text); background: var(--surface); border: 2.5px solid var(--line); border-radius: 14px; padding: 11px 14px; box-shadow: 3px 3px 0 var(--shade); }
+textarea { min-height: 104px; resize: vertical; }
+textarea:focus, input[type=text]:focus { outline: none; box-shadow: 3px 3px 0 var(--pink); }
+textarea::placeholder, input::placeholder { color: var(--muted); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 600; }
+.check input { margin-top: 4px; width: 20px; height: 20px; accent-color: var(--pink); }
+.optional { color: var(--muted); font-family: var(--body); font-size: 0.95rem; font-weight: 600; }
+.hp { position: absolute; left: -9999px; }
+.send { font: inherit; font-family: var(--display); font-size: 1.35rem; border: 3px solid var(--line); border-radius: 16px; padding: 14px; background: var(--yellow); color: var(--on-accent); cursor: pointer; box-shadow: 5px 5px 0 var(--shade); transition: transform .1s, box-shadow .1s; }
+.send:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 var(--shade); }
+.send:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--shade); }
+.send:disabled { opacity: .6; cursor: default; transform: none; }
+.err { color: var(--on-accent); background: var(--pink); border: 2px solid var(--line); border-radius: 10px; padding: 8px 12px; font-weight: 700; }
+.done { background: var(--lime); color: var(--on-accent); border: 3px solid var(--line); border-radius: 24px; padding: 26px 22px; display: grid; gap: 12px; box-shadow: 6px 6px 0 var(--shade); }
+.done h2 { font-family: var(--display); font-weight: 400; margin: 0; font-size: 2rem; }
+.done .link-btn { color: var(--on-accent); }
+.fine { font-size: 0.88rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header style="display:grid;gap:14px">
+    <a class="back" href="/"><img src="/img/logo-96.webp" width="44" height="44" alt=""><span>← Two Hallucinating PMs</span></a>
+    <span class="sticker">Ask the hosts</span>
+    <h1>Ask us <span class="pop">anything</span></h1>
+    <p class="lede">Got a question, a follow-up on something we said, or a correction? Record a quick voice note or type it. We pick a few for the next episode.</p>
+  </header>
+
+  <form id="ask" novalidate>
+    <fieldset>
+      <legend>What is it?</legend>
+      <div class="chips">
+        <input type="radio" name="kind" id="k-q" value="question" checked><label for="k-q">A question</label>
+        <input type="radio" name="kind" id="k-f" value="followup"><label for="k-f">A follow-up</label>
+        <input type="radio" name="kind" id="k-b" value="feedback"><label for="k-b">Feedback</label>
+      </div>
+    </fieldset>
+
+    <section class="recorder" aria-label="Voice note">
+      <div id="rec-live">
+        <button type="button" class="rec-btn" id="rec" aria-label="Start recording"><span class="dot"></span></button>
+      </div>
+      <div class="timer" id="timer" aria-live="polite">Tap to record</div>
+      <p class="hint" id="rec-hint">Up to 3 minutes. Your browser will ask to use the microphone.</p>
+      <audio id="preview" controls hidden></audio>
+      <button type="button" class="link-btn" id="redo" hidden>Record again</button>
+      <div id="fallback" class="fallback" hidden>
+        <p class="hint">This browser can't record here. Pick a voice memo instead.</p>
+        <input type="file" id="file" accept="audio/*" capture>
+      </div>
+    </section>
+
+    <div>
+      <label class="lbl" for="text">Or type it <span class="optional">(or add a note to your recording)</span></label>
+      <textarea id="text" name="text" maxlength="2000" placeholder="You said agents would… but what about…"></textarea>
+    </div>
+
+    <div style="display:grid;gap:10px">
+      <label class="lbl" for="name">Your name <span class="optional">(optional)</span></label>
+      <input type="text" id="name" name="name" maxlength="80" autocomplete="given-name" placeholder="Leave blank to stay anonymous">
+      <label class="check" for="nameOk"><input type="checkbox" id="nameOk" name="nameOk" value="yes" disabled> <span>It's OK to say my name on the show</span></label>
+    </div>
+
+    <input type="text" class="hp" name="website" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+    <p class="err" id="err" role="alert" hidden></p>
+    <button type="submit" class="send" id="send">Send to Anant and Aman</button>
+    <p class="fine">Your voice note is turned into text for the hosts. We never play your recording on air without asking you first.</p>
+  </form>
+
+  <section class="done" id="done" hidden>
+    <h2>Got it. Thank you!</h2>
+    <p>Anant and Aman will see it in their studio. If it makes the show, you'll hear it in an upcoming episode.</p>
+    <div style="display:flex;gap:18px;flex-wrap:wrap"><button type="button" class="link-btn" id="again" style="padding:0">Send another</button><a class="link-btn" href="/" style="padding:0">Back to the episodes</a></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const MAX_SECONDS = 180;
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const episode = (params.get("ep") || "").slice(0, 60);
+
+  // A random id this browser keeps, so several notes from one listener can be grouped.
+  let listenerId = null;
+  try {
+    listenerId = localStorage.getItem("hpm-listener");
+    if (!listenerId) { listenerId = crypto.randomUUID(); localStorage.setItem("hpm-listener", listenerId); }
+  } catch { listenerId = null; }
+
+  let recorder = null, chunks = [], blob = null, startedAt = 0, tick = null, stream = null;
+  const canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  if (!canRecord) { $("rec-live").hidden = true; $("timer").hidden = true; $("rec-hint").hidden = true; $("fallback").hidden = false; }
+
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const pickType = () => ["audio/webm;codecs=opus", "audio/mp4", "audio/webm", "audio/ogg"].find((t) => MediaRecorder.isTypeSupported?.(t)) || "";
+
+  async function start() {
+    showErr("");
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch {
+      showErr("The microphone is blocked. Allow it in your browser settings, or type your message below.");
+      return;
+    }
+    const type = pickType();
+    recorder = new MediaRecorder(stream, type ? { mimeType: type, audioBitsPerSecond: 64000 } : undefined);
+    chunks = [];
+    recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    recorder.onstop = () => {
+      blob = new Blob(chunks, { type: recorder.mimeType || type || "audio/webm" });
+      stream.getTracks().forEach((t) => t.stop());
+      $("preview").src = URL.createObjectURL(blob);
+      $("preview").hidden = false; $("redo").hidden = false; $("rec-live").hidden = true;
+      $("timer").textContent = `Recorded ${fmt((Date.now() - startedAt) / 1000)}`;
+      $("rec-hint").textContent = "Listen back if you like, then send.";
+    };
+    recorder.start(1000);
+    startedAt = Date.now();
+    $("rec").classList.add("on"); $("rec").setAttribute("aria-label", "Stop recording");
+    $("rec-hint").textContent = "Recording. Tap again to stop.";
+    tick = setInterval(() => {
+      const s = (Date.now() - startedAt) / 1000;
+      $("timer").textContent = `${fmt(s)} / ${fmt(MAX_SECONDS)}`;
+      if (s >= MAX_SECONDS) stop();
+    }, 250);
+  }
+  function stop() {
+    clearInterval(tick);
+    $("rec").classList.remove("on"); $("rec").setAttribute("aria-label", "Start recording");
+    if (recorder && recorder.state !== "inactive") recorder.stop();
+  }
+  function reset() {
+    blob = null; $("preview").hidden = true; $("preview").removeAttribute("src");
+    $("redo").hidden = true; $("rec-live").hidden = !canRecord;
+    $("timer").textContent = "Tap to record";
+    $("rec-hint").textContent = "Up to 3 minutes. Your browser will ask to use the microphone.";
+  }
+  $("rec").addEventListener("click", () => (recorder && recorder.state === "recording" ? stop() : start()));
+  $("redo").addEventListener("click", reset);
+  $("file").addEventListener("change", (e) => { blob = e.target.files[0] || null; });
+  $("name").addEventListener("input", () => {
+    const has = $("name").value.trim().length > 0;
+    $("nameOk").disabled = !has; if (!has) $("nameOk").checked = false;
+  });
+
+  function showErr(msg) { $("err").textContent = msg; $("err").hidden = !msg; }
+
+  $("ask").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (recorder && recorder.state === "recording") { stop(); await new Promise((r) => setTimeout(r, 300)); }
+    const text = $("text").value.trim();
+    if (!blob && !text) { showErr("Record a voice note or type a message first."); return; }
+    const fd = new FormData($("ask"));
+    if (blob) fd.append("audio", blob, blob.name || "voice-note");
+    if (listenerId) fd.append("listenerId", listenerId);
+    if (episode) fd.append("episode", episode);
+    $("send").disabled = true; $("send").textContent = "Sending…"; showErr("");
+    try {
+      const res = await fetch("/api/submit", { method: "POST", body: fd });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || "Something went wrong. Try again in a minute.");
+      $("ask").hidden = true; $("done").hidden = false;
+    } catch (err) {
+      showErr(err.message || "Couldn't send. Check your connection and try again.");
+    } finally {
+      $("send").disabled = false; $("send").textContent = "Send to Anant and Aman";
+    }
+  });
+  $("again").addEventListener("click", () => {
+    $("ask").reset(); reset(); $("nameOk").disabled = true; $("done").hidden = true; $("ask").hidden = false;
+  });
+})();
+</script>
+</body>
+</html>
