@@ -125,8 +125,7 @@ ${e.summary.map((s) => `        <li>${esc(s)}</li>`).join("\n")}
     : `      <p class="ep-desc">${esc(e.description)}</p>`;
   return `    <article class="ep${newest ? " ep-new" : ""}" id="${esc(e.slug)}" aria-labelledby="${esc(e.slug)}-title" data-ep="${esc(e.slug)}" data-src="audio/${esc(file)}" data-dur="${dur}">
       <div class="ep-meta"><span class="num">${esc(label(e))}</span><span>${esc(weekOf(e.date))}</span><span>${clock(dur)}</span></div>
-      <h3 id="${esc(e.slug)}-title">${esc(e.title)}</h3>
-${about}
+      <h2 id="${esc(e.slug)}-title">${esc(e.title)}</h2>
       <div class="player">
         <button type="button" class="play" aria-label="Play"><svg class="i-play" aria-hidden="true"><use href="#i-play"/></svg><svg class="i-pause" aria-hidden="true"><use href="#i-pause"/></svg></button>
         <div class="scrub">
@@ -135,6 +134,7 @@ ${about}
         </div>
         <noscript><a href="audio/${esc(file)}">Download the MP3</a></noscript>
       </div>
+${about}
 ${links ? `      <details class="refs"><summary>Sources and further reading <span class="cnt">${links}</span></summary><div class="refs-body">
 ${sources}
       </div></details>

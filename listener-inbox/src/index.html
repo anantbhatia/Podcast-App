@@ -81,6 +81,7 @@ a { color: var(--link); text-underline-offset: 3px; }
 .pill:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shade); }
 
 /* Hero */
+/* The intro sits under the latest episode: on a phone the Play button is on the first screen, the show's story comes next. */
 .hero { display: grid; gap: 22px; }
 .art {
   margin: 0; border: 3px solid var(--line); border-radius: 22px; overflow: hidden;
@@ -183,7 +184,7 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
   color: var(--on-accent); background: var(--lime); border: 2px solid var(--line); border-radius: 6px; padding: 5px 9px 4px; transform: rotate(-2deg);
 }
 .ep-meta span:last-child::before { content: ""; display: inline-block; width: 0.55em; height: 0.55em; margin-right: 6px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--line); vertical-align: 0.05em; }
-.ep h3 { font-size: clamp(1.6rem, 5vw, 2rem); line-height: 1.1; }
+.ep h2 { font-size: clamp(1.6rem, 5vw, 2rem); line-height: 1.1; }
 .ep ul { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; }
 .ep > ul li { position: relative; padding-left: 28px; }
 .ep-desc { margin: 0; max-width: 48rem; font-weight: 600; }
@@ -242,9 +243,12 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   body { font-size: 16px; }
   .play { width: 64px; height: 64px; } .play svg { width: 28px; height: 28px; } .player { gap: 8px 12px; }
   .wrap { padding-inline: 16px; gap: 36px; }
-  .brand span { font-size: 1rem; }
+  .brand span { font-size: 1rem; white-space: nowrap; }
   .brand img { width: 42px; height: 42px; }
   .pill { padding: 7px 12px; font-size: 0.95rem; }
+  /* One short top bar: the nav pills keep their icons and their names for screen readers, the first screen keeps its room for Play. */
+  .top .pill { padding: 9px; } .top .pill svg { width: 20px; height: 20px; }
+  .top .pill-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .subscribe { padding: 18px 16px; }
   .ep { padding: 18px 16px; }
   .art { border-radius: 16px; box-shadow: 5px 5px 0 var(--pink), 5px 5px 0 3px var(--shade); }
@@ -264,14 +268,16 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
 <main class="wrap">
   <nav class="top" aria-label="Site">
     <a class="brand" href="/"><img src="/img/logo-96.webp" width="48" height="48" alt=""><span>Two Hallucinating PMs</span></a>
-    <span class="pills"><a class="pill lime" href="#subscribe"><svg aria-hidden="true"><use href="#i-bell"/></svg>Subscribe</a><a class="pill" href="/ask" data-ask=""><svg aria-hidden="true"><use href="#i-mic"/></svg>Ask us</a></span>
+    <span class="pills"><a class="pill lime" href="#subscribe"><svg aria-hidden="true"><use href="#i-bell"/></svg><span class="pill-text">Subscribe</span></a><a class="pill" href="/ask" data-ask=""><svg aria-hidden="true"><use href="#i-mic"/></svg><span class="pill-text">Ask us</span></a></span>
   </nav>
+
+<!-- EPISODES:LATEST -->
 
   <header class="hero">
     <figure class="art">
       <picture>
         <source type="image/webp" srcset="/img/hero-960.webp 960w, /img/hero-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 720px">
-        <img src="/img/hero-960.jpg" width="960" height="536" alt="Pop-art illustration of Anant and Aman at two microphones, their heads open and spilling neon swirls, a brain in sunglasses, floppy disks, a little robot and VR goggles, under a cloud reading Two Hallucinating PMs, Weekly AI Updates." fetchpriority="high">
+        <img src="/img/hero-960.jpg" width="960" height="536" alt="Pop-art illustration of Anant and Aman at two microphones, their heads open and spilling neon swirls, a brain in sunglasses, floppy disks, a little robot and VR goggles, under a cloud reading Two Hallucinating PMs, Weekly AI Updates." loading="lazy">
       </picture>
     </figure>
     <div class="intro">
@@ -284,14 +290,6 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
       <div class="host b"><span class="dot" aria-hidden="true">Am</span><b>Aman</b><p>Philosophy, history and books. He wants to know who's paying and whether anyone will actually use it.</p></div>
     </div>
   </header>
-
-  <section class="ask" aria-label="Ask the hosts">
-    <span class="mic" aria-hidden="true"><svg><use href="#i-mic"/></svg></span>
-    <p><strong>Got a question or a follow-up?</strong><span>Record a quick voice note or type it, with or without your name. We pick a few for the next episode.</span></p>
-    <a class="pill" href="/ask" data-ask="">Ask us</a>
-  </section>
-
-<!-- EPISODES:LATEST -->
 
   <section class="subscribe" id="subscribe" aria-labelledby="subscribe-title">
     <span class="bell" aria-hidden="true"><svg><use href="#i-bell"/></svg></span>
@@ -316,6 +314,12 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   </section>
 
 <!-- EPISODES:EARLIER -->
+
+  <section class="ask" aria-label="Ask the hosts">
+    <span class="mic" aria-hidden="true"><svg><use href="#i-mic"/></svg></span>
+    <p><strong>Got a question or a follow-up?</strong><span>Record a quick voice note or type it, with or without your name. We pick a few for the next episode.</span></p>
+    <a class="pill" href="/ask" data-ask="">Ask us</a>
+  </section>
 
   <footer>
     <img src="/img/logo-96.webp" width="56" height="56" alt="">
@@ -350,7 +354,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   const fmt = (s) => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
   const cards = [...document.querySelectorAll("article[data-ep]")].map((art, i) => ({
     i, art, ep: art.dataset.ep, src: art.dataset.src, dur: +art.dataset.dur || 0,
-    title: (art.querySelector("h3") || {}).textContent || "",
+    title: (art.querySelector("h2") || {}).textContent || "",
     btn: art.querySelector(".play"), seek: art.querySelector(".seek"), curEl: art.querySelector(".cur"), durEl: art.querySelector(".dur"),
     pos: 0, want: null, listened: 0, last: null, hit: new Set(),
   })).filter((c) => c.src && c.btn && c.seek);
