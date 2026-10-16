@@ -8,7 +8,8 @@ sent as-is for the model to play as a cut-off. `[DEEPER: ...]` notes are not
 speaker lines and are skipped.
 
 Production cues on a line of their own, `[THEME HIT]` (right after the title
-call) and `[TRANSITION]` (where the next story starts), are not spoken. The
+call), `[TRANSITION]` (where the next story starts) and `[STING]` (between
+game items), are not spoken. The
 renderer ends a request at each one and writes where it fell in the audio to
 `<out>.cues.json`, which score_episode.py reads to place the music.
 
@@ -39,7 +40,7 @@ MAX_CHARS = 2500     # well under the v3 (5k) and v4 (10k) per-request limits
 SECTION_GAP = 1.0    # seconds of silence between sections
 LINE_RE = re.compile(rf"^({'|'.join(VOICES)}):\s*(.+)$")
 HEADING_RE = re.compile(r"^#{2,3}\s+(.+)$")
-CUE_RE = re.compile(r"^\[(THEME HIT|TRANSITION)\]$")
+CUE_RE = re.compile(r"^\[(THEME HIT|TRANSITION|STING)\]$")
 # Names the voices get wrong, rewritten only in the text sent to the model.
 # v4 reads IPA between slashes; v3 needs phonetic spellings instead.
 PRONOUNCE = {

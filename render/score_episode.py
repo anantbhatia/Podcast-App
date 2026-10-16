@@ -9,7 +9,8 @@ seconds come back as a button at the end of the episode.
 At every story change a short transition plays in a pause of its own: a
 slice of the same theme rises out of the last line, plays in the clear for
 a couple of seconds, and ducks away under the next story's first line. The
-title call and the transitions come from the `<voice>.cues.json` file that
+same goes for each `[STING]` between game items, with a shorter cut: the
+theme's closing hit, in the clear. The title call, transitions and stings come from the `<voice>.cues.json` file that
 render_elevenlabs.py writes next to the voice track (or from --title-end and
 --transition by hand).
 
@@ -57,6 +58,10 @@ def main():
                     help="second where a new story starts (default: from the cues file); repeatable")
     ap.add_argument("--cues", type=Path, help="cue file (default: <voice>.cues.json if it exists)")
     ap.add_argument("--sting", type=float, default=2.5, help="seconds a transition plays in the clear (0 = none)")
+    ap.add_argument("--item-sting", type=float, metavar="SECONDS", action="append", default=[],
+                    help="second where a game item ends (default: [STING] cues from the cues file); repeatable")
+    ap.add_argument("--item-length", type=float, default=1.6,
+                    help="seconds of the theme's closing hit played between game items (0 = none)")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--lead", type=float, default=4.5, help="seconds of quiet bed before the title ends")
     ap.add_argument("--hold", type=float, default=4.0, help="seconds the theme plays in the clear")
@@ -71,6 +76,8 @@ def main():
             a.title_end = next((c["at"] for c in cues if c["cue"] == "THEME HIT"), None)
         if not a.transition:
             a.transition = [c["at"] for c in cues if c["cue"] == "TRANSITION"]
+        if not a.item_sting:
+            a.item_sting = [c["at"] for c in cues if c["cue"] == "STING"]
     if a.title_end is None:
         raise SystemExit("no title call: pass --title-end or a cues file with a THEME HIT")
 
@@ -92,6 +99,8 @@ def main():
     pauses = {a.title_end: a.hold}
     if a.sting > 0:
         pauses.update({t: a.sting for t in a.transition})
+    if a.item_length > 0:
+        pauses.update({t: a.item_length + 0.3 for t in a.item_sting})
     for t in sorted(pauses, reverse=True):
         i = int(t * SR)
         voice = np.concatenate([voice[:i], np.zeros((int(pauses[t] * SR), 2)), voice[i:]])
@@ -127,6 +136,21 @@ def main():
         for t in a.transition:
             i = int((shifted(t) - rise) * SR)
             voice[i:i + len(sting)] += sting[: len(voice) - i]
+
+    # Game stings: the theme's closing hit, short and in the clear, with a
+    # breath of silence before the next item.
+    if a.item_length > 0 and a.item_sting:
+        # The theme fades out after its last hit, so find where the loud part
+        # ends and take the cut around it rather than the quiet tail.
+        win = int(0.05 * SR)
+        env = np.array([np.sqrt(np.mean(theme[j:j + win] ** 2)) for j in range(0, len(theme) - win, win)])
+        loud_end = (np.where(env > env.max() / 4)[0][-1] + 1) * win
+        n = int(a.item_length * SR)
+        start = max(0, loud_end - int(0.55 * a.item_length * SR))
+        hit = theme[start:start + n] * ramp(n, [(0, 0), (0.05, 0.9), (a.item_length - 0.4, 0.9), (a.item_length, 0)])
+        for t in a.item_sting:
+            i = int(shifted(t) * SR)
+            voice[i:i + n] += hit[: len(voice) - i]
 
     if a.outro > 0:
         button = theme[-int(a.outro * SR):] * ramp(int(a.outro * SR), [(0, 0), (0.4, 1), (a.outro, 1)])
