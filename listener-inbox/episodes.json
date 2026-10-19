@@ -1,5 +1,256 @@
 [
   {
+    "episode": 2,
+    "slug": "ep02",
+    "title": "House of Cards",
+    "date": "2026-10-19",
+    "durationSec": 1274,
+    "description": "The circular financing that's keeping AI alive and the God-mode reverse engineering tool",
+    "sources": [
+      {
+        "story": "The bill comes due",
+        "refs": [
+          {
+            "title": "Broadcom CEO Hock Tan likens many AI investors to casino gamblers",
+            "outlet": "The Next Web",
+            "url": "https://thenextweb.com/news/broadcom-hock-tan-ai-investors-casino-capital"
+          },
+          {
+            "title": "Shares of Oracle, neoclouds drop on CoreWeave debt concerns",
+            "outlet": "SiliconANGLE",
+            "url": "https://siliconangle.com/2026/10/14/shares-of-oracle-neoclouds-drop-on-coreweave-debt-concerns/"
+          },
+          {
+            "title": "CoreWeave bonds tumble into distress, drawing 'yikes' from Musk",
+            "outlet": "Bloomberg",
+            "url": "https://www.bloomberg.com/news/articles/2026-10-14/coreweave-bonds-tumble-into-distress-drawing-yikes-from-musk"
+          },
+          {
+            "title": "Broadcom Form 10-Q for the quarter ended August 2, 2026",
+            "outlet": "SEC EDGAR",
+            "url": "https://www.sec.gov/Archives/edgar/data/1730168/000173016826000080/avgo-20260802.htm"
+          },
+          {
+            "title": "Exclusive-Broadcom to lend Anthropic up to $42 billion to lease its chips, filing says",
+            "outlet": "Reuters via The Star",
+            "url": "https://www.thestar.com.my/tech/tech-news/2026/10/01/exclusive-broadcom-to-lend-anthropic-up-to-42-billion-to-lease-its-chips-filing-says"
+          },
+          {
+            "title": "Anthropic lost $42bn in 2025 as revenue grew 12-fold, Reuters reports",
+            "outlet": "The Next Web",
+            "url": "https://thenextweb.com/news/anthropic-ipo-prospectus-42bn-loss-518bn-compute"
+          },
+          {
+            "title": "Anthropic IPO Prospectus Shows $518 Billion in Compute Bets",
+            "outlet": "Implicator",
+            "url": "https://www.implicator.ai/anthropic-ipo-prospectus-518-billion-compute-commitments/"
+          },
+          {
+            "title": "Artificial Intelligence and the US Economy: An Accounting Perspective on Investment and Production",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2601.11196"
+          },
+          {
+            "title": "OpenAI forecasts cash burn near $280 billion by 2030, FT reports",
+            "outlet": "Reuters via The Star",
+            "url": "https://www.thestar.com.my/tech/tech-news/2026/09/19/openai-forecasts-cash-burn-near-280-billion-by-2030-ft-reports"
+          },
+          {
+            "title": "Anthropic tells investors quarterly revenue up nearly 50% to $16.8bn ahead of IPO",
+            "outlet": "Simon Willison",
+            "url": "https://simonwillison.net/2026/Oct/15/anthropic-tells-investors/"
+          },
+          {
+            "title": "Gemini app model limits change",
+            "outlet": "9to5Google",
+            "url": "https://9to5google.com/2026/10/03/gemini-model-limits-oct-26/"
+          },
+          {
+            "title": "llm-gemini release notes",
+            "outlet": "Simon Willison",
+            "url": "https://simonwillison.net/2026/Oct/13/llm-gemini/"
+          },
+          {
+            "title": "Fidelity fund quarterly holdings",
+            "outlet": "SEC EDGAR",
+            "url": "https://www.sec.gov/Archives/edgar/data/275309/000003540226006126/QTLY_307_20260731.htm"
+          },
+          {
+            "title": "Broadcom and Blackstone amass $60B debt to fund Anthropic chips",
+            "outlet": "AI Weekly",
+            "url": "https://aiweekly.co/alerts/broadcom-and-blackstone-amass-60b-debt-to-fund-anthropic-chips"
+          },
+          {
+            "title": "JPMorgan, Goldman underwrite only $1.3B of Volta's $5B AI loan",
+            "outlet": "AI Weekly",
+            "url": "https://aiweekly.co/alerts/jpmorgan-goldman-underwrite-only-13b-of-voltas-5b-ai-loan"
+          },
+          {
+            "title": "CoreWeave quarterly report (10-Q)",
+            "outlet": "SEC EDGAR",
+            "url": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000366/crwv-20260630.htm"
+          },
+          {
+            "title": "TSMC third-quarter 2026 results",
+            "outlet": "SEC EDGAR",
+            "url": "https://www.sec.gov/Archives/edgar/data/1046179/000104617926000726/a3q26e_withguidancexfinal.htm"
+          },
+          {
+            "title": "Claude pricing",
+            "outlet": "Anthropic",
+            "url": "https://www.anthropic.com/pricing"
+          }
+        ]
+      },
+      {
+        "story": "REA: Reverse Engineer Anything",
+        "refs": [
+          {
+            "title": "REA README",
+            "outlet": "GitHub (morluto/rea)",
+            "url": "https://raw.githubusercontent.com/morluto/rea/main/README.md"
+          },
+          {
+            "title": "REA DISCLAIMER",
+            "outlet": "GitHub (morluto/rea)",
+            "url": "https://raw.githubusercontent.com/morluto/rea/main/DISCLAIMER.md"
+          },
+          {
+            "title": "DX-Ball Reverse Engineering",
+            "outlet": "REA",
+            "url": "https://rea.tools/showcase/dx-ball/"
+          },
+          {
+            "title": "DecompileBench: A Comprehensive Benchmark for Evaluating Decompilers in Real-World Scenarios",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2505.11340"
+          },
+          {
+            "title": "Issue #2120: request for a stricter copyright-conscious mode",
+            "outlet": "GitHub (morluto/rea)",
+            "url": "https://github.com/morluto/rea/issues/2120"
+          },
+          {
+            "title": "NSA Makes Ghidra, a Powerful Cybersecurity Tool, Open Source",
+            "outlet": "Wired",
+            "url": "https://www.wired.com/story/nsa-ghidra-open-source-tool/"
+          },
+          {
+            "title": "Ghidra README",
+            "outlet": "NSA on GitHub",
+            "url": "https://raw.githubusercontent.com/NationalSecurityAgency/ghidra/master/README.md"
+          },
+          {
+            "title": "Decompiler",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Decompiler"
+          },
+          {
+            "title": "Compiler",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Compiler"
+          },
+          {
+            "title": "IDA Pro",
+            "outlet": "Hex-Rays",
+            "url": "https://hex-rays.com/ida-pro"
+          },
+          {
+            "title": "REA case studies (showcase index)",
+            "outlet": "rea.tools",
+            "url": "https://rea.tools/showcase/"
+          },
+          {
+            "title": "How TH04 aims a ring of bullets",
+            "outlet": "rea.tools",
+            "url": "https://rea.tools/showcase/th04/"
+          },
+          {
+            "title": "How Notion copies text and HTML",
+            "outlet": "rea.tools",
+            "url": "https://rea.tools/showcase/notion/"
+          },
+          {
+            "title": "How does an authenticator generate a login code? (Aegis)",
+            "outlet": "rea.tools",
+            "url": "https://rea.tools/showcase/aegis/"
+          },
+          {
+            "title": "Find the flag in a CTF binary (DownUnderCTF)",
+            "outlet": "rea.tools",
+            "url": "https://rea.tools/showcase/ctf/"
+          },
+          {
+            "title": "REA home page (Dinosaur game demo)",
+            "outlet": "rea.tools",
+            "url": "https://rea.tools/"
+          },
+          {
+            "title": "The industrial revolution in reverse engineering (N0zoM1z0)",
+            "outlet": "rea.tools blog",
+            "url": "https://rea.tools/blog/touhou-reconstruction/"
+          },
+          {
+            "title": "dx-ball reconstruction README",
+            "outlet": "GitHub, N0zoM1z0",
+            "url": "https://github.com/N0zoM1z0/dx-ball"
+          },
+          {
+            "title": "Trying out REA: decoding old apps without source code (Satoru Katsuno)",
+            "outlet": "note.com",
+            "url": "https://note.com/legit_pony7975/n/ne0335ab20434"
+          },
+          {
+            "title": "Reverse Engineer Anything (REA) + Claude Code Tutorial [Full Build] (Rakhul)",
+            "outlet": "Rakhul's AI Newsletter (Substack)",
+            "url": "https://rakhulkarthick.substack.com/p/reverse-engineer-anything-rea-claude"
+          },
+          {
+            "title": "Issue #746: Obsidian 1.12.7 ASAR unreadable_output",
+            "outlet": "GitHub, morluto/rea",
+            "url": "https://github.com/morluto/rea/issues/746"
+          },
+          {
+            "title": "Issue #2974: packaged Windows Electron apps fail (Notion 7.21.0)",
+            "outlet": "GitHub, morluto/rea",
+            "url": "https://github.com/morluto/rea/issues/2974"
+          }
+        ]
+      },
+      {
+        "story": "Hallucination Check",
+        "refs": [
+          {
+            "title": "The incredible flying Tesla Roadster is just for show",
+            "outlet": "The Verge",
+            "url": "https://www.theverge.com/transportation/1012783/tesla-roadster-flying-stunt-production-reality-musk"
+          },
+          {
+            "title": "Tesla's Redesigned Roadster Has A Cold-Gas Thruster Option, But You'll Need $250,000 Just To Reserve It",
+            "outlet": "Engadget",
+            "url": "https://www.engadget.com/2288437/teslas-redesigned-roadster-cold-gas-thruster-option-reservation/"
+          },
+          {
+            "title": "AI prompt accidentally printed in Chinese novel; publisher recalls books",
+            "outlet": "KuCoin News",
+            "url": "https://www.kucoin.com/news/flash/ai-prompt-accidentally-printed-in-chinese-novel-publisher-recalls-books"
+          },
+          {
+            "title": "AI-Generated Web Novel Printed as Physical Book, Publisher Responds: Will Recall and Destroy and Revise",
+            "outlet": "AIbase",
+            "url": "https://news.aibase.com/news/31540"
+          },
+          {
+            "title": "22 People Got Together for a Dinner Party. So Did Their A.I. Agents.",
+            "outlet": "The New York Times via DNYUZ",
+            "url": "https://dnyuz.com/2026/10/14/22-people-got-together-for-a-dinner-party-so-did-their-a-i-agents/"
+          }
+        ]
+      }
+    ],
+    "audio": "ep02.mp3"
+  },
+  {
     "episode": 1,
     "slug": "ep01",
     "title": "The Agent Did What?",
