@@ -131,33 +131,34 @@ def request(lines, key: str, seed: int | None, stability: float | None, model: s
         sys.exit(f"ElevenLabs {e.code}: {e.read().decode()[:500]}")
 
 
-def duration(p: Path) -> float:
-    out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                          "-of", "csv=p=0", str(p)], capture_output=True, text=True, check=True)
-    return float(out.stdout)
+RATE = 44100
 
 
-def join(parts: list[tuple[Path, bool]], out: Path):
-    """Concatenate mp3 parts, adding a short silence where a section starts."""
-    with tempfile.TemporaryDirectory() as tmp:
-        gap = Path(tmp) / "gap.mp3"
-        subprocess.run(
-            ["ffmpeg", "-loglevel", "error", "-f", "lavfi", "-i",
-             "anullsrc=r=44100:cl=mono", "-t", str(SECTION_GAP), "-b:a", "128k", str(gap)],
-            check=True,
-        )
-        listing = Path(tmp) / "list.txt"
-        entries = []
-        for i, (p, new_section) in enumerate(parts):
-            if i and new_section:
-                entries.append(f"file '{gap}'")
-            entries.append(f"file '{p.resolve()}'")
-        listing.write_text("\n".join(entries))
-        subprocess.run(
-            ["ffmpeg", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0",
-             "-i", str(listing), "-ar", "44100", "-b:a", "128k", str(out)],
-            check=True,
-        )
+def join(parts: list[tuple[Path, bool]], out: Path) -> list[float]:
+    """Concatenate mp3 parts, adding a short silence where a section starts.
+
+    Parts are decoded to PCM and joined sample by sample, so the returned end
+    time of each part (seconds) is exact. Summing each mp3's own duration
+    drifted by tens of milliseconds per part, which put late cues inside the
+    next line's first word.
+    """
+    pcm, ends, n = [], [], 0
+    gap = bytes(2 * int(SECTION_GAP * RATE))
+    for i, (p, new_section) in enumerate(parts):
+        if i and new_section:
+            pcm.append(gap)
+            n += len(gap)
+        raw = subprocess.run(
+            ["ffmpeg", "-loglevel", "error", "-i", str(p), "-f", "s16le", "-ac", "1",
+             "-ar", str(RATE), "-"], capture_output=True, check=True).stdout
+        pcm.append(raw)
+        n += len(raw)
+        ends.append(n / 2 / RATE)
+    subprocess.run(
+        ["ffmpeg", "-loglevel", "error", "-y", "-f", "s16le", "-ac", "1", "-ar", str(RATE),
+         "-i", "-", "-b:a", "128k", str(out)],
+        input=b"".join(pcm), check=True)
+    return ends
 
 
 def main():
@@ -193,22 +194,22 @@ def main():
     key = os.environ.get("ELEVENLABS_API_KEY") or sys.exit("ELEVENLABS_API_KEY is not set")
     a.out.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
-        parts, cues, at = [], [], 0.0
+        parts, cues = [], []
         for si, (title, lines) in enumerate(sections):
             first = True
             for ci, batch in enumerate(chunk(lines)):
                 if isinstance(batch, tuple):  # a cue: note where it falls
-                    cues.append({"cue": batch[1], "at": round(at, 3), "section": title})
+                    cues.append({"cue": batch[1], "after": len(parts), "section": title})
                     continue
                 print(f"rendering {title} ({ci + 1})...")
                 p = Path(tmp) / f"{si:02d}_{ci:02d}.mp3"
                 p.write_bytes(request(batch, key, a.seed, a.stability, a.model))
-                if first and parts:
-                    at += SECTION_GAP
                 parts.append((p, first))
-                at += duration(p)
                 first = False
-        join(parts, a.out)
+        ends = join(parts, a.out)
+    for c in cues:  # a cue falls where the speech before it ends
+        k = c.pop("after")
+        c["at"] = round(ends[k - 1] if k else 0.0, 3)
     cue_file = a.out.with_suffix(".cues.json")
     cue_file.write_text(json.dumps(cues, indent=1))
     print(f"wrote {a.out} and {cue_file.name} ({len(cues)} cues)")

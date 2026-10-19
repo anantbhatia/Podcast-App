@@ -49,6 +49,38 @@ def ramp(n, points):
     return np.interp(x, secs, gains)[:, None]
 
 
+def snap(voice: np.ndarray, t: float, before: float = 1.2, after: float = 1.0) -> float:
+    """Move a cue into the nearest pause between words, so music never lands on speech.
+
+    Cue times can be a little off (older cue files drifted late by most of a
+    second), so look for quiet stretches of at least 0.16 s near the cue and
+    use the point in one that is closest to it.
+    """
+    frame = int(0.02 * SR)
+    lo, hi = max(0, int((t - before) * SR)), min(len(voice), int((t + after) * SR))
+    seg = voice[lo:hi]
+    if len(seg) < frame:
+        return t
+    rms = np.sqrt(np.mean(seg[: len(seg) // frame * frame].reshape(-1, frame, seg.shape[1]) ** 2, axis=(1, 2)))
+    quiet = rms < 10 ** ((rms_db(voice) - 35) / 20)
+    best, runs, i = None, [], 0
+    while i < len(quiet):
+        if quiet[i]:
+            j = i
+            while j < len(quiet) and quiet[j]:
+                j += 1
+            if j - i >= 8:  # 0.16 s
+                runs.append((lo / SR + i * 0.02 + 0.04, lo / SR + j * 0.02 - 0.04))
+            i = j
+        else:
+            i += 1
+    for a, b in runs:
+        point = min(max(t, a), b)
+        if best is None or abs(point - t) < abs(best - t):
+            best = point
+    return t if best is None else best
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("voice", type=Path)
@@ -84,6 +116,10 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         voice, theme = load(a.voice, tmp), load(a.theme, tmp)
 
+    a.title_end = snap(voice, a.title_end)
+    a.transition = [snap(voice, t) for t in a.transition]
+    a.item_sting = [snap(voice, t) for t in a.item_sting]
+
     # Trim the theme's trailing silence and match it to the voice level.
     end = np.where(np.abs(theme).max(axis=1) > 0.003)[0][-1] + 1
     theme = theme[:end] * 10 ** ((rms_db(voice) + a.level - rms_db(theme)) / 20)
@@ -100,7 +136,7 @@ def main():
     if a.sting > 0:
         pauses.update({t: a.sting for t in a.transition})
     if a.item_length > 0:
-        pauses.update({t: a.item_length + 0.3 for t in a.item_sting})
+        pauses.update({t: a.item_length + 0.4 for t in a.item_sting})
     for t in sorted(pauses, reverse=True):
         i = int(t * SR)
         voice = np.concatenate([voice[:i], np.zeros((int(pauses[t] * SR), 2)), voice[i:]])
