@@ -373,12 +373,17 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     i, art, ep: art.dataset.ep, src: art.dataset.src, dur: +art.dataset.dur || 0,
     title: (art.querySelector("h2") || {}).textContent || "",
     btn: art.querySelector(".play"), seek: art.querySelector(".seek"), curEl: art.querySelector(".cur"), durEl: art.querySelector(".dur"),
-    pos: 0, want: null, listened: 0, last: null, hit: new Set(),
+    pos: 0, want: null, listened: 0, far: 0, last: null, hit: new Set(),
   })).filter((c) => c.src && c.btn && c.seek);
   let cur = null;      // the card whose episode is loaded in the player
   let live = null;     // the card a "play" was sent for and no "pause" yet
   let dragging = null; // the card whose bar is being dragged
   const stat = (c) => ({ t: Math.round(audio.currentTime || 0), d: Math.round(audio.duration || c.dur || 0), l: Math.round(c.listened) });
+  // Listening time counts new ground only: hearing a stretch again after Back 15 doesn't move the 25/50/75/finished marks.
+  function heard(c, from, to) {
+    const dt = to - from; if (!(dt > 0 && dt < 2)) return;
+    if (to > c.far) { c.listened += Math.min(dt, to - c.far); c.far = to; }
+  }
 
   function paint(c) {
     const active = c === cur, playing = active && !audio.paused && !audio.ended;
@@ -401,6 +406,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     if (cur) { cur.pos = audio.ended ? 0 : cur.want != null ? cur.want : audio.currentTime; cur.want = null; }
     if (live) { send("pause", live.ep, stat(live)); live = null; }
     cur = c; c.last = null; c.want = c.pos > 0.5 ? c.pos : null;
+    if (cards.some((x) => x.btn.classList.contains("nudge"))) cards.forEach((x) => x.btn.classList.toggle("nudge", x === c));
     // "#t=" asks the browser to start at that offset (media fragments); trySeek covers browsers that ignore it.
     audio.src = c.want != null ? c.src + "#t=" + c.want.toFixed(1) : c.src;
     if ("mediaSession" in navigator) {
@@ -473,7 +479,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     const c = cur; if (!c) return;
     if (c.want != null) { trySeek(); return; } // position not settled yet
     if (audio.readyState < 2) return; // a src change queues a stray timeupdate at 0
-    if (c.last !== null && !audio.paused) { const dt = audio.currentTime - c.last; if (dt > 0 && dt < 2) c.listened += dt; }
+    if (c.last !== null && !audio.paused) heard(c, c.last, audio.currentTime);
     c.last = audio.currentTime; c.pos = audio.currentTime;
     paint(c);
     marks(c);
@@ -486,7 +492,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   // When an episode finishes, the next one down the page starts.
   audio.addEventListener("ended", () => {
     const c = cur; if (!c) return;
-    if (c.last !== null) { const dt = audio.duration - c.last; if (dt > 0 && dt < 2) c.listened += dt; }
+    if (c.last !== null) heard(c, c.last, audio.duration);
     marks(c);
     c.pos = 0; c.want = null; paintAll();
     const next = cards[cur.i + 1];
@@ -505,7 +511,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
       const onTap = (ev) => {
         if (ev.target.closest("a, button, input, summary, details")) return;
         document.removeEventListener("click", onTap, true);
-        if (!live && cur === cards[0] && audio.paused) play(cards[0]);
+        if (!live && cur && audio.paused) play(cur);
       };
       document.addEventListener("click", onTap, true);
       audio.addEventListener("play", () => document.removeEventListener("click", onTap, true), { once: true });
