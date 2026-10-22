@@ -92,7 +92,6 @@ export async function getStats(env) {
       COUNT(DISTINCT CASE WHEN type='play' THEN ${who} END) AS listeners,
       SUM(type='skip_back') AS skipsBack,
       SUM(type='skip_fwd') AS skipsFwd,
-      COUNT(DISTINCT CASE WHEN type='skip_back' THEN ${who} END) AS rewinders,
       SUM(type='ask_click') AS askClicks,
       SUM(type='ask_submit') AS askSubmits,
       SUM(type='ask_submit' AND voice=1) AS voiceNotes,

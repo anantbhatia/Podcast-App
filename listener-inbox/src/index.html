@@ -194,7 +194,6 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 /* Player: one big play/pause button and a progress bar on every card. */
 .player { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; align-items: center; }
 .play { width: 76px; height: 76px; padding: 0; border-radius: 50%; border: 3px solid var(--line); background: var(--yellow); color: var(--on-accent); cursor: pointer; display: grid; place-items: center; box-shadow: 4px 4px 0 var(--shade); transition: transform .1s, box-shadow .1s, background .15s; }
-.play:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--shade); }
 .play:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--shade); }
 .play svg { width: 34px; height: 34px; }
 .play .i-pause, .is-playing .play .i-play { display: none; }
@@ -204,7 +203,10 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 /* 15-second skips either side of Play: a quick way to hear a number again. */
 .controls { display: flex; align-items: center; gap: 10px; }
 .skip { width: 46px; height: 46px; padding: 0; border-radius: 50%; border: 3px solid var(--line); background: var(--surface); color: var(--text); font-family: var(--body); cursor: pointer; display: grid; place-items: center; box-shadow: 3px 3px 0 var(--shade); transition: transform .1s, box-shadow .1s, background .15s; }
-.skip:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--shade); background: var(--soft); }
+@media (hover: hover) {
+  .play:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--shade); }
+  .skip:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--shade); background: var(--soft); }
+}
 .skip:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shade); }
 .skip svg { width: 32px; height: 32px; }
 @keyframes nudge { 50% { box-shadow: 4px 4px 0 var(--shade), 0 0 0 12px color-mix(in srgb, var(--yellow) 55%, transparent); } }
