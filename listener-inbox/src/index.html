@@ -209,6 +209,7 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 }
 .skip:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shade); }
 .skip svg { width: 32px; height: 32px; }
+.skip, .play { touch-action: manipulation; }
 @keyframes nudge { 50% { box-shadow: 4px 4px 0 var(--shade), 0 0 0 12px color-mix(in srgb, var(--yellow) 55%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .play.nudge { animation: none; } }
 .scrub { display: grid; gap: 6px; min-width: 0; }
@@ -373,16 +374,17 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     i, art, ep: art.dataset.ep, src: art.dataset.src, dur: +art.dataset.dur || 0,
     title: (art.querySelector("h2") || {}).textContent || "",
     btn: art.querySelector(".play"), seek: art.querySelector(".seek"), curEl: art.querySelector(".cur"), durEl: art.querySelector(".dur"),
-    pos: 0, want: null, listened: 0, far: 0, last: null, hit: new Set(),
+    pos: 0, want: null, listened: 0, got: new Set(), last: null, hit: new Set(),
   })).filter((c) => c.src && c.btn && c.seek);
   let cur = null;      // the card whose episode is loaded in the player
   let live = null;     // the card a "play" was sent for and no "pause" yet
   let dragging = null; // the card whose bar is being dragged
   const stat = (c) => ({ t: Math.round(audio.currentTime || 0), d: Math.round(audio.duration || c.dur || 0), l: Math.round(c.listened) });
-  // Listening time counts new ground only: hearing a stretch again after Back 15 doesn't move the 25/50/75/finished marks.
+  // Listening time counts each second once, the first time it's heard: hearing a stretch again after Back 15 doesn't
+  // move the 25/50/75/finished marks, while a stretch skipped over and heard later still counts.
   function heard(c, from, to) {
     const dt = to - from; if (!(dt > 0 && dt < 2)) return;
-    if (to > c.far) { c.listened += Math.min(dt, to - c.far); c.far = to; }
+    for (let s = Math.floor(from); s < to; s++) if (!c.got.has(s)) { c.got.add(s); c.listened += 1; }
   }
 
   function paint(c) {
