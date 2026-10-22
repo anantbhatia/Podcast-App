@@ -2,7 +2,7 @@
 // listener's browser keeps, a salted hash of the IP address (never the address
 // itself), the episode, and how far they got.
 
-const TYPES = new Set(["view", "play", "pause", "q25", "q50", "q75", "complete", "ask_click", "ask_submit", "subscribe", "push"]);
+const TYPES = new Set(["view", "play", "pause", "q25", "q50", "q75", "complete", "skip_back", "skip_fwd", "ask_click", "ask_submit", "subscribe", "push"]);
 // Recorded by the worker itself (a note saved, a sign-up stored), never taken from a page's POST:
 // the daily sign-up caps count them, so anyone could otherwise block sign-ups with a few requests.
 const INTERNAL = new Set(["ask_submit", "subscribe", "push"]);
@@ -90,6 +90,9 @@ export async function getStats(env) {
       SUM(type='play') AS plays,
       SUM(type='pause') AS pauses,
       COUNT(DISTINCT CASE WHEN type='play' THEN ${who} END) AS listeners,
+      SUM(type='skip_back') AS skipsBack,
+      SUM(type='skip_fwd') AS skipsFwd,
+      COUNT(DISTINCT CASE WHEN type='skip_back' THEN ${who} END) AS rewinders,
       SUM(type='ask_click') AS askClicks,
       SUM(type='ask_submit') AS askSubmits,
       SUM(type='ask_submit' AND voice=1) AS voiceNotes,
@@ -109,6 +112,9 @@ export async function getStats(env) {
       COUNT(DISTINCT CASE WHEN type='q50' THEN ${who} END) AS q50,
       COUNT(DISTINCT CASE WHEN type='q75' THEN ${who} END) AS q75,
       COUNT(DISTINCT CASE WHEN type='complete' THEN ${who} END) AS completed,
+      SUM(type='skip_back') AS skipsBack,
+      SUM(type='skip_fwd') AS skipsFwd,
+      COUNT(DISTINCT CASE WHEN type='skip_back' THEN ${who} END) AS rewinders,
       SUM(type='ask_click') AS askClicks,
       SUM(type='ask_submit') AS askSubmits,
       MAX(d) AS duration

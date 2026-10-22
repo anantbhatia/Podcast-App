@@ -201,6 +201,12 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 .is-playing .play .i-pause { display: block; }
 .is-playing .play { background: var(--pink); }
 .play.nudge { animation: nudge 1.3s ease-in-out infinite; }
+/* 15-second skips either side of Play: a quick way to hear a number again. */
+.controls { display: flex; align-items: center; gap: 10px; }
+.skip { width: 46px; height: 46px; padding: 0; border-radius: 50%; border: 3px solid var(--line); background: var(--surface); color: var(--text); font-family: var(--body); cursor: pointer; display: grid; place-items: center; box-shadow: 3px 3px 0 var(--shade); transition: transform .1s, box-shadow .1s, background .15s; }
+.skip:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--shade); background: var(--soft); }
+.skip:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shade); }
+.skip svg { width: 32px; height: 32px; }
 @keyframes nudge { 50% { box-shadow: 4px 4px 0 var(--shade), 0 0 0 12px color-mix(in srgb, var(--yellow) 55%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .play.nudge { animation: none; } }
 .scrub { display: grid; gap: 6px; min-width: 0; }
@@ -243,7 +249,11 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
 }
 @media (max-width: 520px) {
   body { font-size: 16px; }
-  .play { width: 64px; height: 64px; } .play svg { width: 28px; height: 28px; } .player { gap: 8px 12px; }
+  .play { width: 64px; height: 64px; } .play svg { width: 28px; height: 28px; }
+  /* Phones: the three buttons centred in a row, the bar on its own line below so it keeps the full width. */
+  .player { grid-template-columns: 1fr; justify-items: center; gap: 10px; }
+  .controls { gap: 14px; } .skip { width: 44px; height: 44px; } .skip svg { width: 30px; height: 30px; }
+  .scrub { width: 100%; }
   .wrap { padding-inline: 16px; gap: 36px; }
   .brand span { font-size: 1rem; }
   .brand img { width: 42px; height: 42px; }
@@ -265,6 +275,8 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   <symbol id="i-bubble" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" d="M4 5.5h16v10H10l-5 4v-4H4z"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4.5v15l13-7.5z"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z"/></symbol>
+  <symbol id="i-back15" viewBox="0 0 28 28"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M6.64 10.25A8.5 8.5 0 1 0 14 6M17 3l-3 3 3 3"/><text x="14" y="18" text-anchor="middle" fill="currentColor" font-size="10" font-weight="900">15</text></symbol>
+  <symbol id="i-fwd15" viewBox="0 0 28 28"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M21.36 10.25A8.5 8.5 0 1 1 14 6M11 3l3 3-3 3"/><text x="14" y="18" text-anchor="middle" fill="currentColor" font-size="10" font-weight="900">15</text></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 21h4M12 3v1.5"/></g></symbol>
 </svg>
 
@@ -338,7 +350,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
 // (a separate player per card would be refused on iPhones). Each card has its own big
 // play button and progress bar, painted from the shared element while that episode is loaded.
 // Listening stats for the hosts go to /api/event: page view, play, pause, how far into the
-// episode (25/50/75/100%), and Ask clicks. A random id in this browser recognizes repeat
+// episode (25/50/75/100%), 15-second skips, and Ask clicks. A random id in this browser recognizes repeat
 // visits; nothing else about the listener is stored.
 (() => {
   let vid = null;
@@ -400,9 +412,24 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     const p = audio.play();
     if (p && p.catch) p.catch(() => paintAll());
   }
+  // Jump 15 seconds back or ahead: the buttons either side of Play, and the lock-screen controls.
+  // Playing or paused stays as it was; on a card that isn't loaded, the episode is loaded at the new position.
+  function skip(c, delta) {
+    if (!c) return;
+    const active = cur === c;
+    const d = (active && isFinite(audio.duration) && audio.duration) || c.dur || 0;
+    const from = active ? (c.want != null ? c.want : audio.readyState >= 2 ? audio.currentTime : c.pos) : c.pos;
+    let t = Math.max(0, from + delta);
+    if (d) t = Math.min(t, Math.max(0, d - 1)); // a skip past the end lands a second before it, so the episode still finishes
+    c.pos = t; c.last = t; c.want = t;
+    if (active) trySeek(); else select(c);
+    paint(c);
+    send(delta < 0 ? "skip_back" : "skip_fwd", c.ep, Object.assign(stat(c), { t: Math.round(t) }));
+  }
 
   cards.forEach((c) => {
     c.btn.addEventListener("click", () => (cur === c && !audio.paused && !audio.ended ? audio.pause() : play(c)));
+    c.art.querySelectorAll(".skip").forEach((b) => b.addEventListener("click", () => skip(c, b.classList.contains("back") ? -15 : 15)));
     const target = () => (c.seek.value / 1000) * ((cur === c && audio.duration) || c.dur);
     c.seek.addEventListener("input", () => { dragging = c; c.curEl.textContent = fmt(target()); c.seek.style.setProperty("--p", c.seek.value / 10 + "%"); });
     c.seek.addEventListener("change", () => {
@@ -414,6 +441,12 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     });
     paint(c);
   });
+
+  if ("mediaSession" in navigator) {
+    for (const [action, sign] of [["seekbackward", -1], ["seekforward", 1]]) {
+      try { navigator.mediaSession.setActionHandler(action, (e) => skip(cur, sign * ((e && e.seekOffset) || 15))); } catch {}
+    }
+  }
 
   audio.addEventListener("play", () => { if (cur) { cur.last = audio.currentTime; live = cur; send("play", cur.ep, stat(cur)); } paintAll(); });
   audio.addEventListener("pause", () => { if (live && !audio.ended) send("pause", live.ep, stat(live)); live = null; paintAll(); });

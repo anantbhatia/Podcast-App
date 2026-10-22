@@ -107,7 +107,7 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
     <section class="panel">
       <h2>By episode</h2>
       <div class="tablewrap"><table>
-        <thead><tr><th>Episode</th><th>Listeners</th><th>Plays</th><th>Pauses</th><th>Avg listened</th><th>Reached 25 / 50 / 75%</th><th>Finished</th><th>Asks</th></tr></thead>
+        <thead><tr><th>Episode</th><th>Listeners</th><th>Plays</th><th>Pauses</th><th>Avg listened</th><th>Reached 25 / 50 / 75%</th><th>Finished</th><th>Back / ahead 15 s</th><th>Asks</th></tr></thead>
         <tbody id="eps"></tbody>
       </table></div>
     </section>
@@ -167,7 +167,7 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
     if (t.since) $("since").textContent = "Counting since " + new Date(t.since).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) + ".";
     const tiles = [
       [t.visitors, "Unique visitors"], [t.uniqueIps, "Unique IP addresses"], [t.listeners, "Pressed play"],
-      [t.plays, "Plays"], [t.pauses, "Pauses"], [t.returningVisitors, "Came back another day"],
+      [t.plays, "Plays"], [t.pauses, "Pauses"], [t.skipsBack, "Rewound 15 s"], [t.skipsFwd, "Skipped ahead 15 s"], [t.returningVisitors, "Came back another day"],
       [t.multiEpisodeListeners, "Listened to 2+ episodes"], [t.askSubmits, "Questions sent"], [d.subscribers, "Email subscribers"], [d.pushSubscribers, "Browsers with notifications on"],
     ];
     $("tiles").innerHTML = tiles.map(([v, k]) => `<div class="tile"><span class="n">${fmt(v)}</span><span class="k">${k}</span></div>`).join("");
@@ -185,8 +185,9 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
       const bars = [e.listeners, e.q25, e.q50, e.q75, e.completed].map((v, i) => `<i style="height:${Math.max(2, (22 * n(v)) / L)}px" title="${["Started", "25%", "50%", "75%", "Finished"][i]}: ${fmt(v)}"></i>`).join("");
       return `<tr><td>${esc(NAMES[e.ep] || e.ep)}</td><td>${fmt(e.listeners)}</td><td>${fmt(e.plays)}</td><td>${fmt(e.pauses)}</td><td>${mins(e.avgListenSeconds)}</td>
         <td><span class="drop" aria-hidden="true">${bars}</span> <span class="mono">${fmt(e.q25)} / ${fmt(e.q50)} / ${fmt(e.q75)}</span></td>
-        <td>${fmt(e.completed)} <span class="muted">(${pct(e.completed, e.listeners)})</span></td><td>${fmt(e.askSubmits)}</td></tr>`;
-    }).join("") : `<tr><td colspan="8" class="muted" style="text-align:left">No plays yet. Share the listening page link and numbers show up here.</td></tr>`;
+        <td>${fmt(e.completed)} <span class="muted">(${pct(e.completed, e.listeners)})</span></td>
+        <td title="${fmt(e.rewinders)} listener(s) rewound at least once">${fmt(e.skipsBack)} / ${fmt(e.skipsFwd)}</td><td>${fmt(e.askSubmits)}</td></tr>`;
+    }).join("") : `<tr><td colspan="9" class="muted" style="text-align:left">No plays yet. Share the listening page link and numbers show up here.</td></tr>`;
 
     // Last 14 days, including days with no visits.
     const byDay = Object.fromEntries((d.daily || []).map((r) => [r.day, r]));

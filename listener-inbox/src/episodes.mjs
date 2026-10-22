@@ -127,7 +127,11 @@ ${e.summary.map((s) => `        <li>${esc(s)}</li>`).join("\n")}
       <div class="ep-meta"><span class="num">${esc(label(e))}</span><span>${esc(weekOf(e.date))}</span><span>${clock(dur)}</span></div>
       <h2 id="${esc(e.slug)}-title">${esc(e.title)}</h2>
       <div class="player">
-        <button type="button" class="play" aria-label="Play"><svg class="i-play" aria-hidden="true"><use href="#i-play"/></svg><svg class="i-pause" aria-hidden="true"><use href="#i-pause"/></svg></button>
+        <div class="controls">
+          <button type="button" class="skip back" aria-label="Back 15 seconds" title="Back 15 seconds"><svg aria-hidden="true"><use href="#i-back15"/></svg></button>
+          <button type="button" class="play" aria-label="Play"><svg class="i-play" aria-hidden="true"><use href="#i-play"/></svg><svg class="i-pause" aria-hidden="true"><use href="#i-pause"/></svg></button>
+          <button type="button" class="skip fwd" aria-label="Ahead 15 seconds" title="Ahead 15 seconds"><svg aria-hidden="true"><use href="#i-fwd15"/></svg></button>
+        </div>
         <div class="scrub">
           <input type="range" class="seek" min="0" max="1000" value="0" step="1" aria-label="Position in the episode">
           <div class="times"><span class="cur">0:00</span><span class="dur">${clock(dur)}</span></div>
