@@ -42,17 +42,32 @@ export function weekOf(date) {
   return `Week of ${MONTHS[t.getUTCMonth()]} ${t.getUTCDate()}, ${t.getUTCFullYear()}`;
 }
 
-export const label = (e) => (typeof e.label === "string" && e.label.trim()) || `Episode ${e.episode}`;
+const text = (s) => typeof s === "string" && s.trim();
+// A special episode (kind "special", an out-of-cycle one) sits outside the weekly count: it has
+// its own number, specialNo, and no weekly "episode" number, so the next weekly keeps its number.
+export const isSpecial = (e) => !!e && typeof e === "object" && e.kind === "special";
+// The badge on the card: the payload's badge or label when it says something of its own, else
+// built from the number. A bare "Special episode" or "Episode" (what the Studio sends) is the
+// generic kind, not the text, so it gets the number: "Special episode 1".
+export const GENERIC_BADGE = /^(special\s+)?episode$/i;
+export function label(e) {
+  const given = [e.label, e.badge].map(text).find((s) => s && !GENERIC_BADGE.test(s));
+  return given || (isSpecial(e) ? `Special episode ${e.specialNo}` : `Episode ${e.episode}`);
+}
 export const audioFile = (e) => (typeof e.audio === "string" ? e.audio : "");
 // Payload fields that must not be stored: a local path, the Studio's link and the requester.
 export const PRIVATE = ["mp3", "studio", "requestedBy", "requestedAt"];
-const text = (s) => typeof s === "string" && s.trim();
 // "Outlet: Headline", or the headline alone.
 const refText = (r) => (text(r.outlet) ? `${r.outlet.trim()}: ${r.title}` : r.title);
 
 // Newest first: that is the card that autoplays, and when it ends the next one down plays.
+// The order is by publish date, so a special slots in where it aired; on the same day the
+// weekly episode comes first, then the higher number.
+const date = (e) => String((e && e.date) || "");
+const number = (e) => (e && (isSpecial(e) ? e.specialNo : e.episode)) || 0;
 export function sorted(list) {
-  return [...(Array.isArray(list) ? list : [])].sort((a, b) => (b.episode - a.episode) || String(b.date).localeCompare(String(a.date)));
+  return [...(Array.isArray(list) ? list : [])].sort((a, b) =>
+    date(b).localeCompare(date(a)) || (isSpecial(a) - isSpecial(b)) || (number(b) - number(a)));
 }
 
 // Everything a publish must get right, as a list of messages (empty when fine).
@@ -60,15 +75,24 @@ export function sorted(list) {
 export function problems(list, audioExists) {
   const errors = [];
   if (!Array.isArray(list)) return ["episodes.json must be a JSON array of episodes"];
-  const slugs = new Set(), numbers = new Set(), files = new Set();
+  const slugs = new Set(), numbers = new Set(), specials = new Set(), files = new Set();
   list.forEach((e, i) => {
     const at = `episode ${i + 1}${e && typeof e.slug === "string" ? ` (${e.slug})` : ""}`;
     const bad = (msg) => errors.push(`${at}: ${msg}`);
     if (!e || typeof e !== "object" || Array.isArray(e)) return bad("must be an object");
     if (!SLUG.test(e.slug || "")) bad(`slug must be 1-60 lowercase letters, digits or dashes, like "ep02"`);
     else if (slugs.has(e.slug)) bad("slug is used twice"); else slugs.add(e.slug);
-    if (!Number.isInteger(e.episode) || e.episode < 1) bad("episode must be the episode number as a whole number (1, 2, 3...)");
-    else if (numbers.has(e.episode)) bad("episode number is used twice"); else numbers.add(e.episode);
+    if (e.kind !== undefined && e.kind !== "special") bad(`kind must be "special" for an out-of-cycle episode, or left out for a weekly one`);
+    if (isSpecial(e)) {
+      if (!Number.isInteger(e.specialNo) || e.specialNo < 1) bad("specialNo must be the special's own number as a whole number (1, 2, 3...)");
+      else if (specials.has(e.specialNo)) bad("specialNo is used twice"); else specials.add(e.specialNo);
+      if ("episode" in e) bad("a special has no weekly episode number; drop episode so the weekly count stays as it is");
+    } else {
+      if (!Number.isInteger(e.episode) || e.episode < 1) bad("episode must be the episode number as a whole number (1, 2, 3...)");
+      else if (numbers.has(e.episode)) bad("episode number is used twice"); else numbers.add(e.episode);
+      if ("specialNo" in e) bad(`specialNo belongs on a special only (kind: "special")`);
+    }
+    for (const k of ["label", "badge"]) if (e[k] !== undefined && !text(e[k])) bad(`${k} must be a short text for the card's badge, like "Special episode 1", or left out`);
     if (!text(e.title)) bad("title is missing");
     if (!parseDate(e.date)) bad("date must be a real date written YYYY-MM-DD");
     if (seconds(e.durationSec) == null) bad("durationSec must be the length in seconds (1067)");
@@ -93,13 +117,24 @@ export function problems(list, audioExists) {
       });
     });
   });
+  // The page orders by date, so an episode must not be dated before a lower-numbered one of its kind.
+  const entries = list.filter((e) => e && typeof e === "object" && !Array.isArray(e) && parseDate(e.date));
+  for (const [special, word] of [[false, "episode"], [true, "special"]]) {
+    // Only entries whose number passed above; a duplicate was reported there too, so it is skipped here.
+    const same = entries.filter((e) => isSpecial(e) === special && Number.isInteger(number(e)) && number(e) >= 1).sort((a, b) => number(a) - number(b));
+    for (let i = 1; i < same.length; i++) {
+      const prev = same[i - 1], e = same[i];
+      if (number(e) === number(prev)) continue;
+      if (e.date < prev.date) errors.push(`${word} ${number(e)} (${e.slug}) is dated ${e.date}, before ${word} ${number(prev)} (${prev.date}); the page orders by date, so check the dates`);
+    }
+  }
   return errors;
 }
 
 // What /episodes.json shows: the fields the page uses, nothing from the Studio's side.
 export function feed(list) {
   return sorted(list).map((e) => ({
-    episode: e.episode, slug: e.slug, label: e.label, title: e.title, date: e.date, durationSec: seconds(e.durationSec),
+    episode: e.episode, kind: e.kind, specialNo: e.specialNo, slug: e.slug, label: label(e), title: e.title, date: e.date, durationSec: seconds(e.durationSec),
     audio: `audio/${audioFile(e)}`, description: e.description, summary: e.summary,
     sources: (Array.isArray(e.sources) ? e.sources : []).map((g) => ({
       story: g.story, refs: (Array.isArray(g.refs) ? g.refs : []).map((r) => ({ title: r.title, outlet: r.outlet, url: r.url })),
@@ -123,7 +158,7 @@ ${(Array.isArray(g.refs) ? g.refs : []).map((r) => `      <li><a href="${esc(r.u
 ${e.summary.map((s) => `        <li>${esc(s)}</li>`).join("\n")}
       </ul>`
     : `      <p class="ep-desc">${esc(e.description)}</p>`;
-  return `    <article class="ep${newest ? " ep-new" : ""}" id="${esc(e.slug)}" aria-labelledby="${esc(e.slug)}-title" data-ep="${esc(e.slug)}" data-src="audio/${esc(file)}" data-dur="${dur}">
+  return `    <article class="ep${newest ? " ep-new" : ""}${isSpecial(e) ? " ep-special" : ""}" id="${esc(e.slug)}" aria-labelledby="${esc(e.slug)}-title" data-ep="${esc(e.slug)}" data-src="audio/${esc(file)}" data-dur="${dur}">
       <div class="ep-meta"><span class="num">${esc(label(e))}</span><span>${esc(weekOf(e.date))}</span><span>${clock(dur)}</span></div>
       <h2 id="${esc(e.slug)}-title">${esc(e.title)}</h2>
       <div class="player">

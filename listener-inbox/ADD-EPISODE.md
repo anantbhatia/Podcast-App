@@ -3,11 +3,11 @@
 The listening page is built from `episodes.json` (in `listener-inbox/`, next to `wrangler.toml`), and `scripts/add-episode.mjs` writes an entry to it from the Studio's publish payload (the JSON object after `Publish requested from the Studio:`, defined in `/mnt/project-files/dashboard/publish-payload.md`). Publishing is four steps, and any session can do them; nothing in the page's HTML needs touching.
 
 1. **Save the Studio's message to a file**, for example `/tmp/payload.json`. The `Publish requested from the Studio:` line in front can stay.
-2. **Run `node scripts/add-episode.mjs /tmp/payload.json`** from `listener-inbox/`. It checks the payload, copies the MP3 named in `mp3` into `public/audio/` (same file name) and appends an entry to `episodes.json` with only the fields the page shows; it prints what to fix if something is missing, and `--replace` overwrites an entry that already has the slug.
+2. **Run `node scripts/add-episode.mjs /tmp/payload.json`** from `listener-inbox/`. It checks the payload, copies the MP3 named in `mp3` into `public/audio/` (same file name) and appends an entry to `episodes.json` with only the fields the page shows; it prints what to fix if something is missing, and `--replace` overwrites an entry that already has the slug (keeping the date it first aired, since the page orders by date).
 3. **Deploy**, following `DEPLOY.md`, only after Anant says "deploy". `wrangler deploy` (and `--dry-run`, and `wrangler dev`) first runs `node scripts/check-episodes.mjs`, which stops with the reasons listed if an entry is incomplete or its MP3 isn't in `public/audio`.
 4. **Tell subscribers** (the section below): one email per sign-up from Anant's Gmail, then one call that pushes a notification to every browser that asked for one. The publish isn't done until both have run.
 
-Then open https://listen.2hallucinatingpms.workers.dev and confirm the new episode is the "New this week" card and plays. The link to one episode is `https://listen.2hallucinatingpms.workers.dev/ep02` (its slug after the slash): it opens the page on that episode and carries that episode's preview card for Substack, WhatsApp and the rest; the older `/#ep02` anchor still works. Add `?from=<word>` to a link you share and the hosts' page counts the visitors it brought (see README, "Sharing and embedding"). https://listen.2hallucinatingpms.workers.dev/episodes.json shows what was deployed.
+Then open https://listen.2hallucinatingpms.workers.dev and confirm the new episode is the "New this week" card and plays. The link to one episode is `https://listen.2hallucinatingpms.workers.dev/ep02` (its slug after the slash): it opens the page on that episode and carries that episode's preview card for Substack, WhatsApp and the rest; the older `/#ep02` anchor still works. Add `?from=<word>` to a link you share and the hosts' page counts the visitors it brought (see README, "Sharing and embedding"). https://listen.2hallucinatingpms.workers.dev/episodes.json shows what was deployed (its `label` is the badge text as shown on the card).
 
 The repository is public, so `episodes.json` never carries the payload's `mp3` path, `studio` link, `requestedBy` or `requestedAt`: the script drops them, and the check refuses a file that has them. Don't paste the payload into `episodes.json` by hand.
 
@@ -40,7 +40,7 @@ The repository is public, so `episodes.json` never carries the payload's `mp3` p
 
 | Field | What the page does with it |
 |---|---|
-| `episode` | The episode number, a whole number. Sets the order and the "Episode 2" badge. Must be unique. |
+| `episode` | The weekly episode number, a whole number, unique. Sets the "Episode 2" badge. A special (below) has none. |
 | `slug` | Short id, lowercase letters, digits and dashes: `ep02`. Names the episode in the stats, in "Ask about this episode" links and as the card's anchor (`#ep02`), so it never changes once published. |
 | `title` | The title as it should read on the card. |
 | `date` | Publish date, `YYYY-MM-DD`. The card shows the week it falls in ("Week of Oct 19, 2026", the Monday). |
@@ -50,11 +50,32 @@ The repository is public, so `episodes.json` never carries the payload's `mp3` p
 | `summary` | Optional but better: a list of one-sentence bullets for the card, usually one per story (Episode 1 has four). Plain text; it is escaped, so no HTML. |
 | `sources` | What listeners can read, grouped by story: `{ "story", "refs": [{ "title", "outlet", "url" }] }`. Shown as "Outlet: Headline" under the story's name. Every episode lists its sources (Anant's rule), and only ones the fact-check stands behind: leave low-confidence ones out of the payload, since the page shows every ref it is given. `verified` is dropped: `false` there means the fact-check confirmed the page through search instead of opening it, not that it is doubtful. |
 | `askPath`, `studio`, `requestedBy`, `requestedAt` | Not stored; the Ask link is built from `slug`. |
-| `label` | Optional. Replaces the "Episode N" badge text, for a special or a pilot. |
+| `label`, `badge` | Optional. Either replaces the badge text ("Episode N" or "Special episode N") for a special or a pilot; a bare "Episode" or "Special episode" is treated as not given, so the number shows. |
+| `kind`, `specialNo` | For an out-of-cycle special: `"kind": "special"` and its own number `specialNo` (1, 2, 3...), with no `episode`. See below. |
+
+## Special episodes
+
+An out-of-cycle episode (the emergency one on the PHP bug is the first) is published the same way, with `"kind": "special"` and its own number in `specialNo` instead of a weekly `episode` number, so the weekly count carries on unchanged (the weekly after Episode 3 is still Episode 4). Its slug is `special-NN` (`special-01`), so its link is `https://listen.2hallucinatingpms.workers.dev/special-01`, its anchor `#special-01`, its embed `/embed/special-01`, and the stats name it `Special episode 1 · <title>`. The card's badge reads "Special episode 1" (pink). A `badge` or `label` of just "Special episode" (what the Studio sends) means the kind, so the page still shows the number; any other text replaces the badge as written. The number comes from `specialNo`, or from the slug (`special-01`) when the payload has none.
+
+```json
+{
+  "kind": "special",
+  "specialNo": 1,
+  "slug": "special-01",
+  "title": "Patch in Hours",
+  "date": "2026-10-24",
+  "mp3": "/mnt/project-files/episodes/special-01/special-01-patch-in-hours.mp3",
+  "durationSec": 840,
+  "description": "...",
+  "sources": [ { "story": "...", "refs": [ { "title": "...", "outlet": "...", "url": "https://..." } ] } ]
+}
+```
+
+The script drops an `episode` number sent on a special (and says so), and the pre-deploy check refuses a special that has one, a weekly that has `specialNo`, a `kind` other than `special`, or an episode dated before a lower-numbered one of its kind. In the subscriber email, write "Special episode 1 of Two Hallucinating PMs is up: <title>" in place of "Episode <N>".
 
 ## What the page does with it
 
-- The newest episode (highest `episode`) is the "New this week" card and tries to start on its own when someone opens the page; the rest sit under "Earlier episodes", and when an episode ends the next one down starts.
+- The newest episode by `date` is the "New this week" card and tries to start on its own when someone opens the page; the rest sit under "Earlier episodes", and when an episode ends the next one down starts. On the same date the weekly episode goes first, then the higher number. The check refuses a weekly episode dated before a lower-numbered one, since that would put them out of order.
 - The stats page (`/stats`) names episodes from the same file, so nothing there needs editing.
 - Nothing is cached beyond a deploy: the worker builds the page from the file when it starts.
 
@@ -69,7 +90,7 @@ Listeners can leave their email on the listening page, or turn on a notification
    Each item has `email`, `since`, `notified` (episodes already emailed) and `unsubscribe` (that person's own link). `pending` is how many are left for this episode; `count` is everyone. Anyone can type an address into the page, so look at the list before sending: if `pending` is more than the show would expect (dozens, not hundreds), or many addresses share one domain or look made up, stop and show Anant the count instead of sending; never send more than 50 in one publish without his go-ahead.
 2. For each item, send one email from Anant's Gmail through the Gmail connector, to that one address only (never several subscribers in one To or Cc line, since each has a different unsubscribe link), and mark that address right after its email went (step 3), before the next one, so a publish that stops partway can be run again without emailing anyone twice:
    - Subject: `New episode: <title> (Two Hallucinating PMs)`
-   - Body, plain text:
+   - Body, plain text (for a special the first line is `Special episode <N> of Two Hallucinating PMs is up: <title>`, the badge text as /episodes.json's `label` shows it):
      ```
      Episode <N> of Two Hallucinating PMs is up: <title>
 

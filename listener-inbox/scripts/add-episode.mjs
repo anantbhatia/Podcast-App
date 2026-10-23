@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync, copyFileSync, existsSync } from "node:fs";
 import { basename } from "node:path";
 import { fileURLToPath } from "node:url";
-import { problems, sorted, label, seconds, clock, AUDIO_FILE } from "../src/episodes.mjs";
+import { problems, sorted, label, seconds, clock, AUDIO_FILE, GENERIC_BADGE } from "../src/episodes.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const args = process.argv.slice(2);
@@ -28,14 +28,27 @@ try {
 }
 
 // Only what the page shows. Anything else in the payload stays out of the repo.
+// A special (kind "special") carries its own number, specialNo (or the number in its slug,
+// special-01), and no weekly number. A badge or label that only names the kind ("Special
+// episode") isn't stored: the page builds "Special episode 1" from the number itself.
+const special = payload.kind === "special";
+const fromSlug = special && /^special-0*(\d+)$/.exec(String(payload.slug ?? ""));
+const specialNo = payload.specialNo ?? (fromSlug ? Number(fromSlug[1]) : undefined);
+const plain = (s) => typeof s !== "string" || !s.trim() || GENERIC_BADGE.test(s.trim());
 const entry = {
-  episode: payload.episode, slug: payload.slug, label: payload.label, title: payload.title, date: payload.date,
+  kind: payload.kind, episode: special ? undefined : payload.episode, specialNo,
+  slug: payload.slug, label: plain(payload.label) ? undefined : payload.label, badge: plain(payload.badge) ? undefined : payload.badge,
+  title: payload.title, date: payload.date,
   durationSec: payload.durationSec, description: payload.description, summary: payload.summary,
   sources: Array.isArray(payload.sources) ? payload.sources.map((g) => ({
     story: g?.story, refs: Array.isArray(g?.refs) ? g.refs.map((r) => ({ title: r?.title, outlet: r?.outlet, url: r?.url })) : g?.refs,
   })) : payload.sources,
 };
 for (const k of Object.keys(entry)) if (entry[k] === undefined) delete entry[k];
+if (!special && /^special-/.test(String(payload.slug ?? ""))) fail(`The slug ${JSON.stringify(payload.slug)} looks like a special's, but the payload has no "kind": "special"; add it (and specialNo), or use a weekly slug like ep04`);
+if (special && payload.episode !== undefined) console.log(`note: the payload's episode ${JSON.stringify(payload.episode)} is dropped; a special has no weekly number`);
+if (special && payload.specialNo === undefined && fromSlug) console.log(`note: the payload has no specialNo; taking ${specialNo} from the slug`);
+if (special && !/^special-/.test(String(payload.slug))) console.log(`note: a special's slug is usually special-NN, like special-01 (this one is ${JSON.stringify(payload.slug)})`);
 
 // The MP3: copy it from the payload's path into public/audio, unless it is already there.
 const mp3 = typeof payload.mp3 === "string" ? payload.mp3 : "";
@@ -54,6 +67,15 @@ try { list = JSON.parse(readFileSync(file, "utf8")); } catch (e) { fail(`episode
 if (!Array.isArray(list)) fail("episodes.json must be a JSON array");
 const existing = list.findIndex((e) => e && e.slug === entry.slug);
 if (existing >= 0 && !replace) fail(`episodes.json already has ${entry.slug}; pass --replace to overwrite it`);
+// A re-publish keeps the day the episode first aired: the Studio stamps every payload with the
+// day of the press, and the page orders by date, so a fix must not move the episode back to the top.
+if (existing >= 0 && typeof list[existing].date === "string" && list[existing].date !== entry.date) {
+  console.log(`note: keeping the published date ${list[existing].date} (the payload says ${entry.date})`);
+  entry.date = list[existing].date;
+}
+if (existing >= 0 && typeof list[existing].audio === "string" && list[existing].audio !== entry.audio) {
+  console.log(`note: public/audio/${list[existing].audio} is no longer used by ${entry.slug}; delete it unless another entry plays it`);
+}
 if (existing >= 0) list[existing] = entry; else list.push(entry);
 list = sorted(list);
 

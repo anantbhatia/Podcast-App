@@ -150,7 +150,10 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
   const pct = (a, b) => (n(b) ? Math.round((100 * n(a)) / n(b)) + "%" : "–");
   const mins = (s) => (n(s) >= 60 ? `${Math.floor(n(s) / 60)}m ${String(n(s) % 60).padStart(2, "0")}s` : `${n(s)}s`);
   // Episode names come from episodes.json (the worker fills them in); the pilots are no longer on the page but their plays are still counted.
-  const NAMES = Object.assign({ "pilot-1": "Pilot 1 · Cancel Anytime", "pilot-2": "Pilot 2 · Assume All Risks" }, /*EPISODE_NAMES*/{});
+  const EPISODES = /*EPISODE_NAMES*/{}; // in the page's order, newest first
+  const NAMES = Object.assign({ "pilot-1": "Pilot 1 · Cancel Anytime", "pilot-2": "Pilot 2 · Assume All Risks" }, EPISODES);
+  const ORDER = Object.keys(EPISODES);
+  const rank = (ep) => { const i = ORDER.indexOf(ep); return i < 0 ? ORDER.length : i; }; // rows the page no longer has go last
   let pw = ""; try { pw = localStorage.getItem("hpm-stats-pw") || ""; } catch {}
 
   async function load() {
@@ -174,7 +177,7 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
     ];
     $("tiles").innerHTML = tiles.map(([v, k]) => `<div class="tile"><span class="n">${fmt(v)}</span><span class="k">${k}</span></div>`).join("");
 
-    const eps = d.episodes || [];
+    const eps = (d.episodes || []).slice().sort((a, b) => rank(a.ep) - rank(b.ep)); // the page's order, not the slugs' alphabet
     const sum = (k) => eps.reduce((a, e) => a + n(e[k]), 0);
     const steps = [["Visited", t.visitors], ["Pressed play", t.listeners], ["Got halfway", sum("q50")], ["Finished", sum("completed")], ["Opened Ask us", null], ["Sent a question", t.askSubmits]];
     steps[4][1] = t.askClicks;
