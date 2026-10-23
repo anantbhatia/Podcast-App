@@ -58,35 +58,43 @@ function episodePage(env, origin, slug) {
 }
 function embedFor(env, origin, slug) {
   const b = built(env, origin);
-  if (!b.embed.has(slug)) b.embed.set(slug, embedPage(embedTemplate, episodes, slug, origin));
+  if (!b.embed.has(slug)) {
+    const page = embedPage(embedTemplate, episodes, slug, origin);
+    if (!page) return null; // an unknown slug is not worth a map entry
+    b.embed.set(slug, page);
+  }
   return b.embed.get(slug);
 }
+// Share links and the embed's "listen on the site" link always use https, whatever the
+// worker was reached by (only a local dev server is left as it is).
+const siteOrigin = (url) => url.origin.replace(/^http:\/\/(?!127\.0\.0\.1|localhost)/, "https://");
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const { pathname } = url;
+    const origin = siteOrigin(url);
 
     const read = request.method === "GET" || request.method === "HEAD";
     if (read && (pathname === "/" || pathname === "/index.html")) {
-      return html(built(env, url.origin).listening, {}, request);
+      return html(built(env, origin).listening, {}, request);
     }
     // The compact player, meant for an iframe on another site (so no frame restrictions here).
     const embed = read && /^\/embed(?:\/([a-z0-9-]{1,60}))?\/?$/.exec(pathname);
     if (embed) {
-      const page = embedFor(env, url.origin, embed[1] || "");
+      const page = embedFor(env, origin, embed[1] || "");
       return page ? html(page, { "x-robots-tag": "noindex" }, request) : json({ error: "not found" }, 404);
     }
     if (request.method === "GET" && pathname === "/oembed") {
       const format = url.searchParams.get("format") || "json";
       if (format !== "json") return json({ error: "only json" }, 501);
-      const body = oembed(episodes, url.origin, url.searchParams.get("url") || "");
+      const body = oembed(episodes, origin, url.searchParams.get("url") || "");
       return body
         ? new Response(JSON.stringify(body), { headers: { "content-type": "application/json+oembed; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "public, max-age=3600" } })
         : json({ error: "not found" }, 404);
     }
     if (request.method === "GET" && pathname === "/episodes.json") {
-      return new Response(built(env, url.origin).feed, { headers: { "content-type": "application/json", "cache-control": "no-cache" } });
+      return new Response(built(env, origin).feed, { headers: { "content-type": "application/json", "cache-control": "no-cache" } });
     }
     // Audio comes through here so seeking works on every phone.
     if (read && pathname.startsWith("/audio/")) {
@@ -97,7 +105,7 @@ export default {
       return html(recorderPage, { "permissions-policy": "microphone=(self)" });
     }
     if (request.method === "GET" && (pathname === "/stats" || pathname === "/stats/")) {
-      return html(built(env, url.origin).stats, { "x-robots-tag": "noindex" });
+      return html(built(env, origin).stats, { "x-robots-tag": "noindex" });
     }
 
     if (request.method === "POST" && pathname === "/api/submit") {
@@ -149,7 +157,7 @@ export default {
     // "/<slug>": the listening page opened on that episode, with that episode's share card.
     const ep = read && /^\/([a-z0-9-]{1,60})\/?$/.exec(pathname);
     if (ep && bySlug(episodes, ep[1])) {
-      return html(episodePage(env, url.origin, ep[1]), {}, request);
+      return html(episodePage(env, origin, ep[1]), {}, request);
     }
 
     return json({ error: "not found" }, 404);

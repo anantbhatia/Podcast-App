@@ -20,8 +20,11 @@ function ensureSchema(env) {
     env.DB.prepare("CREATE INDEX IF NOT EXISTS events_type_ep ON events (type, ep)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS events_v ON events (v)"),
   ])
-    // The ref column came later (2026-10-23); a table from before gets it here, once. On a table that has it the ALTER fails and that's fine.
-    .then(() => env.DB.prepare("ALTER TABLE events ADD COLUMN ref TEXT").run().catch(() => {}))
+    // The ref column came later (2026-10-23); a table from before gets it here, once. On a table that
+    // already has it the ALTER fails with "duplicate column", which is fine; any other error is real.
+    .then(() => env.DB.prepare("ALTER TABLE events ADD COLUMN ref TEXT").run().catch((e) => {
+      if (!/duplicate column/i.test(String((e && e.message) || e))) throw e;
+    }))
     .catch((e) => { ready = null; throw e; });
   return ready;
 }

@@ -129,6 +129,8 @@ noscript a { font-weight: 800; }
   function trySeek() {
     if (want == null || audio.readyState < 2) return;
     if (Math.abs(audio.currentTime - want) <= 0.5) { want = null; return; }
+    const d = audio.duration;
+    if (d && isFinite(d) && want >= d - 0.5) { want = null; return; } // at or past the end: give it up, as the page does
     const r = audio.seekable; if (!r.length || r.end(r.length - 1) < want) return;
     if (!audio.seeking) { try { audio.currentTime = want; } catch {} }
   }
@@ -143,7 +145,7 @@ noscript a { font-weight: 800; }
   btn.addEventListener("click", () => { if (audio.paused || audio.ended) { const p = audio.play(); if (p && p.catch) p.catch(() => paint()); } else audio.pause(); });
   document.querySelectorAll(".skip").forEach((b) => b.addEventListener("click", () => skip(b.classList.contains("back") ? -15 : 15)));
   seek.addEventListener("input", () => { dragging = true; curEl.textContent = fmt((seek.value / 1000) * dur()); seek.style.setProperty("--p", seek.value / 10 + "%"); });
-  seek.addEventListener("change", () => { dragging = false; seekTo((seek.value / 1000) * dur()); });
+  seek.addEventListener("change", () => { dragging = false; const d = dur(); seekTo(Math.min((seek.value / 1000) * d, Math.max(0, d - 1))); });
   audio.addEventListener("play", () => { last = audio.currentTime; live = true; send("play", stat()); paint(); });
   audio.addEventListener("pause", () => { if (live && !audio.ended) send("pause", stat()); live = false; paint(); });
   audio.addEventListener("seeked", () => { last = audio.currentTime; if (want != null && Math.abs(audio.currentTime - want) < 0.5) want = null; });
