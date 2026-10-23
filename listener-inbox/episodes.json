@@ -248,7 +248,9 @@
         ]
       }
     ],
-    "audio": "ep02.mp3"
+    "audio": "ep02.mp3",
+    "bytes": 15291868,
+    "publishedAt": "2026-10-19T08:05:24Z"
   },
   {
     "episode": 1,
@@ -380,6 +382,7 @@
         ]
       }
     ],
-    "audio": "ep01-the-agent-did-what.mp3"
+    "audio": "ep01-the-agent-did-what.mp3",
+    "bytes": 12813031
   }
 ]

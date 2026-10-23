@@ -27,6 +27,9 @@ for (const e of Array.isArray(list) ? list : []) {
   if (name && size(name) > MAX_AUDIO) {
     errors.push(`episode (${e.slug}): public/audio/${name} is over 25 MiB; re-encode it at 96 kbps mono`);
   }
+  if (name && size(name) >= 0 && Number.isInteger(e.bytes) && e.bytes !== size(name)) {
+    errors.push(`episode (${e.slug}): bytes is ${e.bytes} but public/audio/${name} is ${size(name)} bytes; set bytes to the file's size (the podcast feed sends it)`);
+  }
 }
 if (errors.length) {
   console.error(`episodes.json has ${errors.length} problem${errors.length > 1 ? "s" : ""}:`);

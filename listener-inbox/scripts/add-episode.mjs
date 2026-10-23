@@ -7,10 +7,10 @@
 // the page shows. The repo is public, so the payload's Studio link, requester id and
 // /mnt path are dropped here and the build check refuses them if they get in anyway.
 // Pass --replace to overwrite an entry that already has the same slug.
-import { readFileSync, writeFileSync, copyFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, copyFileSync, existsSync, statSync } from "node:fs";
 import { basename } from "node:path";
 import { fileURLToPath } from "node:url";
-import { problems, sorted, label, seconds, clock, AUDIO_FILE, GENERIC_BADGE } from "../src/episodes.mjs";
+import { problems, sorted, label, seconds, clock, liveOn, AUDIO_FILE, GENERIC_BADGE } from "../src/episodes.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const args = process.argv.slice(2);
@@ -61,6 +61,14 @@ if (!haveMp3 && !existsSync(dest)) {
   fail(`${mp3 || "the MP3"} is not there and public/audio/${audio} doesn't exist yet; copy the MP3 into public/audio first`);
 }
 
+// The MP3's size goes in the entry: the podcast feed's enclosure needs it, and the worker can't stat files.
+entry.bytes = statSync(haveMp3 ? mp3 : dest).size;
+// When the episode went live (UTC), for the feed's pubDate: the Studio stamps only the day, and
+// the directories would hold an item dated noon of a day that has barely begun. A payload dated
+// days ago is an older episode; it gets no instant and the feed lists it at noon of its date.
+const now = new Date().toISOString();
+if (liveOn(now, entry.date)) entry.publishedAt = now;
+
 const file = `${root}episodes.json`;
 let list;
 try { list = JSON.parse(readFileSync(file, "utf8")); } catch (e) { fail(`episodes.json could not be read as JSON: ${e.message}`); }
@@ -69,10 +77,18 @@ const existing = list.findIndex((e) => e && e.slug === entry.slug);
 if (existing >= 0 && !replace) fail(`episodes.json already has ${entry.slug}; pass --replace to overwrite it`);
 // A re-publish keeps the day the episode first aired: the Studio stamps every payload with the
 // day of the press, and the page orders by date, so a fix must not move the episode back to the top.
-if (existing >= 0 && typeof list[existing].date === "string" && list[existing].date !== entry.date) {
-  console.log(`note: keeping the published date ${list[existing].date} (the payload says ${entry.date})`);
-  entry.date = list[existing].date;
+if (existing >= 0) {
+  const was = list[existing];
+  if (typeof was.date === "string" && was.date !== entry.date) {
+    console.log(`note: keeping the published date ${was.date} (the payload says ${entry.date})`);
+    entry.date = was.date;
+  }
+  // The instant it first went live stays with the date; an entry from before it was recorded
+  // keeps none (the feed lists it at noon of its date) unless it is re-published on its own day.
+  if (typeof was.publishedAt === "string") entry.publishedAt = was.publishedAt;
+  else if (!liveOn(entry.publishedAt, entry.date)) delete entry.publishedAt;
 }
+if (!entry.publishedAt) console.log(`note: ${entry.slug} is dated ${JSON.stringify(entry.date)}, not today, with no recorded instant; the feed lists it at noon UTC of that day`);
 if (existing >= 0 && typeof list[existing].audio === "string" && list[existing].audio !== entry.audio) {
   console.log(`note: public/audio/${list[existing].audio} is no longer used by ${entry.slug}; delete it unless another entry plays it`);
 }

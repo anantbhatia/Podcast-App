@@ -50,6 +50,8 @@ The repository is public, so `episodes.json` never carries the payload's `mp3` p
 | `summary` | Optional but better: a list of one-sentence bullets for the card, usually one per story (Episode 1 has four). Plain text; it is escaped, so no HTML. |
 | `sources` | What listeners can read, grouped by story: `{ "story", "refs": [{ "title", "outlet", "url" }] }`. Shown as "Outlet: Headline" under the story's name. Every episode lists its sources (Anant's rule), and only ones the fact-check stands behind: leave low-confidence ones out of the payload, since the page shows every ref it is given. `verified` is dropped: `false` there means the fact-check confirmed the page through search instead of opening it, not that it is doubtful. |
 | `askPath`, `studio`, `requestedBy`, `requestedAt` | Not stored; the Ask link is built from `slug`. |
+| `bytes` | Written by the script: the MP3's size in bytes, for the podcast feed. Not in the payload. |
+| `publishedAt` | Written by the script: the UTC instant the episode was added (`2026-10-19T08:05:24Z`), the feed's `pubDate`; kept on `--replace`, like `date`. Not in the payload. Episode 1 predates the field and is listed at noon UTC of its date. |
 | `label`, `badge` | Optional. Either replaces the badge text ("Episode N" or "Special episode N") for a special or a pilot; a bare "Episode" or "Special episode" is treated as not given, so the number shows. |
 | `kind`, `specialNo` | For an out-of-cycle special: `"kind": "special"` and its own number `specialNo` (1, 2, 3...), with no `episode`. See below. |
 
@@ -76,8 +78,20 @@ The script drops an `episode` number sent on a special (and says so), and the pr
 ## What the page does with it
 
 - The newest episode by `date` is the "New this week" card and tries to start on its own when someone opens the page; the rest sit under "Earlier episodes", and when an episode ends the next one down starts. On the same date the weekly episode goes first, then the higher number. The check refuses a weekly episode dated before a lower-numbered one, since that would put them out of order.
-- The stats page (`/stats`) names episodes from the same file, so nothing there needs editing.
+- The stats page (`/stats`) names episodes from the same file, so nothing there needs editing, and the podcast feed (`/feed.xml`, below) lists the new episode on its own.
 - Nothing is cached beyond a deploy: the worker builds the page from the file when it starts.
+
+## The podcast feed (Spotify and YouTube)
+
+`https://listen.2hallucinatingpms.workers.dev/feed.xml` is the show's podcast feed (RSS 2.0 with the itunes and podcast tags, built by the worker from `episodes.json`, `src/feed.mjs`). Spotify for Creators and YouTube Studio both read it, so a new episode reaches them on its own after the deploy: nothing to upload, no account details on our side. The platforms re-read the feed on their own schedule (hours, not minutes).
+
+- Every entry needs `bytes`, the MP3's size: the script records it, and the pre-deploy check refuses an entry whose `bytes` doesn't match the file (the feed's enclosure sends it, and the directories check it).
+- The script also records `publishedAt`, the instant the episode went live, as the item's `pubDate`: the Studio stamps only the day, and an item dated noon of a day that has only begun would be held as a future release. The check refuses a `publishedAt` off its `date` by more than two days.
+- Each item's description is the card's bullets (one per line, or its line, each closed as a sentence) and then, after a blank line, the AI-voice note the feed carries by Anant's call: "The hosts' voices are AI clones of Anant and Aman, made with ElevenLabs from scripts they approve." It is also in the channel description. Nothing changes on air.
+- A special (`kind: "special"`) is a bonus episode in the feed (`itunes:episodeType` bonus, no episode number); weeklies carry their number.
+- The cover is `public/img/cover.jpg` (3000x3000, under 512 KB); replace the file to change it everywhere, same name.
+- The owner email (`itunes:owner`) is the worker secret `PODCAST_OWNER_EMAIL`, set once per DEPLOY.md; the feed has no owner tag until it is set. Spotify and YouTube send their ownership codes to that address, so it must be set before Anant submits the feed. The address is public in the feed by design, never in the repo.
+- Anant's one-time step after the deploy: in Spotify for Creators and in YouTube Studio, add a podcast by RSS feed, paste the feed URL, and enter the code they email to the owner address.
 
 ## Tell subscribers
 

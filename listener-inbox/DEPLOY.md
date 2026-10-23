@@ -26,6 +26,22 @@ npx --yes wrangler@4 deploy                 # only after "deploy"
 
 Then check https://listen.2hallucinatingpms.workers.dev loads and an episode plays.
 
+## Podcast feed: set the owner email (once)
+
+`/feed.xml` is the podcast feed Spotify for Creators and YouTube Studio read (ADD-EPISODE.md,
+"The podcast feed"). Both send their ownership code to the email address in the feed's
+`itunes:owner` tag, which the worker takes from the secret `PODCAST_OWNER_EMAIL`; until it is
+set the feed has no owner tag and the platforms can't verify the show. Set it once, on Anant's
+word naming the address (his call; the default he was offered is his own Gmail), from
+`listener-inbox/`:
+
+```sh
+printf '%s' 'the address' | npx --yes wrangler@4 secret put PODCAST_OWNER_EMAIL
+```
+
+The address is public in the feed by design (every podcast feed carries one); it is still
+kept out of the repo. The feed is cached for ten minutes, so give it that long after a deploy.
+
 ## Browser notifications: set the push key (once)
 
 The listening page's "Notify me in this browser" button needs a key pair on the worker
@@ -50,10 +66,11 @@ a file, the repo, memory or a status line.
 
 ## Notes
 
-- `wrangler deploy` keeps existing secrets: `INBOX_TOKEN` and `VAPID_PRIVATE_KEY` stay on
-  the worker. Never run `wrangler secret put` or `delete` as part of a deploy; the only
-  secret ever set from here is the one-time push key above. `INBOX_TOKEN` is never set
-  or rotated from the cloud.
+- `wrangler deploy` keeps existing secrets: `INBOX_TOKEN`, `VAPID_PRIVATE_KEY` and
+  `PODCAST_OWNER_EMAIL` stay on the worker. Never run `wrangler secret put` or `delete`
+  as part of a deploy; the only secrets ever set from here are the two one-time steps
+  above (the podcast owner email and the push key). `INBOX_TOKEN` is never set or
+  rotated from the cloud.
 - KV (INBOX) and D1 (hpm-stats) data are untouched by a deploy.
 - MP3s in `public/audio` ship with each deploy (25 MiB per file cap).
 - Always deploy the branch head fresh from GitHub, never a local edit.

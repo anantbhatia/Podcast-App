@@ -23,6 +23,7 @@ import statsTemplate from "./stats.html";
 import unsubscribeTemplate from "./unsubscribe.html";
 import episodes from "../episodes.json";
 import { listeningPage, statsPage, feed, embedPage, oembed, bySlug } from "./episodes.mjs";
+import { podcastFeed } from "./feed.mjs";
 import { recordEvent, getStats } from "./stats.js";
 import { subscribe, signupExists, unsubscribeByEmail, listSubscribers, markNotified, subscriberCount } from "./subscribe.mjs";
 import { publicKey, pushSubscribe, pushUnsubscribe, pushSend, pushCount } from "./push.mjs";
@@ -65,6 +66,12 @@ function embedFor(env, origin, slug) {
   }
   return b.embed.get(slug);
 }
+// The podcast feed, built once per worker instance like the pages. The owner email is the
+// PODCAST_OWNER_EMAIL secret (DEPLOY.md); without it the feed has no owner tag.
+let podcast = null;
+function podcastFor(env, origin) {
+  return podcast || (podcast = podcastFeed(episodes, origin, { ownerEmail: env.PODCAST_OWNER_EMAIL || "" }).catch((e) => { podcast = null; throw e; }));
+}
 // Share links and the embed's "listen on the site" link always use https, whatever the
 // worker was reached by (only a local dev server is left as it is).
 const siteOrigin = (url) => url.origin.replace(/^http:\/\/(?!127\.0\.0\.1|localhost)/, "https://");
@@ -92,6 +99,13 @@ export default {
       return body
         ? new Response(JSON.stringify(body), { headers: { "content-type": "application/json+oembed; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "public, max-age=3600" } })
         : json({ error: "not found" }, 404);
+    }
+    // The podcast feed for Spotify, YouTube and any podcast app.
+    if (read && pathname === "/feed.xml") {
+      const xml = await podcastFor(env, origin);
+      return new Response(request.method === "HEAD" ? null : xml, {
+        headers: { "content-type": "application/rss+xml; charset=utf-8", "cache-control": "public, max-age=600", "access-control-allow-origin": "*" },
+      });
     }
     if (request.method === "GET" && pathname === "/episodes.json") {
       return new Response(built(env, origin).feed, { headers: { "content-type": "application/json", "cache-control": "no-cache" } });
@@ -218,6 +232,13 @@ async function serveAudio(request, env) {
   headers.set("accept-ranges", "bytes");
   headers.set("cache-control", "public, max-age=86400");
   const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") || "");
+  // The asset's size isn't a header here (the runtime adds it as it sends the body), so a HEAD
+  // answer would carry none; podcast directories read it, so it comes from episodes.json's bytes.
+  if (!headers.has("content-length")) {
+    const name = decodeURIComponent(new URL(request.url).pathname.slice("/audio/".length));
+    const known = episodes.find((e) => e && e.audio === name && Number.isInteger(e.bytes));
+    if (known) headers.set("content-length", String(known.bytes));
+  }
   if (!range) {
     return new Response(request.method === "HEAD" ? null : res.body, { status: 200, headers });
   }

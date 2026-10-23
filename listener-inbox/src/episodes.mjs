@@ -72,6 +72,15 @@ export function sorted(list) {
 
 // Everything a publish must get right, as a list of messages (empty when fine).
 // audioExists(file) says whether public/audio/<file> is there; omit it to skip that check.
+// The instant an episode went live, as the add-episode script records it: a UTC timestamp on the
+// publish date or within the two days after it (a press late in the day can deploy the next).
+const STAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+export function liveOn(stamp, date) {
+  if (typeof stamp !== "string" || !STAMP.test(stamp)) return false;
+  const t = Date.parse(stamp), day = Date.parse(`${date}T00:00:00Z`);
+  return Number.isFinite(t) && t >= day && t < day + 3 * 86400e3;
+}
+
 export function problems(list, audioExists) {
   const errors = [];
   if (!Array.isArray(list)) return ["episodes.json must be a JSON array of episodes"];
@@ -95,11 +104,13 @@ export function problems(list, audioExists) {
     for (const k of ["label", "badge"]) if (e[k] !== undefined && !text(e[k])) bad(`${k} must be a short text for the card's badge, like "Special episode 1", or left out`);
     if (!text(e.title)) bad("title is missing");
     if (!parseDate(e.date)) bad("date must be a real date written YYYY-MM-DD");
+    else if (e.publishedAt !== undefined && !liveOn(e.publishedAt, e.date)) bad("publishedAt must be when the episode went live, a UTC timestamp like 2026-10-19T08:05:24Z on the publish date or within the two days after it (the add-episode script records it; leave it out for an older entry)");
     if (seconds(e.durationSec) == null) bad("durationSec must be the length in seconds (1067)");
     const kept = PRIVATE.filter((k) => k in e);
     if (kept.length) bad(`${kept.join(", ")} must not be stored (the repo is public); add the episode with node scripts/add-episode.mjs, which keeps only the page's fields`);
     const file = audioFile(e);
     if (!AUDIO_FILE.test(file)) bad(`audio must be the MP3's file name in public/audio, like "ep02-title.mp3"`);
+    if (!Number.isInteger(e.bytes) || e.bytes < 1) bad("bytes must be the MP3's size in bytes, a whole number (the add-episode script records it; the podcast feed needs it)");
     else if (files.has(file)) bad(`audio file ${file} is used twice`);
     else { files.add(file); if (audioExists && !audioExists(file)) bad(`public/audio/${file} is not there`); }
     const bullets = e.summary !== undefined;
@@ -135,7 +146,7 @@ export function problems(list, audioExists) {
 export function feed(list) {
   return sorted(list).map((e) => ({
     episode: e.episode, kind: e.kind, specialNo: e.specialNo, slug: e.slug, label: label(e), title: e.title, date: e.date, durationSec: seconds(e.durationSec),
-    audio: `audio/${audioFile(e)}`, description: e.description, summary: e.summary,
+    audio: `audio/${audioFile(e)}`, bytes: e.bytes, description: e.description, summary: e.summary,
     sources: (Array.isArray(e.sources) ? e.sources : []).map((g) => ({
       story: g.story, refs: (Array.isArray(g.refs) ? g.refs : []).map((r) => ({ title: r.title, outlet: r.outlet, url: r.url })),
     })),
