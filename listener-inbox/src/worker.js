@@ -11,12 +11,18 @@
 //   (src/subscribe.mjs); the hosts list them at /api/subscribers.
 // - "/api/push/*" are the browser notifications (src/push.mjs, public/sw.js): the page
 //   subscribes with the site's public key, and the hosts call /api/push/send at a publish.
+// - "/<slug>" opens the listening page on that episode and carries its share card (the tags
+//   Substack, WhatsApp, LinkedIn and Slack turn into a preview). "/embed" and "/embed/<slug>"
+//   are a compact player for sites that allow an iframe; "/oembed" describes it for sites
+//   that discover oEmbed. Substack posts take neither (only its own list of embeds), so a
+//   Substack post gets the card, which opens the page here with the stats intact.
 import pageTemplate from "./index.html";
+import embedTemplate from "./embed.html";
 import recorderPage from "./recorder.html";
 import statsTemplate from "./stats.html";
 import unsubscribeTemplate from "./unsubscribe.html";
 import episodes from "../episodes.json";
-import { listeningPage, statsPage, feed } from "./episodes.mjs";
+import { listeningPage, statsPage, feed, embedPage, oembed, bySlug } from "./episodes.mjs";
 import { recordEvent, getStats } from "./stats.js";
 import { subscribe, signupExists, unsubscribeByEmail, listSubscribers, markNotified, subscriberCount } from "./subscribe.mjs";
 import { publicKey, pushSubscribe, pushUnsubscribe, pushSend, pushCount } from "./push.mjs";
@@ -37,12 +43,23 @@ function html(body, extra = {}, request) {
 // so both pages are built once per worker instance. The listening page carries the public
 // push key; without the secret the attribute is empty and the page hides the button.
 let pages = null;
-function built(env) {
+function built(env, origin) {
   return pages || (pages = {
-    listening: listeningPage(pageTemplate, episodes).replace("<!-- PUSH:KEY -->", () => publicKey(env) || ""),
+    listening: listeningPage(pageTemplate, episodes, { origin }).replace("<!-- PUSH:KEY -->", () => publicKey(env) || ""),
     stats: statsPage(statsTemplate, episodes),
     feed: JSON.stringify(feed(episodes)),
+    episode: new Map(), embed: new Map(), // per-episode pages, built on first use
   });
+}
+function episodePage(env, origin, slug) {
+  const b = built(env, origin);
+  if (!b.episode.has(slug)) b.episode.set(slug, listeningPage(pageTemplate, episodes, { origin, start: slug }).replace("<!-- PUSH:KEY -->", () => publicKey(env) || ""));
+  return b.episode.get(slug);
+}
+function embedFor(env, origin, slug) {
+  const b = built(env, origin);
+  if (!b.embed.has(slug)) b.embed.set(slug, embedPage(embedTemplate, episodes, slug, origin));
+  return b.embed.get(slug);
 }
 
 export default {
@@ -52,10 +69,24 @@ export default {
 
     const read = request.method === "GET" || request.method === "HEAD";
     if (read && (pathname === "/" || pathname === "/index.html")) {
-      return html(built(env).listening, {}, request);
+      return html(built(env, url.origin).listening, {}, request);
+    }
+    // The compact player, meant for an iframe on another site (so no frame restrictions here).
+    const embed = read && /^\/embed(?:\/([a-z0-9-]{1,60}))?\/?$/.exec(pathname);
+    if (embed) {
+      const page = embedFor(env, url.origin, embed[1] || "");
+      return page ? html(page, { "x-robots-tag": "noindex" }, request) : json({ error: "not found" }, 404);
+    }
+    if (request.method === "GET" && pathname === "/oembed") {
+      const format = url.searchParams.get("format") || "json";
+      if (format !== "json") return json({ error: "only json" }, 501);
+      const body = oembed(episodes, url.origin, url.searchParams.get("url") || "");
+      return body
+        ? new Response(JSON.stringify(body), { headers: { "content-type": "application/json+oembed; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "public, max-age=3600" } })
+        : json({ error: "not found" }, 404);
     }
     if (request.method === "GET" && pathname === "/episodes.json") {
-      return new Response(built(env).feed, { headers: { "content-type": "application/json", "cache-control": "no-cache" } });
+      return new Response(built(env, url.origin).feed, { headers: { "content-type": "application/json", "cache-control": "no-cache" } });
     }
     // Audio comes through here so seeking works on every phone.
     if (read && pathname.startsWith("/audio/")) {
@@ -66,7 +97,7 @@ export default {
       return html(recorderPage, { "permissions-policy": "microphone=(self)" });
     }
     if (request.method === "GET" && (pathname === "/stats" || pathname === "/stats/")) {
-      return html(built(env).stats, { "x-robots-tag": "noindex" });
+      return html(built(env, url.origin).stats, { "x-robots-tag": "noindex" });
     }
 
     if (request.method === "POST" && pathname === "/api/submit") {
@@ -113,6 +144,12 @@ export default {
       if (request.method === "GET" && pathname === "/api/inbox") return listInbox(env);
       if (request.method === "GET" && pathname.startsWith("/api/audio/")) return getAudio(env, pathname.slice("/api/audio/".length));
       if (request.method === "POST" && pathname.startsWith("/api/done/")) return markDone(env, pathname.slice("/api/done/".length));
+    }
+
+    // "/<slug>": the listening page opened on that episode, with that episode's share card.
+    const ep = read && /^\/([a-z0-9-]{1,60})\/?$/.exec(pathname);
+    if (ep && bySlug(episodes, ep[1])) {
+      return html(episodePage(env, url.origin, ep[1]), {}, request);
     }
 
     return json({ error: "not found" }, 404);

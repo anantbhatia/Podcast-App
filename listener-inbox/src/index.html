@@ -4,15 +4,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Two Hallucinating PMs</title>
-<meta name="description" content="A weekly AI news show with Anant and Aman. AI trends that get outdated by Monday and obsolete by launch.">
-<meta property="og:title" content="Two Hallucinating PMs">
-<meta property="og:description" content="Weekly AI updates with Anant and Aman. AI trends that get outdated by Monday and obsolete by launch.">
-<meta property="og:image" content="https://listen.2hallucinatingpms.workers.dev/img/og.jpg">
+<title><!-- META:TITLE --></title>
+<!-- The share card (Substack, WhatsApp, LinkedIn, Slack and the rest read these tags): the newest episode on "/",
+     that episode on "/<slug>". The worker fills them from episodes.json. -->
+<meta name="description" content="<!-- META:DESC -->">
+<meta property="og:title" content="<!-- META:OGTITLE -->">
+<meta property="og:description" content="<!-- META:DESC -->">
+<meta property="og:url" content="<!-- META:URL -->">
+<meta property="og:site_name" content="Two Hallucinating PMs">
+<meta property="og:image" content="<!-- META:ORIGIN -->/img/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="<!-- META:URL -->">
+<link rel="alternate" type="application/json+oembed" href="<!-- META:ORIGIN -->/oembed?url=<!-- META:URLENC -->" title="<!-- META:OGTITLE -->">
 <meta name="theme-color" content="#fbf3e2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1b1f2c" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -271,7 +277,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
 }
 </style>
 </head>
-<body>
+<body<!-- META:BODY -->>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-mic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5M8.5 21.5h7"/></g></symbol>
   <symbol id="i-linkedin" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></symbol>
@@ -359,8 +365,13 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   let vid = null;
   try { vid = localStorage.getItem("hpm-listener"); if (!vid) { vid = crypto.randomUUID(); localStorage.setItem("hpm-listener", vid); } } catch {}
   const sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random())).slice(0, 18);
+  // Where the visit came from: "?from=substack" on a shared link, else the referring site's host name.
+  let ref = "";
+  try { ref = new URLSearchParams(location.search).get("from") || (document.referrer ? new URL(document.referrer).hostname : ""); } catch {}
+  ref = String(ref).toLowerCase().replace(/[^a-z0-9.:-]/g, "").slice(0, 40);
+  if (ref === location.hostname) ref = "";
   function send(type, ep, extra) {
-    const body = JSON.stringify(Object.assign({ type, ep: ep || "", v: vid, s: sid }, extra || {}));
+    const body = JSON.stringify(Object.assign({ type, ep: ep || "", v: vid, s: sid }, ref ? { ref } : {}, extra || {}));
     try {
       if (navigator.sendBeacon && navigator.sendBeacon("/api/event", new Blob([body], { type: "application/json" }))) return;
     } catch {}
@@ -501,14 +512,16 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     if (next) { next.art.scrollIntoView({ behavior: "smooth", block: "center" }); play(next); }
   });
 
-  // Start the newest episode on arrival. Phones and some browsers refuse sound before a tap;
-  // then the big button pulses until the listener taps it.
-  if (cards[0]) {
-    select(cards[0]);
+  // Start the newest episode on arrival (or the one a "/<slug>" link named). Phones and some browsers
+  // refuse sound before a tap; then the big button pulses until the listener taps it.
+  const start = cards.find((c) => c.ep === document.body.dataset.start) || cards[0];
+  if (start) {
+    select(start);
+    if (start !== cards[0]) start.art.scrollIntoView({ block: "start" });
     const p = audio.play();
     if (p && p.catch) p.catch((e) => {
       if (e && e.name === "AbortError") return;
-      cards[0].btn.classList.add("nudge"); paintAll();
+      start.btn.classList.add("nudge"); paintAll();
       // The first tap on open space counts as "play"; taps on links, buttons and bars do their own thing.
       const onTap = (ev) => {
         if (ev.target.closest("a, button, input, summary, details")) return;

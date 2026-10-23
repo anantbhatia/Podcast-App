@@ -7,7 +7,7 @@ The listening page is built from `episodes.json` (in `listener-inbox/`, next to 
 3. **Deploy**, following `DEPLOY.md`, only after Anant says "deploy". `wrangler deploy` (and `--dry-run`, and `wrangler dev`) first runs `node scripts/check-episodes.mjs`, which stops with the reasons listed if an entry is incomplete or its MP3 isn't in `public/audio`.
 4. **Tell subscribers** (the section below): one email per sign-up from Anant's Gmail, then one call that pushes a notification to every browser that asked for one. The publish isn't done until both have run.
 
-Then open https://listen.2hallucinatingpms.workers.dev and confirm the new episode is the "New this week" card and plays. Each episode has an anchor named after its slug, so the link to one is `https://listen.2hallucinatingpms.workers.dev/#ep02`. https://listen.2hallucinatingpms.workers.dev/episodes.json shows what was deployed.
+Then open https://listen.2hallucinatingpms.workers.dev and confirm the new episode is the "New this week" card and plays. The link to one episode is `https://listen.2hallucinatingpms.workers.dev/ep02` (its slug after the slash): it opens the page on that episode and carries that episode's preview card for Substack, WhatsApp and the rest; the older `/#ep02` anchor still works. Add `?from=<word>` to a link you share and the hosts' page counts the visitors it brought (see README, "Sharing and embedding"). https://listen.2hallucinatingpms.workers.dev/episodes.json shows what was deployed.
 
 The repository is public, so `episodes.json` never carries the payload's `mp3` path, `studio` link, `requestedBy` or `requestedAt`: the script drops them, and the check refuses a file that has them. Don't paste the payload into `episodes.json` by hand.
 
@@ -75,7 +75,7 @@ Listeners can leave their email on the listening page, or turn on a notification
 
      <summary bullets, one per line, or the description>
 
-     Listen: https://listen.2hallucinatingpms.workers.dev/#<slug>
+     Listen: https://listen.2hallucinatingpms.workers.dev/<slug>?from=email
      Got a question for the show? https://listen.2hallucinatingpms.workers.dev/ask?ep=<slug>
 
      You get this because you signed up on the listening page. To stop: <that item's unsubscribe link>

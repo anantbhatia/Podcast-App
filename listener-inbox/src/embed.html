@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><!-- EP:LABEL --> · <!-- EP:TITLE --> · Two Hallucinating PMs</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;700;800&display=swap">
+<style>
+/* The compact player for an iframe on another site: one episode, the same look and the same
+   listening stats as the listening page (src/index.html keeps the full player; keep the two in step). */
+:root {
+  --surface: #fffaf0; --text: #15131f; --muted: #5a566b; --line: #15131f; --shade: #15131f; --soft: #efe4cc;
+  --lime: #b4f01c; --pink: #ff3ea5; --yellow: #ffe83a; --cyan: #18b6f6; --on-accent: #15131f;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --surface: #252a3a; --text: #f5efe0; --muted: #b5b8ca; --line: #0b0c12; --shade: #0b0c12; --soft: #2f3547; color-scheme: dark; }
+}
+html, body { margin: 0; background: transparent; }
+body { font-family: var(--body); color: var(--text); font-size: 16px; line-height: 1.4; padding: 2px 6px 6px 2px; }
+.card { box-sizing: border-box; max-width: 720px; background: var(--surface); border: 2.5px solid var(--line); border-radius: 16px; box-shadow: 4px 4px 0 var(--shade); padding: 12px 14px 12px; display: grid; gap: 8px; }
+.top { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top img { flex: none; width: 26px; height: 26px; border-radius: 50%; }
+.top span { overflow: hidden; text-overflow: ellipsis; }
+h1 { font-family: var(--display); font-weight: 400; font-size: 1.35rem; line-height: 1.15; margin: 0; letter-spacing: 0.005em; }
+.player { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; }
+.controls { display: flex; align-items: center; gap: 8px; }
+.play, .skip { padding: 0; border-radius: 50%; border: 3px solid var(--line); cursor: pointer; display: grid; place-items: center; transition: transform .1s, box-shadow .1s, background .15s; touch-action: manipulation; font-family: var(--body); }
+.play { width: 56px; height: 56px; background: var(--yellow); color: var(--on-accent); box-shadow: 3px 3px 0 var(--shade); }
+.play:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shade); }
+.play svg { width: 26px; height: 26px; }
+.play .i-pause, .is-playing .play .i-play { display: none; }
+.is-playing .play .i-pause { display: block; }
+.is-playing .play { background: var(--pink); }
+.skip { width: 40px; height: 40px; background: var(--surface); color: var(--text); box-shadow: 2px 2px 0 var(--shade); }
+.skip:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--shade); }
+.skip svg { width: 28px; height: 28px; }
+@media (hover: hover) {
+  .play:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--shade); }
+  .skip:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--shade); background: var(--soft); }
+}
+:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+.scrub { display: grid; gap: 4px; min-width: 0; }
+.seek { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; margin: 0; background: transparent; cursor: pointer; --p: 0%; }
+.seek::-webkit-slider-runnable-track { height: 14px; border-radius: 999px; box-shadow: inset 0 0 0 2.5px var(--line); background: linear-gradient(to right, var(--lime) var(--p), var(--soft) var(--p)); }
+.seek::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -4px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--line); box-shadow: 2px 2px 0 var(--shade); }
+.seek::-moz-range-track { height: 14px; border-radius: 999px; box-shadow: inset 0 0 0 2.5px var(--line); background: linear-gradient(to right, var(--lime) var(--p), var(--soft) var(--p)); }
+.seek::-moz-range-thumb { width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--line); box-shadow: 2px 2px 0 var(--shade); }
+.times { display: flex; justify-content: space-between; font-weight: 800; font-size: 0.82rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+.links { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; font-weight: 800; }
+.links a { color: var(--text); text-decoration: none; border-bottom: 2px solid var(--lime); }
+.links a:hover { border-bottom-color: var(--pink); }
+noscript a { font-weight: 800; }
+@media (max-width: 400px) { body { font-size: 15px; } .controls { gap: 6px; } .player { gap: 8px; } }
+</style>
+</head>
+<body data-ep="<!-- EP:SLUG -->" data-dur="<!-- EP:DUR -->">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4.5v15l13-7.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z"/></symbol>
+  <symbol id="i-back15" viewBox="0 0 28 28"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M6.64 10.25A8.5 8.5 0 1 0 14 6M17 3l-3 3 3 3"/><text x="14" y="18" text-anchor="middle" fill="currentColor" font-size="10" font-weight="900">15</text></symbol>
+  <symbol id="i-fwd15" viewBox="0 0 28 28"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M21.36 10.25A8.5 8.5 0 1 1 14 6M11 3l3 3-3 3"/><text x="14" y="18" text-anchor="middle" fill="currentColor" font-size="10" font-weight="900">15</text></symbol>
+</svg>
+<div class="card">
+  <div class="top"><img src="/img/logo-96.webp" width="26" height="26" alt=""><span>Two Hallucinating PMs · <!-- EP:LABEL --> · <!-- EP:CLOCK --></span></div>
+  <h1><!-- EP:TITLE --></h1>
+  <div class="player">
+    <div class="controls">
+      <button type="button" class="skip back" aria-label="Back 15 seconds" title="Back 15 seconds"><svg aria-hidden="true"><use href="#i-back15"/></svg></button>
+      <button type="button" class="play" aria-label="Play"><svg class="i-play" aria-hidden="true"><use href="#i-play"/></svg><svg class="i-pause" aria-hidden="true"><use href="#i-pause"/></svg></button>
+      <button type="button" class="skip fwd" aria-label="Ahead 15 seconds" title="Ahead 15 seconds"><svg aria-hidden="true"><use href="#i-fwd15"/></svg></button>
+    </div>
+    <div class="scrub">
+      <input type="range" class="seek" min="0" max="1000" value="0" step="1" aria-label="Position in the episode">
+      <div class="times"><span class="cur">0:00</span><span class="dur"><!-- EP:CLOCK --></span></div>
+    </div>
+    <noscript><a href="<!-- EP:SRC -->">Download the MP3</a></noscript>
+  </div>
+  <div class="links">
+    <a href="<!-- EP:URL -->" target="_top" rel="noopener">Listen on the site</a>
+    <a href="/ask?ep=<!-- EP:SLUG -->" target="_blank" rel="noopener" data-ask>Ask about this episode</a>
+  </div>
+</div>
+<audio id="a" preload="metadata" src="<!-- EP:SRC -->"></audio>
+<script>
+// Same events as the listening page (view, play, pause, 25/50/75/finished, skips, Ask clicks), tagged
+// with "embed:<host of the page around us>" so the hosts' stats show where the embed sits.
+(() => {
+  const audio = document.getElementById("a"), body = document.body;
+  const ep = body.dataset.ep, dur0 = +body.dataset.dur || 0;
+  let vid = null;
+  try { vid = localStorage.getItem("hpm-listener"); if (!vid) { vid = crypto.randomUUID(); localStorage.setItem("hpm-listener", vid); } } catch {}
+  const sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random())).slice(0, 18);
+  let host = ""; try { host = document.referrer ? new URL(document.referrer).hostname : ""; } catch {}
+  const ref = ("embed" + (host ? ":" + host : "")).toLowerCase().replace(/[^a-z0-9.:-]/g, "").slice(0, 40);
+  function send(type, extra) {
+    const b = JSON.stringify(Object.assign({ type, ep, v: vid, s: sid, ref }, extra || {}));
+    try { if (navigator.sendBeacon && navigator.sendBeacon("/api/event", new Blob([b], { type: "application/json" }))) return; } catch {}
+    fetch("/api/event", { method: "POST", body: b, headers: { "content-type": "application/json" }, keepalive: true }).catch(() => {});
+  }
+  send("view");
+
+  const $ = (s) => document.querySelector(s);
+  const btn = $(".play"), seek = $(".seek"), curEl = $(".cur"), durEl = $(".dur");
+  const fmt = (s) => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  let listened = 0, last = null, want = null, live = false, dragging = false;
+  const got = new Set(), hit = new Set();
+  const dur = () => (isFinite(audio.duration) && audio.duration) || dur0;
+  const stat = () => ({ t: Math.round(audio.currentTime || 0), d: Math.round(dur()), l: Math.round(listened) });
+
+  function paint() {
+    const playing = !audio.paused && !audio.ended;
+    body.classList.toggle("is-playing", playing);
+    btn.setAttribute("aria-label", playing ? "Pause" : "Play");
+    const d = dur(), t = want != null ? want : audio.readyState >= 2 ? audio.currentTime : 0;
+    if (!dragging) { seek.value = d ? Math.round((1000 * t) / d) : 0; seek.style.setProperty("--p", (d ? (100 * t) / d : 0) + "%"); curEl.textContent = fmt(t); }
+    durEl.textContent = fmt(d);
+  }
+  // Each second counts once, the first time it's heard, so Back 15 doesn't move the marks and a skipped stretch counts when heard.
+  function heard(from, to) {
+    const dt = to - from; if (!(dt > 0 && dt < 2)) return;
+    for (let s = Math.floor(from); s < to; s++) if (!got.has(s)) { got.add(s); listened += 1; }
+  }
+  function trySeek() {
+    if (want == null || audio.readyState < 2) return;
+    if (Math.abs(audio.currentTime - want) <= 0.5) { want = null; return; }
+    const r = audio.seekable; if (!r.length || r.end(r.length - 1) < want) return;
+    if (!audio.seeking) { try { audio.currentTime = want; } catch {} }
+  }
+  function seekTo(t) { want = t; last = t; trySeek(); paint(); }
+  function skip(delta) {
+    const d = dur(), from = want != null ? want : audio.readyState >= 2 ? audio.currentTime : 0;
+    let t = Math.max(0, from + delta);
+    if (d) t = Math.min(t, Math.max(0, d - 1));
+    seekTo(t);
+    send(delta < 0 ? "skip_back" : "skip_fwd", Object.assign(stat(), { t: Math.round(t) }));
+  }
+  btn.addEventListener("click", () => { if (audio.paused || audio.ended) { const p = audio.play(); if (p && p.catch) p.catch(() => paint()); } else audio.pause(); });
+  document.querySelectorAll(".skip").forEach((b) => b.addEventListener("click", () => skip(b.classList.contains("back") ? -15 : 15)));
+  seek.addEventListener("input", () => { dragging = true; curEl.textContent = fmt((seek.value / 1000) * dur()); seek.style.setProperty("--p", seek.value / 10 + "%"); });
+  seek.addEventListener("change", () => { dragging = false; seekTo((seek.value / 1000) * dur()); });
+  audio.addEventListener("play", () => { last = audio.currentTime; live = true; send("play", stat()); paint(); });
+  audio.addEventListener("pause", () => { if (live && !audio.ended) send("pause", stat()); live = false; paint(); });
+  audio.addEventListener("seeked", () => { last = audio.currentTime; if (want != null && Math.abs(audio.currentTime - want) < 0.5) want = null; });
+  ["loadedmetadata", "loadeddata", "canplay", "progress", "durationchange"].forEach((ev) => audio.addEventListener(ev, () => { trySeek(); paint(); }));
+  function marks() {
+    const d = audio.duration; if (!d || !isFinite(d)) return;
+    for (const q of [25, 50, 75, 95]) if (!hit.has(q) && listened >= (d * q) / 100) { hit.add(q); send(q === 95 ? "complete" : "q" + q, stat()); }
+  }
+  audio.addEventListener("timeupdate", () => {
+    if (want != null) { trySeek(); return; }
+    if (audio.readyState < 2) return;
+    if (last !== null && !audio.paused) heard(last, audio.currentTime);
+    last = audio.currentTime;
+    paint(); marks();
+  });
+  audio.addEventListener("ended", () => { if (last !== null) heard(last, audio.duration); marks(); live = false; paint(); });
+  if ("mediaSession" in navigator) {
+    try { navigator.mediaSession.metadata = new MediaMetadata({ title: document.querySelector("h1").textContent, artist: "Two Hallucinating PMs", artwork: [{ src: "/icon-512.png", sizes: "512x512", type: "image/png" }] }); } catch {}
+    for (const [action, sign] of [["seekbackward", -1], ["seekforward", 1]]) {
+      try { navigator.mediaSession.setActionHandler(action, (e) => skip(sign * ((e && e.seekOffset) || 15))); } catch {}
+    }
+  }
+  document.querySelectorAll("a[data-ask]").forEach((a) => a.addEventListener("click", () => send("ask_click")));
+  paint();
+})();
+</script>
+</body>
+</html>

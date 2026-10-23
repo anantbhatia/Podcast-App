@@ -121,6 +121,7 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
     <section class="two">
       <div class="panel"><h2>Devices</h2><dl class="kv" id="devices"></dl></div>
       <div class="panel"><h2>Where</h2><dl class="kv" id="countries"></dl></div>
+      <div class="panel"><h2>Came from</h2><dl class="kv" id="sources"></dl><p class="note" style="margin:10px 0 0">Links shared with <span class="mono">?from=substack</span> (or any word) count here, as do embeds on other sites and referring sites. Visitors, then plays.</p></div>
     </section>
 
     <section class="panel">
@@ -204,6 +205,7 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
     const dv = d.devices || {};
     $("devices").innerHTML = `<dt>Phone</dt><dd>${fmt(dv.mobile)}</dd><dt>Computer</dt><dd>${fmt(dv.desktop)}</dd>`;
     $("countries").innerHTML = (d.countries || []).length ? d.countries.map((c) => `<dt>${esc(c.country)}</dt><dd>${fmt(c.visitors)}</dd>`).join("") : `<dt>No visits yet</dt><dd></dd>`;
+    $("sources").innerHTML = (d.sources || []).length ? d.sources.map((r) => `<dt>${esc(r.ref)}</dt><dd>${fmt(r.visitors)} · ${fmt(r.plays)} plays</dd>`).join("") : `<dt>Nothing tagged yet</dt><dd></dd>`;
     $("gen").textContent = "Updated " + new Date(d.generatedAt).toLocaleTimeString();
   }
 

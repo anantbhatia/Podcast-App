@@ -8,6 +8,7 @@ const TYPES = new Set(["view", "play", "pause", "q25", "q50", "q75", "complete",
 const INTERNAL = new Set(["ask_submit", "subscribe", "push"]);
 const EP = /^[a-z0-9-]{0,60}$/;
 const ID = /^[a-zA-Z0-9-]{8,64}$/;
+const REF = /^[a-z0-9.:-]{1,40}$/; // where the visit came from: "substack", "embed:<host>", a referring host
 
 let ready = null;
 function ensureSchema(env) {
@@ -15,10 +16,13 @@ function ensureSchema(env) {
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS events (
       ts INTEGER NOT NULL, day TEXT NOT NULL, type TEXT NOT NULL, ep TEXT NOT NULL DEFAULT '',
       v TEXT, ip TEXT, s TEXT, t INTEGER, d INTEGER, l INTEGER,
-      mobile INTEGER, country TEXT, voice INTEGER)`),
+      mobile INTEGER, country TEXT, voice INTEGER, ref TEXT)`),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS events_type_ep ON events (type, ep)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS events_v ON events (v)"),
-  ]).catch((e) => { ready = null; throw e; });
+  ])
+    // The ref column came later (2026-10-23); a table from before gets it here, once. On a table that has it the ALTER fails and that's fine.
+    .then(() => env.DB.prepare("ALTER TABLE events ADD COLUMN ref TEXT").run().catch(() => {}))
+    .catch((e) => { ready = null; throw e; });
   return ready;
 }
 
@@ -50,12 +54,13 @@ export async function recordEvent(request, env, override) {
   const now = new Date();
   const ua = request.headers.get("user-agent") || "";
   await env.DB.prepare(
-    "INSERT INTO events (ts, day, type, ep, v, ip, s, t, d, l, mobile, country, voice) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    "INSERT INTO events (ts, day, type, ep, v, ip, s, t, d, l, mobile, country, voice, ref) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
   ).bind(
     now.getTime(), now.toISOString().slice(0, 10), e.type, e.ep || "",
     ID.test(e.v || "") ? e.v : null, await ipHash(request, env),
     ID.test(e.s || "") ? e.s : null, int(e.t), int(e.d), int(e.l),
     /Mobi|Android|iPhone/i.test(ua) ? 1 : 0, request.cf?.country || null, e.voice ? 1 : 0,
+    typeof e.ref === "string" && REF.test(e.ref) ? e.ref : null,
   ).run();
   return new Response(null, { status: 204 });
 }
@@ -137,6 +142,9 @@ export async function getStats(env) {
     FROM events WHERE type='view'`));
   const countries = await all(db.prepare(`SELECT country, COUNT(DISTINCT ${who}) AS visitors
     FROM events WHERE type='view' AND country IS NOT NULL GROUP BY country ORDER BY visitors DESC LIMIT 6`));
+  // Where visits came from: a "?from=" tag on a shared link ("substack"), an embed on another site ("embed:<host>"), or the referring site.
+  const sources = await all(db.prepare(`SELECT ref, COUNT(DISTINCT CASE WHEN type='view' THEN ${who} END) AS visitors, SUM(type='play') AS plays
+    FROM events WHERE ref IS NOT NULL AND ref <> '' GROUP BY ref ORDER BY visitors DESC LIMIT 8`));
 
-  return { generatedAt: new Date().toISOString(), totals: { ...totals, ...repeat }, episodes, daily, devices, countries };
+  return { generatedAt: new Date().toISOString(), totals: { ...totals, ...repeat }, episodes, daily, devices, countries, sources };
 }

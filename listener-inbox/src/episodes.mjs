@@ -173,11 +173,60 @@ ${rest.map((e) => card(e, false)).join("\n\n")}
 
 export const sections = (list) => [latest(list), earlier(list)].filter(Boolean).join("\n\n");
 
+const SITE = "Two Hallucinating PMs";
+const TAGLINE = "A weekly AI news show with Anant and Aman. AI trends that get outdated by Monday and obsolete by launch.";
+export const bySlug = (list, slug) => (SLUG.test(slug || "") ? sorted(list).find((e) => e.slug === slug) : undefined) || null;
+
+// What a shared link shows as a card (Substack, WhatsApp, LinkedIn, Slack read the Open Graph tags):
+// the episode's title and description, with its length and a nudge to tap.
+export function shareMeta(e, origin, path) {
+  const mins = e ? Math.round((seconds(e.durationSec) || 0) / 60) : 0;
+  return {
+    TITLE: e && path !== "/" ? `${e.title} · ${SITE}` : SITE, // the tab title: the show on "/", the episode on "/<slug>"
+    OGTITLE: e ? `${label(e)} · ${e.title} | ${SITE}` : SITE,
+    DESC: e ? [e.description || "", mins ? `${mins} min` : "", "Tap to listen"].filter(Boolean).join(" · ") : TAGLINE,
+    URL: origin + path, URLENC: encodeURIComponent(origin + path), ORIGIN: origin,
+  };
+}
+
+// Fills "<!-- META:NAME -->" placeholders (escaped), and "<!-- META:BODY -->" with raw attributes.
+function fillMeta(template, values, bodyAttrs = "") {
+  return template.replace(/<!-- META:(\w+) -->/g, (m, k) => (k === "BODY" ? bodyAttrs : esc(values[k] ?? "")));
+}
+
 // Fills the placeholders in src/index.html and src/stats.html. The replacement is a
 // function so that "$" sequences in episode text ("$$", "$&") are kept as written.
-export function listeningPage(template, list) {
+// `start` names the episode a "/<slug>" link opens on; "/" opens on the newest.
+export function listeningPage(template, list, { origin = "", start = "" } = {}) {
   const a = latest(list), b = earlier(list);
-  return template.replace("<!-- EPISODES:LATEST -->", () => a).replace("<!-- EPISODES:EARLIER -->\n", () => (b ? b + "\n" : ""));
+  const e = start ? bySlug(list, start) : sorted(list)[0];
+  const page = fillMeta(template, shareMeta(e, origin, start ? `/${start}` : "/"), start && e ? ` data-start="${esc(start)}"` : "");
+  return page.replace("<!-- EPISODES:LATEST -->", () => a).replace("<!-- EPISODES:EARLIER -->\n", () => (b ? b + "\n" : ""));
+}
+
+// The compact player at "/embed" (newest) and "/embed/<slug>", for sites that allow an iframe.
+export function embedPage(template, list, slug, origin = "") {
+  const e = slug ? bySlug(list, slug) : sorted(list)[0];
+  if (!e) return null;
+  const dur = seconds(e.durationSec) || 0;
+  const v = { SLUG: e.slug, LABEL: label(e), TITLE: e.title, SRC: `/audio/${audioFile(e)}`, DUR: String(dur), CLOCK: clock(dur), URL: `${origin}/${e.slug}?from=embed`, ORIGIN: origin };
+  return template.replace(/<!-- EP:(\w+) -->/g, (m, k) => esc(v[k] ?? ""));
+}
+
+// oEmbed for a page link (used by sites that discover it: WordPress, Ghost, Notion and others).
+export function oembed(list, origin, target) {
+  let path = "", hash = "";
+  try { const u = new URL(target); if (u.origin !== origin) return null; path = u.pathname.replace(/\/+$/, ""); hash = u.hash.slice(1); } catch { return null; }
+  const m = /^\/(?:embed\/)?([a-z0-9-]{1,60})$/.exec(path);
+  const e = m ? bySlug(list, m[1]) : path === "" || path === "/embed" ? (hash ? bySlug(list, hash) : sorted(list)[0]) : null;
+  if (!e) return null;
+  const title = `${label(e)} · ${e.title}`;
+  return {
+    version: "1.0", type: "rich", provider_name: SITE, provider_url: origin + "/", author_name: "Anant and Aman",
+    title, width: 720, height: 210,
+    html: `<iframe src="${origin}/embed/${e.slug}" width="100%" height="210" style="max-width:720px;border:0" frameborder="0" scrolling="no" loading="lazy" title="${esc(title)}"></iframe>`,
+    thumbnail_url: `${origin}/img/og.jpg`, thumbnail_width: 1200, thumbnail_height: 630,
+  };
 }
 export function statsPage(template, list) {
   const json = JSON.stringify(names(list)).replace(/</g, () => "\\u003c");
