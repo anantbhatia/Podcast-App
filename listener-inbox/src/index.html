@@ -1,0 +1,631 @@
+<!doctype html>
+<!-- Template for the listening page: the worker fills in the episodes from episodes.json. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title><!-- META:TITLE --></title>
+<!-- The share card (Substack, WhatsApp, LinkedIn, Slack and the rest read these tags): the newest episode on "/",
+     that episode on "/<slug>". The worker fills them from episodes.json. -->
+<meta name="description" content="<!-- META:DESC -->">
+<meta property="og:title" content="<!-- META:OGTITLE -->">
+<meta property="og:description" content="<!-- META:DESC -->">
+<meta property="og:url" content="<!-- META:URL -->">
+<meta property="og:site_name" content="Two Hallucinating PMs">
+<meta property="og:image" content="<!-- META:ORIGIN -->/img/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="<!-- META:URL -->">
+<link rel="alternate" type="application/json+oembed" href="<!-- META:ORIGIN -->/oembed?url=<!-- META:URLENC -->" title="<!-- META:OGTITLE -->">
+<link rel="alternate" type="application/rss+xml" href="<!-- META:ORIGIN -->/feed.xml" title="Two Hallucinating PMs (podcast feed)">
+<meta name="theme-color" content="#fbf3e2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f2c" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="hpm-push-key" content="<!-- PUSH:KEY -->">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Pop-art comic look taken from the show art: cream paper with halftone dots, thick ink outlines,
+   hard offset shadows, and the logo's neon lime, cyan, pink and yellow. Dark mode is the logo's navy. */
+:root {
+  --paper: #fbf3e2; --dots: rgba(21, 19, 31, 0.07); --surface: #fffaf0; --ink: #15131f; --text: #15131f;
+  --muted: #5a566b; --line: #15131f; --shade: #15131f; --soft: #efe4cc;
+  --lime: #b4f01c; --cyan: #18b6f6; --pink: #ff3ea5; --yellow: #ffe83a; --purple: #4b3a9c;
+  --link: #4b3a9c; --on-accent: #15131f;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --comic: "Bangers", "Impact", "Arial Black", sans-serif;
+  --body: "Nunito", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1b1f2c; --dots: rgba(255, 255, 255, 0.05); --surface: #252a3a; --text: #f5efe0;
+    --muted: #b5b8ca; --line: #0b0c12; --shade: #0b0c12; --soft: #2f3547; --link: #6fd3ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1b1f2c; --dots: rgba(255, 255, 255, 0.05); --surface: #252a3a; --text: #f5efe0;
+  --muted: #b5b8ca; --line: #0b0c12; --shade: #0b0c12; --soft: #2f3547; --link: #6fd3ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; color: var(--text); font-family: var(--body); font-size: 17px; line-height: 1.6;
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--dots) 1.2px, transparent 1.6px);
+  background-size: 14px 14px;
+}
+h1, h2 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; letter-spacing: 0.005em; }
+p { margin: 0; }
+a { color: var(--link); text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; border-radius: 6px; }
+
+.wrap { max-width: 46rem; margin: 0 auto; padding-inline: 20px; padding-block: 16px 64px; display: grid; gap: 44px; }
+
+/* Top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: max(8px, env(safe-area-inset-top)); }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; min-width: 0; }
+.brand img { width: 48px; height: 48px; flex: none; filter: drop-shadow(2px 2px 0 var(--shade)); }
+.brand span { font-family: var(--display); font-size: 1.15rem; line-height: 1.1; }
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; flex: none;
+  font-family: var(--body); font-weight: 800; font-size: 1rem; text-decoration: none; white-space: nowrap;
+  color: var(--on-accent); background: var(--pink); border: 2.5px solid var(--line); border-radius: 999px;
+  padding: 8px 16px; box-shadow: 3px 3px 0 var(--shade); transition: transform .12s, box-shadow .12s;
+}
+.pill svg { width: 18px; height: 18px; }
+.pill:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--shade); }
+.pill:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shade); }
+
+/* Hero */
+/* The intro sits under the latest episode: on a phone the Play button is on the first screen, the show's story comes next. */
+.hero { display: grid; gap: 22px; }
+.art {
+  margin: 0; border: 3px solid var(--line); border-radius: 22px; overflow: hidden;
+  box-shadow: 7px 7px 0 var(--pink), 7px 7px 0 3px var(--shade); background: var(--soft); aspect-ratio: 2752 / 1536;
+}
+.art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.intro { display: grid; gap: 14px; }
+.stickers { display: flex; flex-wrap: wrap; gap: 8px; }
+.sticker {
+  font-family: var(--comic); font-size: 1.05rem; letter-spacing: 0.06em; line-height: 1; text-transform: uppercase;
+  color: var(--on-accent); background: var(--yellow); border: 2px solid var(--line); border-radius: 6px;
+  padding: 6px 10px 5px; box-shadow: 2px 2px 0 var(--shade);
+}
+.sticker.lime { background: var(--lime); } .sticker.cyan { background: var(--cyan); } .sticker.pink { background: var(--pink); }
+.tilt-l { transform: rotate(-2deg); } .tilt-r { transform: rotate(1.5deg); }
+h1 { font-size: clamp(2.5rem, 9vw, 4rem); line-height: 1.02; color: var(--text); }
+h1 .pop { color: var(--cyan); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 3px 3px 0 var(--ink); }
+.tagline { font-size: 1.2rem; font-weight: 600; max-width: 36rem; }
+mark { color: var(--on-accent); padding: 0 4px; border-radius: 4px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
+
+.hosts { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 14px; }
+.host { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; background: var(--surface); border: 2.5px solid var(--line); border-radius: 16px; padding: 14px 16px; box-shadow: 4px 4px 0 var(--shade); }
+.host .dot { grid-row: span 2; width: 38px; height: 38px; border-radius: 50%; border: 2.5px solid var(--line); display: grid; place-items: center; font-family: var(--display); font-size: 1.15rem; color: var(--on-accent); }
+.host.a .dot { background: var(--lime); } .host.b .dot { background: var(--cyan); }
+.host b { font-family: var(--display); font-weight: 400; font-size: 1.2rem; line-height: 1.2; }
+.host p { color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
+.host-link { grid-column: 2; justify-self: start; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 0.85rem; font-weight: 800; color: var(--text); text-decoration: none; border: 2px solid var(--line); border-radius: 999px; padding: 4px 10px; background: var(--soft); }
+.host-link svg { width: 14px; height: 14px; fill: currentColor; }
+.host-link:hover { background: var(--yellow); color: var(--on-accent); }
+
+/* Ask us: a speech bubble */
+.ask {
+  position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px;
+  background: var(--cyan); color: var(--on-accent); border: 3px solid var(--line); border-radius: 26px;
+  padding: 20px 22px; box-shadow: 6px 6px 0 var(--shade);
+}
+.ask::after {
+  content: ""; position: absolute; left: 44px; bottom: -22px; width: 30px; height: 22px; background: var(--cyan);
+  clip-path: polygon(0 0, 100% 0, 10% 100%); filter: drop-shadow(0 3px 0 var(--line));
+}
+.ask .mic { flex: none; width: 54px; height: 54px; border-radius: 50%; background: var(--yellow); border: 2.5px solid var(--line); display: grid; place-items: center; }
+.ask .mic svg { width: 26px; height: 26px; }
+.ask p { flex: 1 1 15rem; min-width: 0; }
+.ask strong { display: block; font-family: var(--display); font-weight: 400; font-size: 1.45rem; line-height: 1.15; }
+.ask span { font-weight: 600; }
+.ask .pill { background: var(--yellow); }
+
+/* Next episode */
+.pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.pill.lime { background: var(--lime); }
+
+/* Subscribe box: email sign-up for new episodes (the worker keeps the addresses; see ADD-EPISODE.md). */
+.subscribe {
+  position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px 20px;
+  background: var(--pink); color: var(--on-accent); border: 3px solid var(--line); border-radius: 26px;
+  padding: 20px 22px; box-shadow: 6px 6px 0 var(--shade);
+}
+.subscribe .bell { flex: none; width: 54px; height: 54px; border-radius: 50%; background: var(--yellow); border: 2.5px solid var(--line); display: grid; place-items: center; }
+.subscribe .bell svg { width: 26px; height: 26px; }
+.sub-form, .sub-done { flex: 1 1 15rem; min-width: 0; display: grid; gap: 8px; margin: 0; }
+.subscribe strong { display: block; font-family: var(--display); font-weight: 400; font-size: 1.45rem; line-height: 1.15; }
+.subscribe span { font-weight: 600; }
+.sub-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.sub-row input[type=email] { flex: 1 1 14rem; min-width: 0; font: inherit; font-weight: 600; color: var(--text); background: var(--surface); border: 2.5px solid var(--line); border-radius: 999px; padding: 9px 16px; box-shadow: 3px 3px 0 var(--shade); }
+.sub-row input[type=email]:focus { outline: none; box-shadow: 3px 3px 0 var(--cyan); }
+.sub-row input::placeholder { color: var(--muted); }
+.sub-row .pill { background: var(--yellow); cursor: pointer; font: inherit; font-weight: 800; }
+.sub-row .pill:disabled { opacity: 0.7; cursor: default; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.sub-msg { margin: 0; color: var(--on-accent); background: var(--yellow); border: 2px solid var(--line); border-radius: 10px; padding: 6px 12px; font-weight: 700; justify-self: start; }
+/* Browser notifications, under the email form; hidden until the page knows the site's push key and the browser can do push. */
+.push { flex: 1 1 100%; display: grid; gap: 8px; justify-items: start; border-top: 2.5px dashed var(--line); padding-top: 12px; }
+.push .pill { background: var(--lime); cursor: pointer; font: inherit; font-weight: 800; }
+.push .pill:disabled { opacity: 0.7; cursor: default; }
+.push p { margin: 0; font-weight: 600; }
+.push .linkish { background: none; border: 0; padding: 0; margin: 0; font: inherit; font-weight: 800; color: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+.next { display: grid; gap: 8px; justify-items: start; border: 3px dashed var(--line); border-radius: 20px; padding: 22px; background: color-mix(in srgb, var(--surface) 60%, transparent); }
+.next h2 { font-size: 1.7rem; }
+.next p { color: var(--muted); font-weight: 600; }
+
+.latest { display: grid; gap: 14px; justify-items: start; }
+.latest .ep { justify-self: stretch; }
+.latest .ep.ep-new { --accent: var(--lime); }
+.ep.ep-new .ep-meta .num { background: var(--yellow); }
+.ep.ep-special .ep-meta .num { background: var(--pink); } /* an out-of-cycle special, newest or not */
+
+/* Archive */
+.archive { display: grid; gap: 26px; }
+.archive-head { display: grid; gap: 10px; justify-items: start; }
+.archive-head h2 { font-size: clamp(2rem, 6vw, 2.5rem); }
+.archive-head p { color: var(--muted); max-width: 40rem; }
+
+.ep {
+  background: var(--surface); border: 3px solid var(--line); border-radius: 20px; padding: 22px;
+  display: grid; gap: 14px; box-shadow: 6px 6px 0 var(--accent, var(--lime)), 6px 6px 0 3px var(--shade);
+}
+.ep:nth-of-type(odd) { --accent: var(--cyan); }
+.ep:nth-of-type(even) { --accent: var(--pink); }
+.ep-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; color: var(--muted); font-weight: 700; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.ep-meta .num {
+  font-family: var(--comic); font-weight: 400; font-size: 1.1rem; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1;
+  color: var(--on-accent); background: var(--lime); border: 2px solid var(--line); border-radius: 6px; padding: 5px 9px 4px; transform: rotate(-2deg);
+}
+.ep-meta span:last-child::before { content: ""; display: inline-block; width: 0.55em; height: 0.55em; margin-right: 6px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--line); vertical-align: 0.05em; }
+.ep h2 { font-size: clamp(1.6rem, 5vw, 2rem); line-height: 1.1; }
+.ep ul { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; }
+.ep > ul li { position: relative; padding-left: 28px; }
+.ep-desc { margin: 0; max-width: 48rem; font-weight: 600; }
+.ep > ul li::before { content: ""; position: absolute; left: 2px; top: 0.42em; width: 14px; height: 14px; background: var(--accent); border: 2px solid var(--line); clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+/* Player: one big play/pause button and a progress bar on every card. */
+.player { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; align-items: center; }
+.play { width: 76px; height: 76px; padding: 0; border-radius: 50%; border: 3px solid var(--line); background: var(--yellow); color: var(--on-accent); cursor: pointer; display: grid; place-items: center; box-shadow: 4px 4px 0 var(--shade); transition: transform .1s, box-shadow .1s, background .15s; }
+.play:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--shade); }
+.play svg { width: 34px; height: 34px; }
+.play .i-pause, .is-playing .play .i-play { display: none; }
+.is-playing .play .i-pause { display: block; }
+.is-playing .play { background: var(--pink); }
+.play.nudge { animation: nudge 1.3s ease-in-out infinite; }
+/* 15-second skips either side of Play: a quick way to hear a number again. */
+.controls { display: flex; align-items: center; gap: 10px; }
+.skip { width: 46px; height: 46px; padding: 0; border-radius: 50%; border: 3px solid var(--line); background: var(--surface); color: var(--text); font-family: var(--body); cursor: pointer; display: grid; place-items: center; box-shadow: 3px 3px 0 var(--shade); transition: transform .1s, box-shadow .1s, background .15s; }
+@media (hover: hover) {
+  .play:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--shade); }
+  .skip:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--shade); background: var(--soft); }
+}
+.skip:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shade); }
+.skip svg { width: 32px; height: 32px; }
+.skip, .play { touch-action: manipulation; }
+@keyframes nudge { 50% { box-shadow: 4px 4px 0 var(--shade), 0 0 0 12px color-mix(in srgb, var(--yellow) 55%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .play.nudge { animation: none; } }
+.scrub { display: grid; gap: 6px; min-width: 0; }
+.seek { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer; --p: 0%; }
+.seek::-webkit-slider-runnable-track { height: 16px; border-radius: 999px; box-shadow: inset 0 0 0 2.5px var(--line); background: linear-gradient(to right, var(--lime) var(--p), var(--soft) var(--p)); }
+.seek::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -4px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--line); box-shadow: 2px 2px 0 var(--shade); }
+.seek::-moz-range-track { height: 16px; border-radius: 999px; box-shadow: inset 0 0 0 2.5px var(--line); background: linear-gradient(to right, var(--lime) var(--p), var(--soft) var(--p)); }
+.seek::-moz-range-thumb { width: 24px; height: 24px; box-sizing: border-box; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--line); box-shadow: 2px 2px 0 var(--shade); }
+.seek:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; border-radius: 999px; }
+.times { display: flex; justify-content: space-between; font-weight: 800; font-size: 0.9rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+.is-playing .times .cur { color: var(--text); }
+.player noscript a { grid-column: 1 / -1; font-weight: 800; }
+#player-audio { display: none; }
+.fine { font-size: 0.88rem; color: var(--muted); }
+
+.refs { border-top: 2.5px dashed color-mix(in srgb, var(--line) 35%, transparent); padding-top: 12px; }
+.refs summary { cursor: pointer; font-weight: 800; list-style: none; display: flex; align-items: center; gap: 10px; }
+.refs summary::-webkit-details-marker { display: none; }
+.refs summary::before { content: "+"; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--yellow); color: var(--on-accent); border: 2px solid var(--line); font-weight: 800; line-height: 1; flex: none; }
+.refs[open] summary::before { content: "\2212"; }
+.refs .cnt { font-size: 0.78rem; font-weight: 800; color: var(--on-accent); background: var(--soft); border: 1.5px solid var(--line); border-radius: 999px; padding: 0 8px; }
+:root[data-theme="dark"] .refs .cnt { color: var(--text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .refs .cnt { color: var(--text); } }
+.refs-body { display: grid; gap: 14px; padding-top: 14px; }
+.ref-group h3 { margin: 0 0 4px; font-family: var(--body); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ref-group ul { gap: 4px; }
+.ref-group a { color: var(--text); text-decoration-color: var(--accent); text-decoration-thickness: 2px; overflow-wrap: anywhere; }
+.ref-group a:hover { color: var(--link); }
+
+.ep-ask { justify-self: start; display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: var(--text); text-decoration: none; border: 2px solid var(--line); border-radius: 999px; padding: 6px 14px; background: var(--soft); }
+.ep-ask svg { width: 16px; height: 16px; }
+.ep-ask:hover { background: var(--yellow); color: var(--on-accent); }
+
+footer { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; border-top: 3px solid var(--line); padding-top: 22px; font-size: 0.9rem; color: var(--muted); }
+footer img { grid-row: span 2; width: 56px; height: 56px; }
+.bits { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.2em; color: color-mix(in srgb, var(--lime) 70%, var(--muted)); grid-column: 1 / -1; overflow: hidden; white-space: nowrap; }
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ep { transition: transform .15s; } .ep:hover { transform: translate(-2px, -2px); }
+}
+@media (max-width: 520px) {
+  body { font-size: 16px; }
+  .play { width: 64px; height: 64px; } .play svg { width: 28px; height: 28px; }
+  /* Phones: the three buttons centred in a row, the bar on its own line below so it keeps the full width. */
+  .player { grid-template-columns: 1fr; justify-items: center; gap: 10px; }
+  .controls { gap: 14px; } .skip { width: 44px; height: 44px; } .skip svg { width: 30px; height: 30px; }
+  .scrub { width: 100%; }
+  .wrap { padding-inline: 16px; gap: 36px; }
+  .brand span { font-size: 1rem; }
+  .brand img { width: 42px; height: 42px; }
+  .pill { padding: 7px 12px; font-size: 0.95rem; }
+  /* One short top bar: the nav pills keep their icons and their names for screen readers, the first screen keeps its room for Play. */
+  .top .pills { flex: none; } .top .pill { padding: 9px; } .top .pill svg { width: 20px; height: 20px; }
+  .top .pill-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .subscribe { padding: 18px 16px; }
+  .ep { padding: 18px 16px; }
+  .art { border-radius: 16px; box-shadow: 5px 5px 0 var(--pink), 5px 5px 0 3px var(--shade); }
+  .ask { padding: 18px; }
+}
+</style>
+</head>
+<body<!-- META:BODY -->>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-mic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5M8.5 21.5h7"/></g></symbol>
+  <symbol id="i-linkedin" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></symbol>
+  <symbol id="i-bubble" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" d="M4 5.5h16v10H10l-5 4v-4H4z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4.5v15l13-7.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z"/></symbol>
+  <symbol id="i-back15" viewBox="0 0 28 28"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M6.64 10.25A8.5 8.5 0 1 0 14 6M17 3l-3 3 3 3"/><text x="14" y="18" text-anchor="middle" fill="currentColor" font-size="10" font-weight="900">15</text></symbol>
+  <symbol id="i-fwd15" viewBox="0 0 28 28"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M21.36 10.25A8.5 8.5 0 1 1 14 6M11 3l3 3-3 3"/><text x="14" y="18" text-anchor="middle" fill="currentColor" font-size="10" font-weight="900">15</text></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 21h4M12 3v1.5"/></g></symbol>
+</svg>
+
+<main class="wrap">
+  <nav class="top" aria-label="Site">
+    <a class="brand" href="/"><img src="/img/logo-96.webp" width="48" height="48" alt=""><span>Two Hallucinating PMs</span></a>
+    <span class="pills"><a class="pill lime" href="#subscribe"><svg aria-hidden="true"><use href="#i-bell"/></svg><span class="pill-text">Subscribe</span></a><a class="pill" href="/ask" data-ask=""><svg aria-hidden="true"><use href="#i-mic"/></svg><span class="pill-text">Ask us</span></a></span>
+  </nav>
+
+<!-- EPISODES:LATEST -->
+
+  <header class="hero">
+    <figure class="art">
+      <picture>
+        <source type="image/webp" srcset="/img/hero-960.webp 960w, /img/hero-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 720px">
+        <img src="/img/hero-960.jpg" width="960" height="536" alt="Pop-art illustration of Anant and Aman at two microphones, their heads open and spilling neon swirls, a brain in sunglasses, floppy disks, a little robot and VR goggles, under a cloud reading Two Hallucinating PMs, Weekly AI Updates." loading="lazy">
+      </picture>
+    </figure>
+    <div class="intro">
+      <div class="stickers"><span class="sticker tilt-l">Weekly AI updates</span><span class="sticker lime tilt-r">About 15 minutes</span></div>
+      <h1>Two <span class="pop">Hallucinating</span> PMs</h1>
+      <p class="tagline">We talk about AI trends that get <mark class="lime">outdated by Monday</mark> and <mark class="pink">obsolete by launch</mark>.</p>
+    </div>
+    <div class="hosts">
+      <div class="host a"><span class="dot" aria-hidden="true">An</span><b>Anant</b><p>A hands-on PM who'd rather build it than read about it. Show him a demo and he asks when he can get access.</p><a class="host-link" href="https://www.linkedin.com/in/anantbhatia/" target="_blank" rel="noopener" aria-label="Anant on LinkedIn"><svg aria-hidden="true"><use href="#i-linkedin"/></svg>LinkedIn</a></div>
+      <div class="host b"><span class="dot" aria-hidden="true">Am</span><b>Aman</b><p>Philosophy, history and books. He wants to know who's paying and whether anyone will actually use it.</p><a class="host-link" href="https://www.linkedin.com/in/avichlit/" target="_blank" rel="noopener" aria-label="Aman on LinkedIn"><svg aria-hidden="true"><use href="#i-linkedin"/></svg>LinkedIn</a></div>
+    </div>
+  </header>
+
+  <section class="subscribe" id="subscribe" aria-labelledby="subscribe-title">
+    <span class="bell" aria-hidden="true"><svg><use href="#i-bell"/></svg></span>
+    <form class="sub-form" id="sub-form" method="post" action="/api/subscribe" novalidate>
+      <strong id="subscribe-title">Know when the next episode is up</strong>
+      <span>One email when a new episode is up, nothing else. Unsubscribe with one tap.</span>
+      <div class="sub-row">
+        <input type="email" name="email" id="sub-email" required autocomplete="email" inputmode="email" placeholder="you@example.com" aria-label="Your email address" maxlength="254">
+        <input type="text" class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit" class="pill">Subscribe</button>
+      </div>
+      <p class="sub-msg" id="sub-msg" role="alert" hidden></p>
+    </form>
+    <p class="sub-done" id="sub-done" role="status" hidden><strong>You're in.</strong><span>We'll email you when the next episode is up.</span></p>
+    <div class="push" id="push" hidden>
+      <span>No email? A notification on this device works too.</span>
+      <button type="button" class="pill" id="push-btn"><svg aria-hidden="true"><use href="#i-bell"/></svg>Notify me in this browser</button>
+      <p id="push-on" role="status" hidden>Notifications are on in this browser. <button type="button" class="linkish" id="push-off">Turn off</button></p>
+      <p id="push-hint" hidden>On an iPhone or iPad, add this page to your Home Screen first (Share, then "Add to Home Screen"); the button appears when you open it from there.</p>
+      <p class="sub-msg" id="push-msg" role="alert" hidden></p>
+    </div>
+  </section>
+
+<!-- EPISODES:EARLIER -->
+
+  <section class="ask" aria-label="Ask the hosts">
+    <span class="mic" aria-hidden="true"><svg><use href="#i-mic"/></svg></span>
+    <p><strong>Got a question or a follow-up?</strong><span>Record a quick voice note or type it, with or without your name. We pick a few for the next episode.</span></p>
+    <a class="pill" href="/ask" data-ask="">Ask us</a>
+  </section>
+
+  <footer>
+    <img src="/img/logo-96.webp" width="56" height="56" alt="">
+    <p>New episodes every week. News in each one is as of the week it was made.</p>
+    <p class="fine">Made by <a href="https://www.linkedin.com/in/anantbhatia/" target="_blank" rel="noopener">Anant</a> and <a href="https://www.linkedin.com/in/avichlit/" target="_blank" rel="noopener">Aman</a> for friends and family.</p>
+    <span class="bits" aria-hidden="true">01010100 01110111 01101111 00100000 01010000 01001101 01110011 01010100 01110111 01101111</span>
+  </footer>
+</main>
+
+<audio id="player-audio" preload="metadata"></audio>
+<script>
+// One shared audio element plays every episode, so finishing one can start the next
+// (a separate player per card would be refused on iPhones). Each card has its own big
+// play button and progress bar, painted from the shared element while that episode is loaded.
+// Listening stats for the hosts go to /api/event: page view, play, pause, how far into the
+// episode (25/50/75/100%), 15-second skips, and Ask clicks. A random id in this browser recognizes repeat
+// visits; nothing else about the listener is stored.
+(() => {
+  let vid = null;
+  try { vid = localStorage.getItem("hpm-listener"); if (!vid) { vid = crypto.randomUUID(); localStorage.setItem("hpm-listener", vid); } } catch {}
+  const sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random())).slice(0, 18);
+  // Where the visit came from: "?from=substack" on a shared link, else the referring site's host name.
+  let ref = "";
+  try { ref = new URLSearchParams(location.search).get("from") || (document.referrer ? new URL(document.referrer).hostname : ""); } catch {}
+  ref = String(ref).toLowerCase().replace(/[^a-z0-9.:-]/g, "").slice(0, 40);
+  if (ref === location.hostname) ref = "";
+  function send(type, ep, extra) {
+    const body = JSON.stringify(Object.assign({ type, ep: ep || "", v: vid, s: sid }, ref ? { ref } : {}, extra || {}));
+    try {
+      if (navigator.sendBeacon && navigator.sendBeacon("/api/event", new Blob([body], { type: "application/json" }))) return;
+    } catch {}
+    fetch("/api/event", { method: "POST", body, headers: { "content-type": "application/json" }, keepalive: true }).catch(() => {});
+  }
+  send("view", "");
+
+  const audio = document.getElementById("player-audio");
+  const fmt = (s) => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  const cards = [...document.querySelectorAll("article[data-ep]")].map((art, i) => ({
+    i, art, ep: art.dataset.ep, src: art.dataset.src, dur: +art.dataset.dur || 0,
+    title: (art.querySelector("h2") || {}).textContent || "",
+    btn: art.querySelector(".play"), seek: art.querySelector(".seek"), curEl: art.querySelector(".cur"), durEl: art.querySelector(".dur"),
+    pos: 0, want: null, listened: 0, got: new Set(), last: null, hit: new Set(),
+  })).filter((c) => c.src && c.btn && c.seek);
+  let cur = null;      // the card whose episode is loaded in the player
+  let live = null;     // the card a "play" was sent for and no "pause" yet
+  let dragging = null; // the card whose bar is being dragged
+  const stat = (c) => ({ t: Math.round(audio.currentTime || 0), d: Math.round(audio.duration || c.dur || 0), l: Math.round(c.listened) });
+  // Listening time counts each second once, the first time it's heard: hearing a stretch again after Back 15 doesn't
+  // move the 25/50/75/finished marks, while a stretch skipped over and heard later still counts.
+  function heard(c, from, to) {
+    const dt = to - from; if (!(dt > 0 && dt < 2)) return;
+    for (let s = Math.floor(from); s < to; s++) if (!c.got.has(s)) { c.got.add(s); c.listened += 1; }
+  }
+
+  function paint(c) {
+    const active = c === cur, playing = active && !audio.paused && !audio.ended;
+    c.art.classList.toggle("is-playing", playing);
+    c.btn.setAttribute("aria-label", playing ? "Pause" : "Play");
+    const d = (active && isFinite(audio.duration) && audio.duration) || c.dur;
+    const t = active && c.want == null && audio.readyState >= 2 ? audio.currentTime : c.pos;
+    if (dragging !== c) {
+      c.seek.value = d ? Math.round((1000 * t) / d) : 0;
+      c.seek.style.setProperty("--p", (d ? (100 * t) / d : 0) + "%");
+      c.curEl.textContent = fmt(t);
+    }
+    c.durEl.textContent = fmt(d);
+  }
+  const paintAll = () => cards.forEach(paint);
+
+  // Load c's episode into the player without starting it.
+  function select(c) {
+    if (cur === c) return;
+    if (cur) { cur.pos = audio.ended ? 0 : cur.want != null ? cur.want : audio.currentTime; cur.want = null; }
+    if (live) { send("pause", live.ep, stat(live)); live = null; }
+    cur = c; c.last = null; c.want = c.pos > 0.5 ? c.pos : null;
+    if (cards.some((x) => x.btn.classList.contains("nudge"))) cards.forEach((x) => x.btn.classList.toggle("nudge", x === c));
+    // "#t=" asks the browser to start at that offset (media fragments); trySeek covers browsers that ignore it.
+    audio.src = c.want != null ? c.src + "#t=" + c.want.toFixed(1) : c.src;
+    if ("mediaSession" in navigator) {
+      try { navigator.mediaSession.metadata = new MediaMetadata({ title: c.title, artist: "Two Hallucinating PMs", artwork: [{ src: "/icon-512.png", sizes: "512x512", type: "image/png" }] }); } catch {}
+    }
+    paintAll();
+  }
+  function play(c) {
+    select(c);
+    cards.forEach((x) => x.btn.classList.remove("nudge"));
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => paintAll());
+  }
+  // Jump 15 seconds back or ahead: the buttons either side of Play, and the lock-screen controls.
+  // Playing or paused stays as it was; on a card that isn't loaded, the episode is loaded at the new position.
+  function skip(c, delta) {
+    if (!c) return;
+    const active = cur === c;
+    const d = (active && isFinite(audio.duration) && audio.duration) || c.dur || 0;
+    const from = active ? (c.want != null ? c.want : audio.readyState >= 2 ? audio.currentTime : c.pos) : c.pos;
+    let t = Math.max(0, from + delta);
+    if (d) t = Math.min(t, Math.max(0, d - 1)); // a skip past the end lands a second before it, so the episode still finishes
+    c.pos = t; c.last = t; c.want = t;
+    if (active) trySeek(); else select(c);
+    paint(c);
+    send(delta < 0 ? "skip_back" : "skip_fwd", c.ep, Object.assign(stat(c), { t: Math.round(t) }));
+  }
+
+  cards.forEach((c) => {
+    c.btn.addEventListener("click", () => (cur === c && !audio.paused && !audio.ended ? audio.pause() : play(c)));
+    c.art.querySelectorAll(".skip").forEach((b) => b.addEventListener("click", () => skip(c, b.classList.contains("back") ? -15 : 15)));
+    const target = () => (c.seek.value / 1000) * ((cur === c && audio.duration) || c.dur);
+    c.seek.addEventListener("input", () => { dragging = c; c.curEl.textContent = fmt(target()); c.seek.style.setProperty("--p", c.seek.value / 10 + "%"); });
+    c.seek.addEventListener("change", () => {
+      dragging = null;
+      const t = target();
+      c.pos = t; c.last = t; c.want = t;
+      if (cur !== c) select(c); else trySeek();
+      paint(c);
+    });
+    paint(c);
+  });
+
+  if ("mediaSession" in navigator) {
+    for (const [action, sign] of [["seekbackward", -1], ["seekforward", 1]]) {
+      try { navigator.mediaSession.setActionHandler(action, (e) => skip(cur, sign * ((e && e.seekOffset) || 15))); } catch {}
+    }
+  }
+
+  audio.addEventListener("play", () => { if (cur) { cur.last = audio.currentTime; live = cur; send("play", cur.ep, stat(cur)); } paintAll(); });
+  audio.addEventListener("pause", () => { if (live && !audio.ended) send("pause", live.ep, stat(live)); live = null; paintAll(); });
+  audio.addEventListener("seeked", () => {
+    if (!cur) return;
+    cur.last = audio.currentTime;
+    if (cur.want != null && Math.abs(audio.currentTime - cur.want) < 0.5) cur.want = null;
+  });
+  audio.addEventListener("loadedmetadata", () => { if (cur) { cur.dur = audio.duration || cur.dur; paint(cur); } });
+  // A wanted position (resume, or a drag on the bar) is applied once the file is seekable there.
+  // Chrome reports an empty seekable range for a while after a load, and a seek then lands at 0.
+  function trySeek() {
+    const c = cur; if (!c || c.want == null || audio.readyState < 2) return;
+    if (Math.abs(audio.currentTime - c.want) <= 0.5) { c.want = null; return; } // already there
+    const d = audio.duration;
+    if (d && isFinite(d) && c.want >= d - 0.5) { c.want = null; return; }
+    const r = audio.seekable; if (!r.length || r.end(r.length - 1) < c.want) return;
+    if (!audio.seeking) { try { audio.currentTime = c.want; } catch {} }
+  }
+  ["loadeddata", "canplay", "progress", "durationchange"].forEach((ev) => audio.addEventListener(ev, trySeek));
+  audio.addEventListener("timeupdate", () => {
+    const c = cur; if (!c) return;
+    if (c.want != null) { trySeek(); return; } // position not settled yet
+    if (audio.readyState < 2) return; // a src change queues a stray timeupdate at 0
+    if (c.last !== null && !audio.paused) heard(c, c.last, audio.currentTime);
+    c.last = audio.currentTime; c.pos = audio.currentTime;
+    paint(c);
+    marks(c);
+  });
+  // "complete" means they actually listened to 95% of it, not that they skipped to the end.
+  function marks(c) {
+    const d = audio.duration; if (!d || !isFinite(d)) return;
+    for (const q of [25, 50, 75, 95]) if (!c.hit.has(q) && c.listened >= (d * q) / 100) { c.hit.add(q); send(q === 95 ? "complete" : "q" + q, c.ep, stat(c)); }
+  }
+  // When an episode finishes, the next one down the page starts.
+  audio.addEventListener("ended", () => {
+    const c = cur; if (!c) return;
+    if (c.last !== null) heard(c, c.last, audio.duration);
+    marks(c);
+    c.pos = 0; c.want = null; paintAll();
+    const next = cards[cur.i + 1];
+    if (next) { next.art.scrollIntoView({ behavior: "smooth", block: "center" }); play(next); }
+  });
+
+  // Start the newest episode on arrival (or the one a "/<slug>" link named). Phones and some browsers
+  // refuse sound before a tap; then the big button pulses until the listener taps it.
+  const start = cards.find((c) => c.ep === document.body.dataset.start) || cards[0];
+  if (start) {
+    select(start);
+    if (start !== cards[0]) start.art.scrollIntoView({ block: "start" });
+    const p = audio.play();
+    if (p && p.catch) p.catch((e) => {
+      if (e && e.name === "AbortError") return;
+      start.btn.classList.add("nudge"); paintAll();
+      // The first tap on open space counts as "play"; taps on links, buttons and bars do their own thing.
+      const onTap = (ev) => {
+        if (ev.target.closest("a, button, input, summary, details")) return;
+        document.removeEventListener("click", onTap, true);
+        if (!live && cur && audio.paused) play(cur);
+      };
+      document.addEventListener("click", onTap, true);
+      audio.addEventListener("play", () => document.removeEventListener("click", onTap, true), { once: true });
+    });
+  }
+
+  document.querySelectorAll("a[data-ask]").forEach((a) => a.addEventListener("click", () => send("ask_click", a.dataset.ask)));
+
+  // Email sign-up. The address goes to the worker (never into the stats); a flag in this
+  // browser remembers that this person already signed up.
+  const form = document.getElementById("sub-form"), done = document.getElementById("sub-done"), msg = document.getElementById("sub-msg");
+  const subscribed = () => { form.hidden = true; done.hidden = false; };
+  try { if (localStorage.getItem("hpm-subscribed")) subscribed(); } catch {}
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault(); msg.hidden = true;
+    const email = form.email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { msg.textContent = "That doesn't look like an email address."; msg.hidden = false; form.email.focus(); return; }
+    const btn = form.querySelector("button"); btn.disabled = true;
+    try {
+      const fd = new FormData(form); fd.set("email", email); fd.set("ep", cards[0] ? cards[0].ep : ""); if (vid) fd.set("listenerId", vid);
+      const res = await fetch("/api/subscribe", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't sign you up. Try again in a minute.");
+      try { localStorage.setItem("hpm-subscribed", email); } catch {}
+      subscribed();
+    } catch (e) {
+      msg.textContent = e.message; msg.hidden = false;
+    } finally { btn.disabled = false; }
+  });
+
+  // Browser notifications. The page carries the site's public push key (empty until the key is
+  // set on the worker, see DEPLOY.md); /sw.js shows the notification. iPhones only allow push
+  // for pages added to the Home Screen, so they get a hint instead of the button.
+  const pushBox = document.getElementById("push"), pushBtn = document.getElementById("push-btn"), pushOn = document.getElementById("push-on"), pushOff = document.getElementById("push-off"), pushHint = document.getElementById("push-hint"), pushMsg = document.getElementById("push-msg");
+  const pushKey = (document.querySelector('meta[name="hpm-push-key"]') || {}).content || "";
+  const keyBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  const apple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const installed = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const pushAble = Boolean(pushKey) && window.isSecureContext && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const say = (text) => { pushMsg.textContent = text; pushMsg.hidden = !text; };
+  const pushState = (on) => { pushOn.hidden = !on; pushBtn.hidden = on; };
+  const sameKey = (sub) => {
+    const k = sub.options && sub.options.applicationServerKey;
+    if (!k) return true;
+    const a = new Uint8Array(k), b = keyBytes(pushKey);
+    return a.length === b.length && a.every((x, i) => x === b[i]);
+  };
+  const flag = (on) => { try { if (on) localStorage.setItem("hpm-push", "1"); else localStorage.removeItem("hpm-push"); } catch {} };
+  async function enablePush() {
+    say(""); pushBtn.disabled = true;
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { say(perm === "denied" ? "Notifications are blocked for this site in your browser settings." : "No problem. The button is here whenever you want it."); return; }
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (sub && !sameKey(sub)) { await sub.unsubscribe(); sub = null; } // the site's key changed since
+      sub = sub || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(pushKey) });
+      const res = await fetch("/api/push/subscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...sub.toJSON(), ep: cards[0] ? cards[0].ep : "", listenerId: vid }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw Object.assign(new Error(data.error || ""), { server: true });
+      flag(true); pushState(true);
+    } catch (e) {
+      flag(false); // never remember "on" when the worker doesn't have the subscription; the button comes back next visit
+      // The worker's own message (such as the daily cap) is shown; a browser's error isn't readable, so a plain line instead.
+      say(e.server && e.message ? e.message : "Couldn't switch notifications on in this browser. Try again, or use the email box.");
+    } finally { pushBtn.disabled = false; }
+  }
+  async function disablePush() {
+    pushOff.disabled = true;
+    try {
+      const reg = await navigator.serviceWorker.getRegistration("/sw.js");
+      const sub = reg && await reg.pushManager.getSubscription();
+      if (sub) {
+        fetch("/api/push/unsubscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
+        await sub.unsubscribe();
+      }
+    } catch {}
+    flag(false); pushOff.disabled = false; pushState(false); say("Notifications are off in this browser.");
+  }
+  if (pushAble) {
+    pushBox.hidden = false;
+    pushBtn.addEventListener("click", enablePush);
+    pushOff.addEventListener("click", disablePush);
+    let flagged = false; try { flagged = Boolean(localStorage.getItem("hpm-push")); } catch {}
+    if (flagged && Notification.permission === "granted") {
+      navigator.serviceWorker.getRegistration("/sw.js").then(async (reg) => {
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (sub && sameKey(sub)) pushState(true);
+        else if (sub) enablePush(); // the site's key changed: subscribe again with the new one, no prompt needed
+        else flag(false);
+      }).catch(() => {});
+    } else if (flagged) flag(false);
+  } else if (pushKey && apple && !installed) {
+    pushBox.hidden = false; pushBtn.hidden = true; pushHint.hidden = false;
+  }
+})();
+</script>
+</body>
+</html>
