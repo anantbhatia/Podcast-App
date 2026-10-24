@@ -1,5 +1,139 @@
 [
   {
+    "kind": "special",
+    "specialNo": 1,
+    "slug": "special-01",
+    "title": "Patch in Hours",
+    "date": "2026-10-24",
+    "durationSec": 1056,
+    "description": "A bug under most of the web, a fix rushed out a day early, and an embargo that broke in hours: what the PHP scare really hit, and why AI made it faster.",
+    "sources": [
+      {
+        "story": "Patch in Hours",
+        "refs": [
+          {
+            "title": "Today's PHP Security Release, and How We're Strengthening PHP Security",
+            "outlet": "The PHP Foundation",
+            "url": "https://thephp.foundation/blog/2026/10/21/todays-php-security-release-and-how-were-strengthening-php-security/"
+          },
+          {
+            "title": "PHP security advisories (21 and 23 October 2026)",
+            "outlet": "PHP.net",
+            "url": "https://www.php.net/"
+          },
+          {
+            "title": "PHP 5 ChangeLog",
+            "outlet": "PHP.net",
+            "url": "https://www.php.net/ChangeLog-5.php"
+          },
+          {
+            "title": "Amazon Threat Intelligence identifies PHP2Shell exploitation prior to public disclosure in MadPot",
+            "outlet": "AWS Security Blog",
+            "url": "https://aws.amazon.com/blogs/security/amazon-threat-intelligence-identifies-php2shell-exploitation-prior-to-public-disclosure-in-madpot/"
+          },
+          {
+            "title": "php2shell",
+            "outlet": "Calif",
+            "url": "https://calif.io/php2shell"
+          },
+          {
+            "title": "PHP2Shell: AI uncovers critical RCE vulnerabilities affecting 70% of the Internet",
+            "outlet": "Wiz",
+            "url": "https://www.wiz.io/blog/php2shell-php-rce"
+          },
+          {
+            "title": "PHP devs publish critical bug fix as site owners warned: Pull 'em offline if you're unpatched",
+            "outlet": "The Register",
+            "url": "https://www.theregister.com/security/2026/10/21/php-devs-publish-critical-bug-fix-as-site-owners-warned-pull-em-offline-if-youre-unpatched/5304519"
+          },
+          {
+            "title": "PHP blames supply chain security biz Chainguard for putting huge chunks of the web at risk",
+            "outlet": "The Register",
+            "url": "https://www.theregister.com/security/2026/10/22/php-blames-supply-chain-security-biz-chainguard-for-putting-huge-chunks-of-the-web-at-risk/5304611"
+          },
+          {
+            "title": "PHP2Shell Exploit Attempts Hit Millions as Attackers Try to Deploy Mirai Malware",
+            "outlet": "The Hacker News",
+            "url": "https://thehackernews.com/2026/10/php2shell-exploit-attempts-hit-millions.html"
+          },
+          {
+            "title": "OpenAI says GPT-5.6 Sol found a PHP flaw before attackers did",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/openai-says-gpt-5-6-sol-found-a-php-flaw-before-attackers-did/"
+          },
+          {
+            "title": "Usage Statistics and Market Share of Server-side Programming Languages for Websites, October 2026",
+            "outlet": "W3Techs",
+            "url": "https://w3techs.com/technologies/overview/programming_language"
+          },
+          {
+            "title": "Usage Statistics and Market Share of Content Management Systems, October 2026",
+            "outlet": "W3Techs",
+            "url": "https://w3techs.com/technologies/overview/content_management"
+          },
+          {
+            "title": "PHP",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/PHP"
+          },
+          {
+            "title": "MediaWiki",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/MediaWiki"
+          },
+          {
+            "title": "Moodle",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Moodle"
+          },
+          {
+            "title": "PHP Foundation",
+            "outlet": "Open Collective",
+            "url": "https://opencollective.com/phpfoundation"
+          },
+          {
+            "title": "The Value of Open Source Software (Working Paper 24-038)",
+            "outlet": "Harvard Business School",
+            "url": "https://www.hbs.edu/ris/Publication%20Files/24-038_51f8444f-502c-4139-8bf2-56eb4b65c58a.pdf"
+          },
+          {
+            "title": "PHP (2023)",
+            "outlet": "Sovereign Tech Agency",
+            "url": "https://www.sovereign.tech/tech/php"
+          },
+          {
+            "title": "Alpha-Omega",
+            "outlet": "Alpha-Omega (Linux Foundation project)",
+            "url": "https://alpha-omega.dev/"
+          },
+          {
+            "title": "Demystifying the Mythos or Disrupting Bugonomics? From Zero-Day Asymmetry to Defender Remediation Throughput",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2605.24632"
+          },
+          {
+            "title": "Bramah lock",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Bramah_lock"
+          },
+          {
+            "title": "Alfred Charles Hobbs",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Alfred_Charles_Hobbs"
+          },
+          {
+            "title": "Common Vulnerability Scoring System v4.0: Specification Document",
+            "outlet": "FIRST",
+            "url": "https://www.first.org/cvss/v4.0/specification-document"
+          }
+        ]
+      }
+    ],
+    "audio": "special-01.mp3",
+    "bytes": 12677533,
+    "publishedAt": "2026-10-24T23:38:21.453Z"
+  },
+  {
     "episode": 2,
     "slug": "ep02",
     "title": "House of Cards",
