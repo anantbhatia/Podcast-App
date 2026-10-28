@@ -1,5 +1,203 @@
 [
   {
+    "episode": 3,
+    "slug": "ep03",
+    "title": "Your AI went on crazy Shopping Spree. Who pays for the returns?",
+    "date": "2026-10-28",
+    "durationSec": 1213,
+    "description": "How is US Retail Industry dealing with: Who pays when customer's Shopping  Agent makes a mistake?",
+    "summary": [
+      "The stores that blocked shopping bots now set the rules, and decide who pays when your bot buys wrong.",
+      "Are AI agents hiring humans yet? What 303 paid bot tasks and the jobs data really show.",
+      "A chatbot company went bankrupt. What happens to everything people told it, and why delete isn't enough."
+    ],
+    "sources": [
+      {
+        "story": "Who's holding the bag?",
+        "refs": [
+          {
+            "title": "Making It Possible for Agents to Shop on Behalf of Customers",
+            "outlet": "Walmart",
+            "url": "https://corporate.walmart.com/news/2026/10/Making-It-Possible-for-Agents-to-Shop-on-Behalf-of-Customers"
+          },
+          {
+            "title": "Walmart sets the rules for AI shopping agents",
+            "outlet": "ActuIA",
+            "url": "https://actuia.com/en/news/walmart-sets-the-rules-for-ai-shopping-agents"
+          },
+          {
+            "title": "1Password for Agents",
+            "outlet": "1Password",
+            "url": "https://1password.com/press/2026/october/1password-for-agents-trust-layer-personal-ai-agents"
+          },
+          {
+            "title": "Introducing Claude Duet",
+            "outlet": "Claude blog",
+            "url": "https://claude.com/resources/articles/claude-duet"
+          },
+          {
+            "title": "AI shopping agents are getting blocked",
+            "outlet": "The Verge",
+            "url": "https://www.theverge.com/report/1015811/ai-shopping-agents-blocked-amazon-the-realreal-target-meta-muse"
+          },
+          {
+            "title": "Meta's commercial terms remove 'train', keep crawling clause",
+            "outlet": "Relevant Audience",
+            "url": "https://www.relevantaudience.com/meta/meta-commercial-terms-removes-train-keeps-crawling-clause/"
+          },
+          {
+            "title": "Meta removes training clause from commercial terms",
+            "outlet": "Search Engine Journal",
+            "url": "https://www.searchenginejournal.com/meta-removes-training-crawl-clause-commercial-terms/593584/"
+          },
+          {
+            "title": "Schwab blocks AI agents",
+            "outlet": "The Next Web",
+            "url": "https://thenextweb.com/news/schwab-blocks-ai-agents-meta-muse"
+          },
+          {
+            "title": "2025 Retail Returns Landscape",
+            "outlet": "NRF and Happy Returns",
+            "url": "https://nrf.com/research/2025-retail-returns-landscape"
+          },
+          {
+            "title": "Visa Inc.",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Visa_Inc."
+          },
+          {
+            "title": "15 U.S.C. §1642",
+            "outlet": "Legal Information Institute",
+            "url": "https://www.law.cornell.edu/uscode/text/15/1642"
+          },
+          {
+            "title": "Regulation Z §1026.12",
+            "outlet": "CFPB",
+            "url": "https://www.consumerfinance.gov/rules-policy/regulations/1026/12/"
+          },
+          {
+            "title": "Sellers.json explained",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/sellers-json/"
+          },
+          {
+            "title": "Preference Is Not Permission",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2610.29216"
+          }
+        ]
+      },
+      {
+        "story": "You asked: Are any AI agents hiring humans yet?",
+        "refs": [
+          {
+            "title": "Security Risks of AI Agents Hiring Humans: An Empirical Marketplace Study",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2602.19514"
+          },
+          {
+            "title": "RentAHuman Terms",
+            "outlet": "RentAHuman",
+            "url": "https://rentahuman.ai/terms"
+          },
+          {
+            "title": "US cybersecurity job postings fall 26% as AI security engineer demand soars",
+            "outlet": "SecurityWeek",
+            "url": "https://www.securityweek.com/us-cybersecurity-job-postings-fall-26-as-ai-security-engineer-demand-soars/"
+          }
+        ]
+      },
+      {
+        "story": "Who owns your chats?",
+        "refs": [
+          {
+            "title": "Notice of Interest and Reservation of Rights (Doc 33)",
+            "outlet": "State attorneys general, via NY AG",
+            "url": "https://ag.ny.gov/sites/default/files/court-filings/alaska-et-al-v-characters-technologies-inc-notice-of-interest-2026.pdf"
+          },
+          {
+            "title": "US states seek children's data protections in Character.AI bankruptcy",
+            "outlet": "Reuters via WHTC",
+            "url": "https://whtc.com/2026/10/14/us-states-seek-childrens-data-protections-in-character-ai-bankruptcy/"
+          },
+          {
+            "title": "An update on Character.AI",
+            "outlet": "Character.AI blog",
+            "url": "https://blog.character.ai/an-update-on-character-ai/"
+          },
+          {
+            "title": "Character.AI",
+            "outlet": "Bondoro",
+            "url": "https://bondoro.com/character-ai/"
+          },
+          {
+            "title": "Character.AI loses 66 of its 86 staff to Disney ahead of bankruptcy sale",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/character-ai-loses-66-of-its-86-staff-to-disney-ahead-of-bankruptcy-sale/"
+          },
+          {
+            "title": "Character.AI says its 163 million users are not bankruptcy creditors",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/character-ai-says-its-163-million-users-are-not-bankruptcy-creditors/"
+          },
+          {
+            "title": "Roblox Requires Age Checks for Communication",
+            "outlet": "Roblox",
+            "url": "https://about.roblox.com/newsroom/2025/11/roblox-requires-age-checks-limits-minor-and-adult-chat"
+          },
+          {
+            "title": "Roblox: Age verification slows growth",
+            "outlet": "heise online",
+            "url": "https://heise.de/-11279275"
+          },
+          {
+            "title": "Discord data breach affects at least 70,000 users",
+            "outlet": "TechCrunch",
+            "url": "https://techcrunch.com/2025/10/09/discord-suffers-data-breach-impacting-at-least-70000-users"
+          },
+          {
+            "title": "Your chatbot just went bankrupt. What happens now to your user data?",
+            "outlet": "KQED",
+            "url": "https://www.kqed.org/news/12104362/your-chatbot-just-went-bankrupt-what-happens-now-to-your-user-data"
+          },
+          {
+            "title": "Character.ai bankruptcy: how to export your chats before the sale",
+            "outlet": "Notebookcheck",
+            "url": "https://www.notebookcheck.net/Character-ai-bankruptcy-How-to-export-your-chats-before-the-sale.1423870.0.html"
+          },
+          {
+            "title": "Google Aims to Boost AI With Purchase of Spirit Airlines Data",
+            "outlet": "Bloomberg Law",
+            "url": "https://news.bloomberglaw.com/privacy-and-data-security/google-aims-to-boost-ai-with-purchase-of-spirit-airlines-data"
+          },
+          {
+            "title": "Google to buy Spirit Airlines business data for $10 million",
+            "outlet": "Reuters via The Star",
+            "url": "https://www.thestar.com.my/tech/tech-news/2026/08/18/google-to-buy-spirit-airlines-business-data-for-10-million"
+          },
+          {
+            "title": "Google wins Spirit Airlines data auction with $10M bid and picks who scrubs it",
+            "outlet": "Implicator",
+            "url": "https://www.implicator.ai/google-wins-spirit-airlines-data-auction-with-10m-bid-and-picks-who-scrubs-it/"
+          },
+          {
+            "title": "Court delays Google's acquisition of Spirit's business data",
+            "outlet": "ch-aviation",
+            "url": "https://www.ch-aviation.com/news/170908-court-delays-googles-acquisition-of-spirits-business-data"
+          },
+          {
+            "title": "Spirit's privacy ombudsman backs Google's $10m data deal",
+            "outlet": "The Next Web",
+            "url": "https://thenextweb.com/news/google-spirit-airlines-data-ombudsman-approval"
+          }
+        ]
+      }
+    ],
+    "audio": "ep03.mp3",
+    "bytes": 14566186,
+    "publishedAt": "2026-10-28T17:51:11.278Z"
+  },
+  {
     "kind": "special",
     "specialNo": 1,
     "slug": "special-01",
