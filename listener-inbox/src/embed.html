@@ -99,9 +99,12 @@ noscript a { font-weight: 800; }
   const hour = new Date().getHours(), slot = hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : "evening";
   const top = document.getElementById("top"); top.textContent = "Good " + slot + " · " + top.textContent;
   let greeting = false, greeted = false; // the clip is playing; this page already greeted
-  const greetDue = () => { if (greeted) return false; try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } };
+  // Decided once, when the page opens (as on the listening page): due unless this browser heard a greeting in the last three hours.
+  const greetWanted = (() => { try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } })();
+  const greetDue = () => greetWanted && !greeted;
   function startEpisode() { greeting = false; audio.src = epSrc; const p = audio.play(); if (p && p.catch) p.catch(() => paint()); }
   function greetThenPlay() {
+    if (want == null && audio.readyState >= 2 && !audio.ended && audio.currentTime > 0.5) want = audio.currentTime; // a paused position comes back after the clip
     greeting = true; audio.src = "/audio/greet-" + slot + ".mp3"; paint();
     const p = audio.play();
     if (p && p.catch) p.catch((e) => { if (!greeting) return; if (e && e.name === "NotAllowedError") { greeting = false; audio.src = epSrc; paint(); } else startEpisode(); });

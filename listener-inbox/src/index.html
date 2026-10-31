@@ -640,7 +640,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
       start.btn.classList.add("nudge"); paintAll();
       // The first tap on open space counts as "play"; taps on links, buttons and bars do their own thing.
       const onTap = (ev) => {
-        if (ev.target.closest("a, button, input, summary, details")) return;
+        if (ev.target.closest("a, button, input, label, form, summary, details")) return;
         document.removeEventListener("click", onTap, true);
         if (!live && cur && audio.paused) play(cur);
       };

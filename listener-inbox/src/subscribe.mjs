@@ -83,6 +83,8 @@ async function fields(request) {
 
 const key = (token) => `subs/${token}.json`;
 const clipKey = (gid, slot) => `greetclip/${gid}/${slot}`;
+const META_MAX = 1000; // KV refuses metadata over 1024 bytes; the copy there drops its oldest slugs to fit
+const size = (o) => new TextEncoder().encode(JSON.stringify(o)).length;
 function store(env, token, rec) {
   const record = {
     email: rec.email, since: rec.since, ep: rec.ep || "", notified: (rec.notified || []).slice(-KEEP),
@@ -90,7 +92,10 @@ function store(env, token, rec) {
     clipsFor: typeof rec.clipsFor === "string" ? rec.clipsFor.slice(0, MAX_NAME) : "", // the name the stored clips say
     gi: rec.gi ? 1 : 0, // the greet index is written
   };
-  return env.INBOX.put(key(token), JSON.stringify(record), { metadata: record });
+  // A long address with many long slugs can pass 1 KB; the value keeps them all, the metadata the recent ones.
+  const metadata = { ...record, notified: [...record.notified] };
+  while (size(metadata) > META_MAX && metadata.notified.length) metadata.notified.shift();
+  return env.INBOX.put(key(token), JSON.stringify(record), { metadata });
 }
 // Writes greet/<gid> -> token for a sign-up that has none yet (ones from before the greeting).
 async function indexGreet(env, token, rec) {
@@ -173,9 +178,10 @@ async function byGreetId(env, gid) {
   return rec ? { token, gid, ...rec } : null;
 }
 const greeting = (rec) => ({ name: rec.name || "", clips: Boolean(rec.name) && rec.clipsFor === rec.name });
-// A changed or cleared name drops the clips that say the old one (they would stay downloadable otherwise).
+// A changed or cleared name drops the clips that say the old one (they would stay downloadable
+// otherwise), whether or not the publish run got as far as recording which name they say.
 async function rename(env, token, gid, plain, name) {
-  if (plain.clipsFor) for (const slot of SLOTS) await env.INBOX.delete(clipKey(gid, slot));
+  for (const slot of SLOTS) await env.INBOX.delete(clipKey(gid, slot));
   await store(env, token, { ...plain, name, clipsFor: "" });
   return { ...plain, name, clipsFor: "" };
 }
