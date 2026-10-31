@@ -95,40 +95,59 @@ The script drops an `episode` number sent on a special (and says so), and the pr
 
 ## Tell subscribers
 
-Listeners can leave their email on the listening page, or turn on a notification in their browser ("Notify me in this browser"). The worker keeps both in the inbox KV namespace. It can't send mail, so the email goes out as part of each publish, after the deploy is checked; the browser notifications it sends itself when asked. `INBOX_URL` and `INBOX_TOKEN` are in the cloud environment; never print the token, and keep the address list in a temporary file, not in the thread.
+Listeners can leave their email (and, if they like, a first name) on the listening page, or turn on a notification in their browser ("Notify me in this browser"). The worker keeps both in the inbox KV namespace. It can't send mail, so the email goes out as part of each publish, after the deploy is checked; the browser notifications it sends itself when asked. `INBOX_URL` and `INBOX_TOKEN` are in the cloud environment; never print the token, and keep the address list in a temporary file, not in the thread. Names are personal too: they stay in that file and out of the thread.
 
 1. List who is still to be emailed about this episode:
    ```sh
    curl -sS -H "Authorization: Bearer $INBOX_TOKEN" "$INBOX_URL/api/subscribers?ep=ep02" > /tmp/subs.json
    ```
-   Each item has `email`, `since`, `notified` (episodes already emailed) and `unsubscribe` (that person's own link). `pending` is how many are left for this episode; `count` is everyone. Anyone can type an address into the page, so look at the list before sending: if `pending` is more than the show would expect (dozens, not hundreds), or many addresses share one domain or look made up, stop and show Anant the count instead of sending; never send more than 50 in one publish without his go-ahead.
-2. For each item, send one email from Anant's Gmail through the Gmail connector, to that one address only (never several subscribers in one To or Cc line, since each has a different unsubscribe link), and mark that address right after its email went (step 3), before the next one, so a publish that stops partway can be run again without emailing anyone twice:
+   Each item has `email`, `name` (the first name they gave, or ""), `since`, `notified` (episodes already emailed), `listen` (that person's own link to this episode: it carries their greeting id, so the page greets them by name) and `unsubscribe` (their own unsubscribe link). `pending` is how many are left for this episode; `count` is everyone. Anyone can type an address into the page, so look at the list before sending: if `pending` is more than the show would expect (dozens, not hundreds), or many addresses share one domain or look made up, stop and show Anant the count instead of sending; never send more than 50 in one publish without his go-ahead.
+2. Render the spoken greeting for anyone who gave a name since the last publish (a few seconds of the hosts saying "Good morning, <Name>!" in their ElevenLabs voices, stored on the worker; see "The greeting" below):
+   ```sh
+   node scripts/greet-clips.mjs --named --dry-run   # how many, and the credits (about 60 per person)
+   node scripts/greet-clips.mjs --named
+   ```
+   It stops above 25 people in one run until it is run with `--max <n>`, so a host sees an unusual spend first. A failure here doesn't hold the publish: those listeners get the show's generic greeting until the next run.
+3. For each item, send one email from Anant's Gmail through the Gmail connector, to that one address only (never several subscribers in one To or Cc line, since each has a different listen link and unsubscribe link), and mark that address right after its email went (step 4), before the next one, so a publish that stops partway can be run again without emailing anyone twice:
    - Subject: `New episode: <title> (Two Hallucinating PMs)`
-   - Body, plain text (for a special the first line is `Special episode <N> of Two Hallucinating PMs is up: <title>`, the badge text as /episodes.json's `label` shows it):
+   - Body, plain text (for a special the first line is `Special episode <N> of Two Hallucinating PMs is up: <title>`, the badge text as /episodes.json's `label` shows it; `Hi <name>,` on top when the item has a name):
      ```
      Episode <N> of Two Hallucinating PMs is up: <title>
 
      <summary bullets, one per line, or the description>
 
-     Listen: https://listen.2hallucinatingpms.workers.dev/<slug>?from=email
+     Listen: <that item's listen link>
      Got a question for the show? https://listen.2hallucinatingpms.workers.dev/ask?ep=<slug>
 
      You get this because you signed up on the listening page. To stop: <that item's unsubscribe link>
      ```
-3. Mark each address told, right after its email:
+4. Mark each address told, right after its email:
    ```sh
    curl -sS -X POST -H "Authorization: Bearer $INBOX_TOKEN" -H "content-type: application/json" \
      --data '{"ep":"ep02","emails":["<the address just emailed>"]}' "$INBOX_URL/api/notified"
    ```
    The answer says how many were `marked` (`already` if it was marked before, `unknown` if the address isn't signed up). It takes up to 40 addresses in one call; more are reported as `skipped`. If anything stopped partway, run step 1 again: it lists only the ones not yet marked.
-4. Push the notification to every browser that asked for one. One call sends to up to 10 browsers (the free plan's limit on what a request can do); repeat it until `pending` is 0:
+5. Push the notification to every browser that asked for one. One call sends to up to 10 browsers (the free plan's limit on what a request can do); repeat it until `pending` is 0:
    ```sh
    curl -sS -X POST -H "Authorization: Bearer $INBOX_TOKEN" -H "content-type: application/json" \
      --data '{"ep":"ep02","title":"New episode: <title>","body":"<the description, one line>","url":"/#ep02"}' "$INBOX_URL/api/push/send"
    ```
    The answer counts `sent`, `gone` (browsers that dropped their subscription; removed), `failed` (retried on the next call, up to three times for this episode), `pending` (still to do, the retries included) and `total`. Each browser gets the message once per episode, so re-running is safe. A 503 means the push key isn't set on the worker yet (the one-time step in `DEPLOY.md`); the emails still go out.
 
-The hosts see both counts on `/stats` and the email list under them. `/unsubscribe` is the page behind the link in every email; it asks for one click before removing the sign-up (so mail scanners that open links can't), and takes a typed address for someone who lost the link. Browser notifications are turned off from the page's "Turn off" link.
+The hosts see both counts on `/stats` and the email list (with names) under them. `/unsubscribe` is the page behind the link in every email; it asks for one click before removing the sign-up (so mail scanners that open links can't), and takes a typed address for someone who lost the link. Browser notifications are turned off from the page's "Turn off" link.
+
+## The greeting
+
+The listening page greets each listener by the time of day on their own device: a bubble at the top reads "Good morning!", "Good afternoon!" (noon to 5 pm) or "Good evening!" (5 pm to 5 am), and the first episode of a visit starts with the hosts saying it, a few seconds in their ElevenLabs voices through the same player (`public/audio/greet-<slot>.mp3`, rendered once by `node scripts/greet-clips.mjs --generic`; the lines are in that script). A visit is three hours in that browser, so a refresh doesn't repeat it; pausing the greeting skips it. The embed does the same with the generic clip. The podcast feed is untouched: Spotify and YouTube listeners hear the episode as published.
+
+A subscriber who arrives from the `listen` link in their email is greeted by name, in the bubble and, once their clips are rendered (step 2 above), in the voice: "Good morning, Anurag!". The link carries a greeting id (`?l=<id>`, derived one way from the sign-up, never the unsubscribe token or an address); the page keeps the id in that browser and drops it from the address bar, so opening the site directly later greets them too, until they tap "Not <name>?" on a shared device. The name comes from the sign-up form's optional "First name", from the page itself (a subscriber the page knows but has no name for is asked "What should we call you?"), or from a host:
+
+```sh
+curl -sS -X POST -H "Authorization: Bearer $INBOX_TOKEN" -H "content-type: application/json" \
+  --data '{"email":"<address>","name":"Anurag"}' "$INBOX_URL/api/subscribers/name"
+```
+
+A name is letters, spaces, hyphens and apostrophes, up to 40 characters; an empty name clears it. A name changed after its clips were rendered gets the generic voice until the next `--named` run (the listing's `clipsFor` says which name the stored clips say). Names and addresses stay in KV: never in the stats, the repo or a thread.
 
 ## If a check fails
 

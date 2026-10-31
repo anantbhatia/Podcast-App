@@ -67,7 +67,7 @@ noscript a { font-weight: 800; }
   <symbol id="i-fwd15" viewBox="0 0 28 28"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M21.36 10.25A8.5 8.5 0 1 1 14 6M11 3l3 3-3 3"/><text x="14" y="18" text-anchor="middle" fill="currentColor" font-size="10" font-weight="900">15</text></symbol>
 </svg>
 <div class="card">
-  <div class="top"><img src="/img/logo-96.webp" width="26" height="26" alt=""><span>Two Hallucinating PMs · <!-- EP:LABEL --> · <!-- EP:CLOCK --></span></div>
+  <div class="top"><img src="/img/logo-96.webp" width="26" height="26" alt=""><span id="top">Two Hallucinating PMs · <!-- EP:LABEL --> · <!-- EP:CLOCK --></span></div>
   <h1><!-- EP:TITLE --></h1>
   <div class="player">
     <div class="controls">
@@ -90,9 +90,22 @@ noscript a { font-weight: 800; }
 <script>
 // Same events as the listening page (view, play, pause, 25/50/75/finished, skips, Ask clicks), tagged
 // with "embed:<host of the page around us>" so the hosts' stats show where the embed sits.
+// The greeting, as on the listening page: the top line says good morning, afternoon or evening by
+// the device's clock, and the first play of a visit (three hours in this browser) starts with the
+// hosts saying it (the show's generic clip; the embed knows no names). Pausing it skips it.
 (() => {
   const audio = document.getElementById("a"), body = document.body;
-  const ep = body.dataset.ep, dur0 = +body.dataset.dur || 0;
+  const ep = body.dataset.ep, dur0 = +body.dataset.dur || 0, epSrc = audio.getAttribute("src");
+  const hour = new Date().getHours(), slot = hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : "evening";
+  const top = document.getElementById("top"); top.textContent = "Good " + slot + " · " + top.textContent;
+  let greeting = false, greeted = false; // the clip is playing; this page already greeted
+  const greetDue = () => { if (greeted) return false; try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } };
+  function startEpisode() { greeting = false; audio.src = epSrc; const p = audio.play(); if (p && p.catch) p.catch(() => paint()); }
+  function greetThenPlay() {
+    greeting = true; audio.src = "/audio/greet-" + slot + ".mp3"; paint();
+    const p = audio.play();
+    if (p && p.catch) p.catch((e) => { if (!greeting) return; if (e && e.name === "NotAllowedError") { greeting = false; audio.src = epSrc; paint(); } else startEpisode(); });
+  }
   let vid = null;
   try { vid = localStorage.getItem("hpm-listener"); if (!vid) { vid = crypto.randomUUID(); localStorage.setItem("hpm-listener", vid); } } catch {}
   const sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random())).slice(0, 18);
@@ -110,14 +123,14 @@ noscript a { font-weight: 800; }
   const fmt = (s) => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
   let listened = 0, last = null, want = null, live = false, dragging = false;
   const got = new Set(), hit = new Set();
-  const dur = () => (isFinite(audio.duration) && audio.duration) || dur0;
+  const dur = () => (!greeting && isFinite(audio.duration) && audio.duration) || dur0;
   const stat = () => ({ t: Math.round(audio.currentTime || 0), d: Math.round(dur()), l: Math.round(listened) });
 
   function paint() {
     const playing = !audio.paused && !audio.ended;
     body.classList.toggle("is-playing", playing);
     btn.setAttribute("aria-label", playing ? "Pause" : "Play");
-    const d = dur(), t = want != null ? want : audio.readyState >= 2 ? audio.currentTime : 0;
+    const d = dur(), t = want != null ? want : !greeting && audio.readyState >= 2 ? audio.currentTime : 0;
     if (!dragging) { seek.value = d ? Math.round((1000 * t) / d) : 0; seek.style.setProperty("--p", (d ? (100 * t) / d : 0) + "%"); curEl.textContent = fmt(t); }
     durEl.textContent = fmt(d);
   }
@@ -127,7 +140,7 @@ noscript a { font-weight: 800; }
     for (let s = Math.floor(from); s < to; s++) if (!got.has(s)) { got.add(s); listened += 1; }
   }
   function trySeek() {
-    if (want == null || audio.readyState < 2) return;
+    if (greeting || want == null || audio.readyState < 2) return;
     if (Math.abs(audio.currentTime - want) <= 0.5) { want = null; return; }
     const d = audio.duration;
     if (d && isFinite(d) && want >= d - 0.5) { want = null; return; } // at or past the end: give it up, as the page does
@@ -142,26 +155,41 @@ noscript a { font-weight: 800; }
     seekTo(t);
     send(delta < 0 ? "skip_back" : "skip_fwd", Object.assign(stat(), { t: Math.round(t) }));
   }
-  btn.addEventListener("click", () => { if (audio.paused || audio.ended) { const p = audio.play(); if (p && p.catch) p.catch(() => paint()); } else audio.pause(); });
+  btn.addEventListener("click", () => {
+    if (!(audio.paused || audio.ended)) return audio.pause();
+    if (greetDue()) return greetThenPlay();
+    const p = audio.play(); if (p && p.catch) p.catch(() => paint());
+  });
   document.querySelectorAll(".skip").forEach((b) => b.addEventListener("click", () => skip(b.classList.contains("back") ? -15 : 15)));
   seek.addEventListener("input", () => { dragging = true; curEl.textContent = fmt((seek.value / 1000) * dur()); seek.style.setProperty("--p", seek.value / 10 + "%"); });
   seek.addEventListener("change", () => { dragging = false; const d = dur(); seekTo(Math.min((seek.value / 1000) * d, Math.max(0, d - 1))); });
-  audio.addEventListener("play", () => { last = audio.currentTime; live = true; send("play", stat()); paint(); });
-  audio.addEventListener("pause", () => { if (live && !audio.ended) send("pause", stat()); live = false; paint(); });
-  audio.addEventListener("seeked", () => { last = audio.currentTime; if (want != null && Math.abs(audio.currentTime - want) < 0.5) want = null; });
+  audio.addEventListener("play", () => {
+    if (greeting) { greeted = true; try { localStorage.setItem("hpm-greeted", String(Date.now())); } catch {} paint(); return; }
+    last = audio.currentTime; live = true; send("play", stat()); paint();
+  });
+  audio.addEventListener("pause", () => {
+    if (greeting) { if (!audio.ended) { greeting = false; audio.src = epSrc; } paint(); return; } // pausing the greeting skips it
+    if (live && !audio.ended) send("pause", stat()); live = false; paint();
+  });
+  audio.addEventListener("error", () => { if (greeting) startEpisode(); });
+  audio.addEventListener("seeked", () => { if (greeting) return; last = audio.currentTime; if (want != null && Math.abs(audio.currentTime - want) < 0.5) want = null; });
   ["loadedmetadata", "loadeddata", "canplay", "progress", "durationchange"].forEach((ev) => audio.addEventListener(ev, () => { trySeek(); paint(); }));
   function marks() {
     const d = audio.duration; if (!d || !isFinite(d)) return;
     for (const q of [25, 50, 75, 95]) if (!hit.has(q) && listened >= (d * q) / 100) { hit.add(q); send(q === 95 ? "complete" : "q" + q, stat()); }
   }
   audio.addEventListener("timeupdate", () => {
+    if (greeting) return;
     if (want != null) { trySeek(); return; }
     if (audio.readyState < 2) return;
     if (last !== null && !audio.paused) heard(last, audio.currentTime);
     last = audio.currentTime;
     paint(); marks();
   });
-  audio.addEventListener("ended", () => { if (last !== null) heard(last, audio.duration); marks(); live = false; paint(); });
+  audio.addEventListener("ended", () => {
+    if (greeting) return startEpisode(); // the greeting is over: the episode starts
+    if (last !== null) heard(last, audio.duration); marks(); live = false; paint();
+  });
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.metadata = new MediaMetadata({ title: document.querySelector("h1").textContent, artist: "Two Hallucinating PMs", artwork: [{ src: "/icon-512.png", sizes: "512x512", type: "image/png" }] }); } catch {}
     for (const [action, sign] of [["seekbackward", -1], ["seekforward", 1]]) {

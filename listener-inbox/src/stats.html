@@ -127,9 +127,9 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
 
     <section class="panel">
       <h2>Email subscribers</h2>
-      <p class="note" style="margin:0 0 10px">People who asked to be emailed when a new episode is up. Each publish emails the ones not yet told about that episode, and pushes a notification to every browser counted in the tile above (see ADD-EPISODE.md).</p>
+      <p class="note" style="margin:0 0 10px">People who asked to be emailed when a new episode is up. Each publish emails the ones not yet told about that episode, and pushes a notification to every browser counted in the tile above (see ADD-EPISODE.md). The name is what the page greets them by when they arrive from their email link; "–" means they haven't given one yet.</p>
       <div class="tablewrap"><table>
-        <thead><tr><th>Email</th><th>Since</th><th>Told about</th></tr></thead>
+        <thead><tr><th>Email</th><th>Name</th><th>Since</th><th>Told about</th></tr></thead>
         <tbody id="subs"></tbody>
       </table></div>
     </section>
@@ -215,11 +215,11 @@ th { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: 
 
   async function loadSubscribers() {
     const res = await fetch("/api/subscribers", { headers: { authorization: "Bearer " + pw } });
-    if (!res.ok) { $("subs").innerHTML = `<tr><td colspan="3" class="muted" style="text-align:left">Couldn't load the list.</td></tr>`; return; }
+    if (!res.ok) { $("subs").innerHTML = `<tr><td colspan="4" class="muted" style="text-align:left">Couldn't load the list.</td></tr>`; return; }
     const d = await res.json();
     $("subs").innerHTML = d.items.length ? d.items.map((s) =>
-      `<tr><td style="text-align:left">${esc(s.email)}</td><td>${new Date(s.since).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td><td>${esc(s.notified.join(", ") || "–")}</td></tr>`).join("")
-      : `<tr><td colspan="3" class="muted" style="text-align:left">No sign-ups yet.</td></tr>`;
+      `<tr><td style="text-align:left">${esc(s.email)}</td><td style="text-align:left">${esc(s.name || "") || "–"}</td><td>${new Date(s.since).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td><td>${esc(s.notified.join(", ") || "–")}</td></tr>`).join("")
+      : `<tr><td colspan="4" class="muted" style="text-align:left">No sign-ups yet.</td></tr>`;
   }
 
   $("login").addEventListener("submit", (e) => { e.preventDefault(); pw = $("pw").value.trim(); if (pw) load(); });

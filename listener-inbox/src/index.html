@@ -4,6 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title><!-- META:TITLE --></title>
 <!-- The share card (Substack, WhatsApp, LinkedIn, Slack and the rest read these tags): the newest episode on "/",
      that episode on "/<slug>". The worker fills them from episodes.json. -->
@@ -152,8 +153,9 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 .subscribe strong { display: block; font-family: var(--display); font-weight: 400; font-size: 1.45rem; line-height: 1.15; }
 .subscribe span { font-weight: 600; }
 .sub-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
-.sub-row input[type=email] { flex: 1 1 14rem; min-width: 0; font: inherit; font-weight: 600; color: var(--text); background: var(--surface); border: 2.5px solid var(--line); border-radius: 999px; padding: 9px 16px; box-shadow: 3px 3px 0 var(--shade); }
-.sub-row input[type=email]:focus { outline: none; box-shadow: 3px 3px 0 var(--cyan); }
+.sub-row input:not(.hp) { flex: 1 1 14rem; min-width: 0; font: inherit; font-weight: 600; color: var(--text); background: var(--surface); border: 2.5px solid var(--line); border-radius: 999px; padding: 9px 16px; box-shadow: 3px 3px 0 var(--shade); }
+.sub-row input[name=name] { flex: 1 1 9rem; }
+.sub-row input:not(.hp):focus { outline: none; box-shadow: 3px 3px 0 var(--cyan); }
 .sub-row input::placeholder { color: var(--muted); }
 .sub-row .pill { background: var(--yellow); cursor: pointer; font: inherit; font-weight: 800; }
 .sub-row .pill:disabled { opacity: 0.7; cursor: default; }
@@ -165,6 +167,24 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 .push .pill:disabled { opacity: 0.7; cursor: default; }
 .push p { margin: 0; font-weight: 600; }
 .push .linkish { background: none; border: 0; padding: 0; margin: 0; font: inherit; font-weight: 800; color: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* The greeting: "Good morning / afternoon / evening" by the device's clock, with the first name once the page knows it
+   (from the email link, or the sign-up form). Hidden until the script fills it, so there is no empty bubble without JS. */
+.greet { display: grid; gap: 8px; justify-items: start; margin: -24px 0 -28px; } /* sits close to the bar above and the card below, so Play stays on a phone's first screen */
+.greet-line {
+  position: relative; margin: 0; font-family: var(--display); font-size: clamp(1.35rem, 5vw, 2rem); line-height: 1.1;
+  color: var(--on-accent); background: var(--yellow); border: 3px solid var(--line); border-radius: 18px; padding: 12px 18px 11px;
+  box-shadow: 5px 5px 0 var(--shade); transform: rotate(-1deg); margin-bottom: 6px; /* room for the tail */
+}
+.greet-line::after { content: ""; position: absolute; left: 26px; bottom: -13px; width: 18px; height: 18px; background: var(--yellow); border: 3px solid var(--line); border-top: 0; border-left: 0; transform: skewX(-20deg) rotate(45deg); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+.greet-sub { margin: 0; color: var(--muted); font-weight: 600; font-size: 0.95rem; padding-left: 6px; }
+.greet-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0; padding-left: 6px; font-weight: 700; }
+.greet-ask input { flex: 0 1 11rem; min-width: 0; font: inherit; font-weight: 600; color: var(--text); background: var(--surface); border: 2.5px solid var(--line); border-radius: 999px; padding: 7px 14px; box-shadow: 3px 3px 0 var(--shade); }
+.greet-ask input:focus { outline: none; box-shadow: 3px 3px 0 var(--cyan); }
+.greet-ask .pill { background: var(--lime); cursor: pointer; font: inherit; font-weight: 800; padding: 6px 14px; }
+.greet-ask .pill:disabled { opacity: 0.7; cursor: default; }
+.greet-ask .sub-msg { flex: 1 1 100%; }
+.greet .linkish { background: none; border: 0; padding: 0 0 0 6px; margin: 0; font: inherit; font-weight: 700; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 
 .next { display: grid; gap: 8px; justify-items: start; border: 3px dashed var(--line); border-radius: 20px; padding: 22px; background: color-mix(in srgb, var(--surface) 60%, transparent); }
 .next h2 { font-size: 1.7rem; }
@@ -297,6 +317,18 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     <span class="pills"><a class="pill lime" href="#subscribe"><svg aria-hidden="true"><use href="#i-bell"/></svg><span class="pill-text">Subscribe</span></a><a class="pill" href="/ask" data-ask=""><svg aria-hidden="true"><use href="#i-mic"/></svg><span class="pill-text">Ask us</span></a></span>
   </nav>
 
+  <section class="greet" id="greet" hidden aria-label="Greeting">
+    <p class="greet-line"><span id="greet-hi">Hello</span><span id="greet-who" hidden>, <span id="greet-name"></span></span>!</p>
+    <p class="greet-sub" id="greet-sub" hidden>Anant and Aman say hi before the episode starts.</p>
+    <form class="greet-ask" id="greet-ask" hidden novalidate>
+      <label for="greet-first">What should we call you?</label>
+      <input type="text" id="greet-first" name="first" maxlength="40" autocomplete="given-name" placeholder="First name">
+      <button type="submit" class="pill">Save</button>
+      <p class="sub-msg" id="greet-msg" role="alert" hidden></p>
+    </form>
+    <button type="button" class="linkish" id="greet-not" hidden></button>
+  </section>
+
 <!-- EPISODES:LATEST -->
 
   <header class="hero">
@@ -321,8 +353,9 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     <span class="bell" aria-hidden="true"><svg><use href="#i-bell"/></svg></span>
     <form class="sub-form" id="sub-form" method="post" action="/api/subscribe" novalidate>
       <strong id="subscribe-title">Know when the next episode is up</strong>
-      <span>One email when a new episode is up, nothing else. Unsubscribe with one tap.</span>
+      <span>One email when a new episode is up, nothing else. Unsubscribe with one tap. Leave a first name and the hosts greet you by it when you open an episode from the email.</span>
       <div class="sub-row">
+        <input type="text" name="name" id="sub-name" autocomplete="given-name" placeholder="First name (optional)" aria-label="Your first name, optional" maxlength="40">
         <input type="email" name="email" id="sub-email" required autocomplete="email" inputmode="email" placeholder="you@example.com" aria-label="Your email address" maxlength="254">
         <input type="text" class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button type="submit" class="pill">Subscribe</button>
@@ -363,11 +396,27 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
 // Listening stats for the hosts go to /api/event: page view, play, pause, how far into the
 // episode (25/50/75/100%), 15-second skips, and Ask clicks. A random id in this browser recognizes repeat
 // visits; nothing else about the listener is stored.
+// The greeting: the bubble at the top says good morning, afternoon or evening by this device's
+// clock, with the listener's first name when the page knows it, and before the first episode of
+// a visit the hosts say the same through the player (a few seconds; pausing skips it). Who the
+// listener is comes from the "l" id in the listen link of their episode email, kept in this
+// browser afterwards, so opening the site directly greets them too; "Not you?" forgets it. The id
+// names a sign-up, never an address, and no name goes to the stats.
 (() => {
   let vid = null;
   try { vid = localStorage.getItem("hpm-listener"); if (!vid) { vid = crypto.randomUUID(); localStorage.setItem("hpm-listener", vid); } } catch {}
   const sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random())).slice(0, 18);
   // Where the visit came from: "?from=substack" on a shared link, else the referring site's host name.
+  let gid = "", who = "", named = false; // the sign-up id from the email link, the name, whether its own spoken greeting is rendered
+  try {
+    const q = new URLSearchParams(location.search), l = q.get("l");
+    if (l && /^[0-9a-f]{64}$/.test(l)) {
+      gid = l; localStorage.setItem("hpm-greet", gid);
+      q.delete("l"); const rest = q.toString(); // the id stays out of the address bar, copied links and history
+      history.replaceState(null, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
+    } else gid = localStorage.getItem("hpm-greet") || "";
+    who = (gid && localStorage.getItem("hpm-greet-name")) || "";
+  } catch {}
   let ref = "";
   try { ref = new URLSearchParams(location.search).get("from") || (document.referrer ? new URL(document.referrer).hostname : ""); } catch {}
   ref = String(ref).toLowerCase().replace(/[^a-z0-9.:-]/g, "").slice(0, 40);
@@ -380,6 +429,16 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     fetch("/api/event", { method: "POST", body, headers: { "content-type": "application/json" }, keepalive: true }).catch(() => {});
   }
   send("view", "");
+
+  const $ = (id) => document.getElementById(id);
+  const greetBox = $("greet"), greetHi = $("greet-hi"), greetWho = $("greet-who"), greetName = $("greet-name"), greetSub = $("greet-sub"), greetAsk = $("greet-ask"), greetNot = $("greet-not"), greetMsg = $("greet-msg");
+  const hour = new Date().getHours();
+  const slot = hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : "evening";
+  // Whom the id names (the name may be empty) and whether their own spoken greeting is rendered; a spent id is forgotten.
+  const whoami = gid ? fetch("/api/greet?g=" + gid).then(async (r) => {
+    if (r.status === 404) return forget();
+    if (r.ok) learned(await r.json());
+  }).catch(() => {}) : Promise.resolve();
 
   const audio = document.getElementById("player-audio");
   const fmt = (s) => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
@@ -401,7 +460,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   }
 
   function paint(c) {
-    const active = c === cur, playing = active && !audio.paused && !audio.ended;
+    const active = c === cur, playing = (active || (greeting && greeting.c === c)) && !audio.paused && !audio.ended;
     c.art.classList.toggle("is-playing", playing);
     c.btn.setAttribute("aria-label", playing ? "Pause" : "Play");
     const d = (active && isFinite(audio.duration) && audio.duration) || c.dur;
@@ -418,6 +477,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   // Load c's episode into the player without starting it.
   function select(c) {
     if (cur === c) return;
+    greeting = null; // a clip still playing is dropped: whatever loads next is an episode
     if (cur) { cur.pos = audio.ended ? 0 : cur.want != null ? cur.want : audio.currentTime; cur.want = null; }
     if (live) { send("pause", live.ep, stat(live)); live = null; }
     cur = c; c.last = null; c.want = c.pos > 0.5 ? c.pos : null;
@@ -429,11 +489,42 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     }
     paintAll();
   }
-  function play(c) {
+  function playNow(c) {
     select(c);
     cards.forEach((x) => x.btn.classList.remove("nudge"));
     const p = audio.play();
     if (p && p.catch) p.catch(() => paintAll());
+    return p;
+  }
+  // The spoken greeting: before the first episode of a visit (a visit being three hours in this
+  // browser), the player plays a few seconds of Anant and Aman saying good morning, afternoon or
+  // evening, with the listener's name once their own clip is rendered. While it plays nothing is
+  // "loaded" (cur is null), so the position, stats and marks of the episode are untouched; its
+  // card shows as playing and its button pauses, which skips the greeting. A clip that won't
+  // load or play falls through to the episode.
+  let greeting = null;    // { c }: the episode that follows the clip
+  let greeted = false;    // this page already played (or started) the greeting
+  const greetDue = () => { if (greeted || !cards.length) return false; try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } };
+  const greetSrc = () => (named && gid ? "/greet/" + gid + "/" + slot + ".mp3" : "/audio/greet-" + slot + ".mp3");
+  function play(c) {
+    if (!greetDue()) return playNow(c);
+    if (cur) { cur.pos = cur.want != null ? cur.want : audio.readyState >= 2 ? audio.currentTime : cur.pos; cur.want = null; }
+    if (live) { send("pause", live.ep, stat(live)); live = null; }
+    cur = null; greeting = { c };
+    cards.forEach((x) => x.btn.classList.remove("nudge"));
+    audio.src = greetSrc();
+    if ("mediaSession" in navigator) {
+      try { navigator.mediaSession.metadata = new MediaMetadata({ title: "Hello from Anant and Aman", artist: "Two Hallucinating PMs", artwork: [{ src: "/icon-512.png", sizes: "512x512", type: "image/png" }] }); } catch {}
+    }
+    paintAll();
+    const p = audio.play();
+    if (p && p.catch) p.catch((e) => {
+      if (!greeting || greeting.c !== c) return;
+      // Refused without a tap: the episode is loaded back so the first tap plays (greeting first, since none played).
+      if (e && e.name === "NotAllowedError") { select(c); paintAll(); return; }
+      playNow(c); // the clip can't be played here: straight to the episode
+    });
+    return p;
   }
   // Jump 15 seconds back or ahead: the buttons either side of Play, and the lock-screen controls.
   // Playing or paused stays as it was; on a card that isn't loaded, the episode is loaded at the new position.
@@ -445,13 +536,15 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     let t = Math.max(0, from + delta);
     if (d) t = Math.min(t, Math.max(0, d - 1)); // a skip past the end lands a second before it, so the episode still finishes
     c.pos = t; c.last = t; c.want = t;
+    const resume = greeting && greeting.c === c;
     if (active) trySeek(); else select(c);
+    if (resume) playNow(c);
     paint(c);
     send(delta < 0 ? "skip_back" : "skip_fwd", c.ep, Object.assign(stat(c), { t: Math.round(t) }));
   }
 
   cards.forEach((c) => {
-    c.btn.addEventListener("click", () => (cur === c && !audio.paused && !audio.ended ? audio.pause() : play(c)));
+    c.btn.addEventListener("click", () => ((cur === c || (greeting && greeting.c === c)) && !audio.paused && !audio.ended ? audio.pause() : play(c)));
     c.art.querySelectorAll(".skip").forEach((b) => b.addEventListener("click", () => skip(c, b.classList.contains("back") ? -15 : 15)));
     const target = () => (c.seek.value / 1000) * ((cur === c && audio.duration) || c.dur);
     c.seek.addEventListener("input", () => { dragging = c; c.curEl.textContent = fmt(target()); c.seek.style.setProperty("--p", c.seek.value / 10 + "%"); });
@@ -459,7 +552,9 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
       dragging = null;
       const t = target();
       c.pos = t; c.last = t; c.want = t;
+      const resume = greeting && greeting.c === c;
       if (cur !== c) select(c); else trySeek();
+      if (resume) playNow(c);
       paint(c);
     });
     paint(c);
@@ -471,8 +566,17 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     }
   }
 
-  audio.addEventListener("play", () => { if (cur) { cur.last = audio.currentTime; live = cur; send("play", cur.ep, stat(cur)); } paintAll(); });
-  audio.addEventListener("pause", () => { if (live && !audio.ended) send("pause", live.ep, stat(live)); live = null; paintAll(); });
+  audio.addEventListener("play", () => {
+    if (greeting) { greeted = true; try { localStorage.setItem("hpm-greeted", String(Date.now())); } catch {} greetSub.hidden = true; }
+    if (cur) { cur.last = audio.currentTime; live = cur; send("play", cur.ep, stat(cur)); }
+    paintAll();
+  });
+  audio.addEventListener("pause", () => {
+    if (greeting && !audio.ended) select(greeting.c); // pausing the greeting skips it: the episode is loaded, paused
+    if (live && !audio.ended) send("pause", live.ep, stat(live));
+    live = null; paintAll();
+  });
+  audio.addEventListener("error", () => { if (greeting) playNow(greeting.c); });
   audio.addEventListener("seeked", () => {
     if (!cur) return;
     cur.last = audio.currentTime;
@@ -506,6 +610,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   }
   // When an episode finishes, the next one down the page starts.
   audio.addEventListener("ended", () => {
+    if (greeting) { playNow(greeting.c); return; } // the greeting is over: the episode starts
     const c = cur; if (!c) return;
     if (c.last !== null) heard(c, c.last, audio.duration);
     marks(c);
@@ -520,7 +625,9 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   if (start) {
     select(start);
     if (start !== cards[0]) start.art.scrollIntoView({ block: "start" });
-    const p = audio.play();
+    // A listener from an email link: the page first asks whom it greets (so the clip with their name plays), for up to 1.5 s.
+    (gid && greetDue() ? Promise.race([whoami, new Promise((r) => setTimeout(r, 1500))]) : Promise.resolve()).then(() => {
+    const p = play(start);
     if (p && p.catch) p.catch((e) => {
       if (e && e.name === "AbortError") return;
       start.btn.classList.add("nudge"); paintAll();
@@ -533,9 +640,43 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
       document.addEventListener("click", onTap, true);
       audio.addEventListener("play", () => document.removeEventListener("click", onTap, true), { once: true });
     });
+    });
   }
 
   document.querySelectorAll("a[data-ask]").forEach((a) => a.addEventListener("click", () => send("ask_click", a.dataset.ask)));
+
+  // The greeting bubble. The name comes from the worker by the id in the email link (or a cached
+  // copy for a direct visit, corrected when the answer arrives); an id the worker no longer knows
+  // (the person unsubscribed) is forgotten. Someone the page knows but has no name for is asked.
+  function showGreeting() {
+    greetHi.textContent = "Good " + slot;
+    greetWho.hidden = !who; greetName.textContent = who;
+    greetAsk.hidden = !(gid && !who);
+    greetNot.hidden = !who; greetNot.textContent = "Not " + who + "?";
+    greetSub.hidden = !greetDue();
+    greetBox.hidden = false;
+  }
+  function forget() { gid = ""; who = ""; named = false; try { localStorage.removeItem("hpm-greet"); localStorage.removeItem("hpm-greet-name"); } catch {} showGreeting(); }
+  function learned(d) {
+    who = d.name || ""; named = Boolean(d.clips);
+    try { if (who) localStorage.setItem("hpm-greet-name", who); else localStorage.removeItem("hpm-greet-name"); } catch {}
+    showGreeting();
+  }
+  showGreeting();
+  greetNot.addEventListener("click", forget);
+  greetAsk.addEventListener("submit", async (ev) => {
+    ev.preventDefault(); greetMsg.hidden = true;
+    const first = greetAsk.querySelector("input"), name = first.value.trim();
+    if (!name) { first.focus(); return; }
+    const btn = greetAsk.querySelector("button"); btn.disabled = true;
+    try {
+      const res = await fetch("/api/greet/name", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ g: gid, name }) });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 404) { forget(); return; }
+      if (!res.ok) throw new Error(data.error || "Couldn't save that. Try again in a minute.");
+      learned(data);
+    } catch (e) { greetMsg.textContent = e.message; greetMsg.hidden = false; } finally { btn.disabled = false; }
+  });
 
   // Email sign-up. The address goes to the worker (never into the stats); a flag in this
   // browser remembers that this person already signed up.
@@ -553,6 +694,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Couldn't sign you up. Try again in a minute.");
       try { localStorage.setItem("hpm-subscribed", email); } catch {}
+      if (data.gid) { gid = data.gid; try { localStorage.setItem("hpm-greet", gid); } catch {} learned({ name: form.querySelector("input[name=name]").value.trim(), clips: false }); }
       subscribed();
     } catch (e) {
       msg.textContent = e.message; msg.hidden = false;

@@ -9,6 +9,9 @@
 //   to the hosts (same INBOX_TOKEN as the password).
 // - "/api/subscribe" and "/unsubscribe" are the email sign-ups for new episodes
 //   (src/subscribe.mjs); the hosts list them at /api/subscribers.
+// - "/api/greet" tells the page whom to greet (the listen link in a subscriber's email
+//   carries their id), "/greet/<id>/<slot>.mp3" is their spoken greeting with their name,
+//   rendered at a publish by scripts/greet-clips.mjs; the generic ones are /audio/greet-*.mp3.
 // - "/api/push/*" are the browser notifications (src/push.mjs, public/sw.js): the page
 //   subscribes with the site's public key, and the hosts call /api/push/send at a publish.
 // - "/<slug>" opens the listening page on that episode and carries its share card (the tags
@@ -25,7 +28,7 @@ import episodes from "../episodes.json";
 import { listeningPage, statsPage, feed, embedPage, oembed, bySlug } from "./episodes.mjs";
 import { podcastFeed } from "./feed.mjs";
 import { recordEvent, getStats } from "./stats.js";
-import { subscribe, signupExists, unsubscribeByEmail, listSubscribers, markNotified, subscriberCount } from "./subscribe.mjs";
+import { subscribe, signupExists, unsubscribeByEmail, listSubscribers, markNotified, subscriberCount, setSubscriberName, greet, setGreetName, greetClip, putGreetClip, markGreetClips } from "./subscribe.mjs";
 import { publicKey, pushSubscribe, pushUnsubscribe, pushSend, pushCount } from "./push.mjs";
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // about 10 minutes of phone audio
@@ -155,10 +158,28 @@ export default {
       stats.pushSubscribers = await pushCount(env);
       return json(stats);
     }
-    if (pathname === "/api/subscribers" || pathname === "/api/notified") {
+    if (pathname === "/api/subscribers" || pathname === "/api/subscribers/name" || pathname === "/api/notified") {
       if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
       if (request.method === "GET" && pathname === "/api/subscribers") return listSubscribers(request, env);
+      if (request.method === "POST" && pathname === "/api/subscribers/name") return setSubscriberName(request, env);
       if (request.method === "POST" && pathname === "/api/notified") return markNotified(request, env);
+    }
+    // The greeting: whom the page greets, by the id in their listen link (never a name in a URL).
+    if (request.method === "GET" && pathname === "/api/greet") return greet(request, env);
+    if (request.method === "POST" && pathname === "/api/greet/name") return setGreetName(request, env);
+    const clip = /^\/greet\/([0-9a-f]{64})\/(morning|afternoon|evening)\.mp3$/.exec(pathname);
+    if (clip && read) {
+      const buf = await greetClip(env, clip[1], clip[2]);
+      if (!buf) return json({ error: "not found" }, 404);
+      return ranged(request, buf, { "content-type": "audio/mpeg", "cache-control": "private, max-age=86400", "x-robots-tag": "noindex" });
+    }
+    // Hosts only: a rendered greeting goes in slot by slot, then the name the three say is recorded.
+    const greetApi = /^\/api\/greet\/([0-9a-f]{64})\/(morning|afternoon|evening|clips)$/.exec(pathname);
+    if (greetApi) {
+      if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
+      if (request.method === "PUT" && greetApi[2] !== "clips") return putGreetClip(request, env, greetApi[1], greetApi[2]);
+      if (request.method === "POST" && greetApi[2] === "clips") return markGreetClips(request, env, greetApi[1]);
+      return json({ error: "method" }, 405);
     }
 
     if (pathname.startsWith("/api/inbox") || pathname.startsWith("/api/audio/") || pathname.startsWith("/api/done/")) {
@@ -242,8 +263,19 @@ async function serveAudio(request, env) {
   if (!range) {
     return new Response(request.method === "HEAD" ? null : res.body, { status: 200, headers });
   }
-  const buf = await res.arrayBuffer();
+  return ranged(request, await res.arrayBuffer(), headers);
+}
+
+// A whole file, or the part a Range header asks for (206), from bytes already in memory.
+function ranged(request, buf, extra) {
+  const headers = new Headers(extra);
+  headers.set("accept-ranges", "bytes");
   const size = buf.byteLength;
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") || "");
+  if (!range || (range[1] === "" && range[2] === "")) {
+    headers.set("content-length", String(size));
+    return new Response(request.method === "HEAD" ? null : buf, { status: 200, headers });
+  }
   const start = range[1] === "" ? Math.max(0, size - Number(range[2])) : Number(range[1]);
   const end = range[1] !== "" && range[2] !== "" ? Math.min(Number(range[2]), size - 1) : size - 1;
   if (start >= size || start > end) {
