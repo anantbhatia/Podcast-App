@@ -101,13 +101,13 @@ Listeners can leave their email (and, if they like, a first name) on the listeni
    ```sh
    curl -sS -H "Authorization: Bearer $INBOX_TOKEN" "$INBOX_URL/api/subscribers?ep=ep02" > /tmp/subs.json
    ```
-   Each item has `email`, `name` (the first name they gave, or ""), `since`, `notified` (episodes already emailed), `listen` (that person's own link to this episode: it carries their greeting id, so the page greets them by name) and `unsubscribe` (their own unsubscribe link). `pending` is how many are left for this episode; `count` is everyone. Anyone can type an address into the page, so look at the list before sending: if `pending` is more than the show would expect (dozens, not hundreds), or many addresses share one domain or look made up, stop and show Anant the count instead of sending; never send more than 50 in one publish without his go-ahead.
+   Each item has `email`, `name` (the first name they gave, or ""), `since`, `notified` (episodes already emailed), `listen` (that person's own link to this episode: it carries their greeting id, so the page greets them by name) and `unsubscribe` (their own unsubscribe link). `pending` is how many are left for this episode; `count` is everyone. If the answer's `unindexed` is not 0, some sign-ups from before the greeting haven't got their greeting id yet (the listing gives 20 per call): run the call again until it is 0, then use that list. Anyone can type an address into the page, so look at the list before sending: if `pending` is more than the show would expect (dozens, not hundreds), or many addresses share one domain or look made up, stop and show Anant the count instead of sending; never send more than 50 in one publish without his go-ahead.
 2. Render the spoken greeting for anyone who gave a name since the last publish (a few seconds of the hosts saying "Good morning, <Name>!" in their ElevenLabs voices, stored on the worker; see "The greeting" below):
    ```sh
-   node scripts/greet-clips.mjs --named --dry-run   # how many, and the credits (about 60 per person)
+   node scripts/greet-clips.mjs --named --dry-run   # how many, the credits (about 60 per person) and the names due
    node scripts/greet-clips.mjs --named
    ```
-   It stops above 25 people in one run until it is run with `--max <n>`, so a host sees an unusual spend first. A failure here doesn't hold the publish: those listeners get the show's generic greeting until the next run.
+   The dry run lists the names the hosts' voices are about to say: read them (they stay in the terminal, never in a thread). A name is at most three words of letters, but anyone can type one, so clear anything that isn't a first name before the real run: `POST /api/subscribers/name {"email": ..., "name": ""}` (below). The real run stops above 25 people until it is run with `--max <n>`, so a host sees an unusual spend first, and it checks the worker takes clips before spending a credit. A failure here doesn't hold the publish: those listeners get the show's generic greeting until the next run.
 3. For each item, send one email from Anant's Gmail through the Gmail connector, to that one address only (never several subscribers in one To or Cc line, since each has a different listen link and unsubscribe link), and mark that address right after its email went (step 4), before the next one, so a publish that stops partway can be run again without emailing anyone twice:
    - Subject: `New episode: <title> (Two Hallucinating PMs)`
    - Body, plain text (for a special the first line is `Special episode <N> of Two Hallucinating PMs is up: <title>`, the badge text as /episodes.json's `label` shows it; `Hi <name>,` on top when the item has a name):
@@ -147,7 +147,7 @@ curl -sS -X POST -H "Authorization: Bearer $INBOX_TOKEN" -H "content-type: appli
   --data '{"email":"<address>","name":"Anurag"}' "$INBOX_URL/api/subscribers/name"
 ```
 
-A name is letters, spaces, hyphens and apostrophes, up to 40 characters; an empty name clears it. A name changed after its clips were rendered gets the generic voice until the next `--named` run (the listing's `clipsFor` says which name the stored clips say). Names and addresses stay in KV: never in the stats, the repo or a thread.
+A name is letters only, up to three words and 24 characters (hyphens and apostrophes inside a word are fine); an empty name clears it. Whoever holds the link can change the name from the page ("Change name"), which is how a typo or a prank is fixed; a changed or cleared name drops the clips that said the old one, and the listener hears the generic voice until the next `--named` run (the listing's `clipsFor` says which name the stored clips say). Name changes from the page are capped at 100 a day. Names and addresses stay in KV: never in the stats, the repo or a thread.
 
 ## If a check fails
 

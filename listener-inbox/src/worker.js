@@ -166,12 +166,13 @@ export default {
     }
     // The greeting: whom the page greets, by the id in their listen link (never a name in a URL).
     if (request.method === "GET" && pathname === "/api/greet") return greet(request, env);
-    if (request.method === "POST" && pathname === "/api/greet/name") return setGreetName(request, env);
+    if (request.method === "POST" && pathname === "/api/greet/name") return setGreetName(request, env, ctx);
     const clip = /^\/greet\/([0-9a-f]{64})\/(morning|afternoon|evening)\.mp3$/.exec(pathname);
     if (clip && read) {
       const buf = await greetClip(env, clip[1], clip[2]);
       if (!buf) return json({ error: "not found" }, 404);
-      return ranged(request, buf, { "content-type": "audio/mpeg", "cache-control": "private, max-age=86400", "x-robots-tag": "noindex" });
+      // Not cached: the same URL says a new name after a re-render, and a play is at most one fetch per visit.
+      return ranged(request, buf, { "content-type": "audio/mpeg", "cache-control": "private, no-store", "x-robots-tag": "noindex" });
     }
     // Hosts only: a rendered greeting goes in slot by slot, then the name the three say is recorded.
     const greetApi = /^\/api\/greet\/([0-9a-f]{64})\/(morning|afternoon|evening|clips)$/.exec(pathname);

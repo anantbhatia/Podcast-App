@@ -29,9 +29,14 @@ const KEEP = 24;           // slugs remembered per sign-up (metadata is capped a
 export const MARK_MAX = 40; // addresses marked per /api/notified call (one KV write each, under the 50-call limit)
 const MAX_NEW_PER_DAY = 50;  // new sign-ups a day: bounds what a script can add before a publish (each is three KV writes)
 const INDEX_MAX = 20;        // sign-ups from before the greeting that one listing gives a greet index (two writes each)
-export const MAX_NAME = 40;
-// A first name as people write them: letters in any script, spaces, hyphens, apostrophes and dots.
-const NAME = /^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u;
+export const MAX_NAME = 24;
+// A first name as people write them: letters in any script, with hyphens or apostrophes inside,
+// up to three words. Tight on purpose: the hosts' cloned voices say it and the episode email
+// opens with it, so no sentences, dots, digits or links.
+const WORD = "[\\p{L}\\p{M}]+(?:['’-][\\p{L}\\p{M}]+)*";
+const NAME = new RegExp(`^${WORD}(?: ${WORD}){0,2}$`, "u");
+const NAME_RULE = `A first name is letters only, up to three words and ${MAX_NAME} characters.`;
+const MAX_NAME_CHANGES_PER_DAY = 100; // name changes from the page a day (each is a KV write; the free plan allows 1,000)
 export const SLOTS = ["morning", "afternoon", "evening"];
 export const MAX_CLIP_BYTES = 200 * 1024; // a few seconds of speech at 96 kbps is under 60 KB
 
@@ -104,7 +109,7 @@ export async function subscribe(request, env, ctx) {
   const email = normalizeEmail(f.email);
   if (!email) return json({ error: "That doesn't look like an email address." }, 400);
   const name = cleanName(f.name);
-  if (name === null) return json({ error: `A first name is letters, spaces, hyphens and apostrophes, up to ${MAX_NAME} characters.` }, 400);
+  if (name === null) return json({ error: NAME_RULE }, 400);
 
   const idx = `subidx/${await hash(email)}`;
   const already = await env.INBOX.get(idx);
@@ -168,6 +173,12 @@ async function byGreetId(env, gid) {
   return rec ? { token, gid, ...rec } : null;
 }
 const greeting = (rec) => ({ name: rec.name || "", clips: Boolean(rec.name) && rec.clipsFor === rec.name });
+// A changed or cleared name drops the clips that say the old one (they would stay downloadable otherwise).
+async function rename(env, token, gid, plain, name) {
+  if (plain.clipsFor) for (const slot of SLOTS) await env.INBOX.delete(clipKey(gid, slot));
+  await store(env, token, { ...plain, name, clipsFor: "" });
+  return { ...plain, name, clipsFor: "" };
+}
 
 // GET /api/greet?g=<gid>: who the page is greeting (the name may be empty: then the page asks
 // for one) and whether the spoken greeting with that name is there (/greet/<gid>/<slot>.mp3).
@@ -177,20 +188,24 @@ export async function greet(request, env) {
   return new Response(JSON.stringify(greeting(rec)), { headers: { "content-type": "application/json", "cache-control": "private, no-store" } });
 }
 
-// POST /api/greet/name { g, name }: the listener sets (or clears) the name on their own
-// sign-up, from the page their link opened. The clips keep the old name until the next
-// publish renders new ones; `clips` says whether they match.
-export async function setGreetName(request, env) {
+// POST /api/greet/name { g, name }: the listener sets, changes or clears the name on their
+// own sign-up, from the page their link opened. New clips come at the next publish; until
+// then `clips` is false and the page plays the generic greeting. Counted per day like the
+// other public writes, so a script holding one id can't use up the plan's KV writes.
+export async function setGreetName(request, env, ctx) {
   const f = await fields(request);
   if (!f) return json({ error: "Send { g, name }." }, 400);
   if (typeof f.website === "string" && f.website.trim()) return json({ ok: true });
   const name = cleanName(f.name);
-  if (name === null) return json({ error: `A first name is letters, spaces, hyphens and apostrophes, up to ${MAX_NAME} characters.` }, 400);
+  if (name === null) return json({ error: NAME_RULE }, 400);
   const rec = await byGreetId(env, typeof f.g === "string" ? f.g : "");
   if (!rec) return json({ error: "That link is spent. Sign up again on the page to be greeted by name." }, 404);
   const { token, gid, ...plain } = rec;
-  if (plain.name !== name) await store(env, token, { ...plain, name });
-  return json({ ok: true, ...greeting({ ...plain, name }) });
+  if (plain.name === name) return json({ ok: true, ...greeting(plain) });
+  if ((await countToday(env, "greet_name")) >= MAX_NAME_CHANGES_PER_DAY) return json({ error: "Name changes are paused for today. Try again tomorrow." }, 429);
+  const next = await rename(env, token, gid, plain, name);
+  ctx.waitUntil(recordEvent(request, env, { type: "greet_name", ep: "" }).catch(() => {}));
+  return json({ ok: true, ...greeting(next) });
 }
 
 // Hosts only. POST /api/subscribers/name { email, name }: a host sets the name for a sign-up.
@@ -199,13 +214,14 @@ export async function setSubscriberName(request, env) {
   const email = f && normalizeEmail(f.email);
   if (!email) return json({ error: "Send { email, name }." }, 400);
   const name = cleanName(f.name);
-  if (name === null) return json({ error: `A first name is letters, spaces, hyphens and apostrophes, up to ${MAX_NAME} characters.` }, 400);
+  if (name === null) return json({ error: NAME_RULE }, 400);
   const token = await env.INBOX.get(`subidx/${await hash(email)}`);
   const rec = token && (await env.INBOX.get(key(token), { type: "json" }));
   if (!rec) return json({ error: "That address isn't signed up." }, 404);
-  const next = await indexGreet(env, token, rec);
-  if (next.name !== name) await store(env, token, { ...next, name });
-  return json({ ok: true, name, gid: await greetId(token), clips: Boolean(name) && next.clipsFor === name });
+  const gid = await greetId(token);
+  let next = await indexGreet(env, token, rec);
+  if (next.name !== name) next = await rename(env, token, gid, next, name);
+  return json({ ok: true, name, gid, ...greeting(next) });
 }
 
 // GET /greet/<gid>/<slot>.mp3: the spoken greeting with this listener's name, or 404 before
@@ -258,26 +274,29 @@ async function* records(env) {
 // Hosts only. GET /api/subscribers?ep=<slug> lists sign-ups not yet emailed about that
 // episode (all of them without ep), each with its name, its listen link for the email (it
 // carries the gid, so the page greets them) and its own unsubscribe link. `clipsFor` is the
-// name the stored spoken greeting says ("" before one is rendered).
+// name the stored spoken greeting says ("" before one is rendered). Sign-ups from before the
+// greeting get their greet index here, INDEX_MAX per call; one still without it has a plain
+// listen link (`greet` false) and `unindexed` counts them, so the caller lists again until 0.
 export async function listSubscribers(request, env) {
   const url = new URL(request.url);
   const ep = url.searchParams.get("ep") || "";
   if (ep && !SLUG.test(ep)) return json({ error: "bad ep" }, 400);
   const items = [];
-  let count = 0, indexed = 0;
+  let count = 0, indexed = 0, unindexed = 0;
   for await (let r of records(env)) {
     count++;
     if (!r.gi && indexed < INDEX_MAX) { r = { ...r, ...(await indexGreet(env, r.token, r)) }; indexed++; }
+    if (!r.gi) unindexed++;
     if (ep && (r.notified || []).includes(ep)) continue;
-    const gid = await greetId(r.token);
+    const gid = r.gi ? await greetId(r.token) : "";
     items.push({
-      email: r.email, name: r.name || "", since: r.since, notified: r.notified || [], gid, clipsFor: r.clipsFor || "",
-      listen: `${url.origin}/${ep}?from=email&l=${gid}`,
+      email: r.email, name: r.name || "", since: r.since, notified: r.notified || [], gid, greet: Boolean(r.gi), clipsFor: r.clipsFor || "",
+      listen: `${url.origin}/${ep}?from=email${gid ? `&l=${gid}` : ""}`,
       unsubscribe: `${url.origin}/unsubscribe?t=${r.token}`,
     });
   }
   items.sort((a, b) => a.since.localeCompare(b.since));
-  return json({ count, ep, pending: items.length, items });
+  return json({ count, ep, pending: items.length, unindexed, items });
 }
 
 // Hosts only. POST /api/notified { ep, emails: [...] } after the emails went out; up to

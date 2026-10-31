@@ -13,10 +13,12 @@
 //     (PUT /api/greet/<id>/<slot>, then POST /api/greet/<id>/clips), so their next visit from
 //     an email link greets them by name. Part of each publish (ADD-EPISODE.md, "Tell
 //     subscribers"), before the emails go out. At most --max subscribers per run (25 unless
-//     given), so a run can't spend more than a host expects; --dry-run only counts and prices.
+//     given), so a run can't spend more than a host expects. --dry-run spends nothing: it
+//     counts, prices and lists the names due, for the operator's eyes (the hosts' voices will
+//     say them; clear one that isn't a first name with POST /api/subscribers/name first).
 //
 // Needs ELEVENLABS_API_KEY and ffmpeg (both in the cloud environment); --named also INBOX_URL and
-// INBOX_TOKEN. Names and addresses are printed only with --verbose, and never belong in a thread.
+// INBOX_TOKEN. Addresses are printed only with --verbose; neither names nor addresses belong in a thread.
 import { writeFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -77,14 +79,26 @@ function finishClip(raw, out, dir) {
   return { seconds: Number(probe[0]), bytes: Number(probe[1]) };
 }
 
-async function renderSet(name, key, dir, into) {
+// Renders the three clips; `after(slot, file)` runs as soon as each one is ready (so a store
+// failure stops the run before the next clip is paid for).
+async function renderSet(name, key, dir, into, after) {
   const made = {};
   for (const slot of SLOTS) {
     const raw = await render(script(slot, name), key);
     const out = into(slot);
     made[slot] = { out, ...finishClip(raw, out, dir) };
+    if (after) await after(slot, out);
   }
   return made;
+}
+// A worker answer the run can't recover from: the greeting routes aren't deployed (404/405),
+// the token is wrong (401), or the worker refuses what we send (other 4xx).
+class WorkerRefused extends Error {}
+async function check(res, what) {
+  if (res.ok) return;
+  const text = (await res.text()).slice(0, 200);
+  if (res.status >= 400 && res.status < 500) throw new WorkerRefused(`${what}: the worker answered ${res.status} ${text}`);
+  throw new Error(`${what}: ${res.status} ${text}`);
 }
 
 const key = process.env.ELEVENLABS_API_KEY;
@@ -108,31 +122,45 @@ if (flag("--named")) {
   const base = (process.env.INBOX_URL || "").replace(/\/+$/, ""), token = process.env.INBOX_TOKEN;
   if (!base || !token) fail("INBOX_URL and INBOX_TOKEN are needed to reach the subscriber list.");
   const auth = { authorization: `Bearer ${token}` };
-  const res = await fetch(`${base}/api/subscribers`, { headers: auth });
+  const rawMax = opt("--max", "25");
+  if (!/^\d+$/.test(rawMax) || Number(rawMax) < 1) fail(`--max needs a whole number, for example --max 30 (got "${rawMax}").`);
+  const max = Number(rawMax);
+  let res;
+  try { res = await fetch(`${base}/api/subscribers`, { headers: auth }); } catch (e) { fail(`Couldn't reach ${base}: ${e.cause ? e.cause.message : e.message}`); }
   if (!res.ok) fail(`${base}/api/subscribers answered ${res.status}.`);
-  const { items, count } = await res.json();
+  const { items, count, unindexed } = await res.json();
+  if (unindexed) console.log(`Note: ${unindexed} older sign-ups still have no greeting link; list /api/subscribers again until the answer's unindexed is 0.`);
   const due = items.filter((s) => s.name && s.clipsFor !== s.name && /^[0-9a-f]{64}$/.test(s.gid));
-  const max = Number(opt("--max", 25));
   const total = due.reduce((n, s) => n + chars(s.name), 0);
   console.log(`${count} sign-ups, ${items.filter((s) => s.name).length} with a name, ${due.length} without clips in that name: ${total} characters, about ${credits(total)} credits.`);
+  if (dry) {
+    for (const s of due) console.log(`  would render for "${s.name}" (id ${s.gid.slice(0, 8)}…${verbose ? `, ${s.email}` : ""}): ${script("morning", s.name)[0][1]}`);
+    if (due.length > max) console.log(`That is more than ${max} in one run: the real run stops unless given --max ${due.length}.`);
+    process.exit(0);
+  }
   if (due.length > max) fail(`That is more than ${max} subscribers in one run; a host should expect the spend. Run again with --max ${due.length} to go ahead.`);
-  if (dry) process.exit(0);
+  if (!due.length) { console.log("Nothing to render."); process.exit(0); }
+  // Before any credit is spent: the worker must carry the greeting routes and take the token.
+  // An empty body gets the route's own "an MP3 between ..." refusal; anything else means stop.
+  const probe = await fetch(`${base}/api/greet/${due[0].gid}/morning`, { method: "PUT", headers: { ...auth, "content-type": "audio/mpeg" }, body: new Uint8Array(0) });
+  if (probe.status !== 400) fail(`The worker at ${base} doesn't take greeting clips yet (answered ${probe.status} to a probe): deploy this version first (DEPLOY.md), then run again.`);
   let done = 0;
   for (const s of due) {
     const who = verbose ? `${s.name} <${s.email}>` : `id ${s.gid.slice(0, 8)}…`;
     try {
-      const made = await renderSet(s.name, key, dir, (slot) => join(dir, `${s.gid.slice(0, 8)}-${slot}.mp3`));
-      for (const slot of SLOTS) {
-        const put = await fetch(`${base}/api/greet/${s.gid}/${slot}`, { method: "PUT", headers: { ...auth, "content-type": "audio/mpeg" }, body: readFileSync(made[slot].out) });
-        if (!put.ok) throw new Error(`storing the ${slot} clip failed (${put.status}: ${(await put.text()).slice(0, 200)})`);
-      }
+      const made = await renderSet(s.name, key, dir, (slot) => join(dir, `${s.gid.slice(0, 8)}-${slot}.mp3`), async (slot, file) => {
+        const put = await fetch(`${base}/api/greet/${s.gid}/${slot}`, { method: "PUT", headers: { ...auth, "content-type": "audio/mpeg" }, body: readFileSync(file) });
+        await check(put, `storing the ${slot} clip`);
+      });
       const mark = await fetch(`${base}/api/greet/${s.gid}/clips`, { method: "POST", headers: { ...auth, "content-type": "application/json" }, body: JSON.stringify({ for: s.name }) });
-      if (!mark.ok) throw new Error(`marking the clips failed (${mark.status})`);
+      await check(mark, "marking the clips");
       done++;
       console.log(`  ${who}: 3 clips stored (${SLOTS.map((x) => made[x].seconds.toFixed(1) + " s").join(", ")})`);
     } catch (e) {
       console.error(`  ${who}: ${e.message}`);
+      if (e instanceof WorkerRefused) { console.error("Stopping: the worker refuses the clips, so nothing more is rendered."); process.exit(1); }
     }
   }
   console.log(`${done} of ${due.length} subscribers have their greeting now${done < due.length ? "; run again for the rest" : ""}.`);
+  process.exit(done === due.length ? 0 : 1);
 }

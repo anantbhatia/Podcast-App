@@ -184,6 +184,7 @@ mark.lime { background: var(--lime); } mark.pink { background: var(--pink); }
 .greet-ask .pill { background: var(--lime); cursor: pointer; font: inherit; font-weight: 800; padding: 6px 14px; }
 .greet-ask .pill:disabled { opacity: 0.7; cursor: default; }
 .greet-ask .sub-msg { flex: 1 1 100%; }
+.greet-tools { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
 .greet .linkish { background: none; border: 0; padding: 0 0 0 6px; margin: 0; font: inherit; font-weight: 700; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 
 .next { display: grid; gap: 8px; justify-items: start; border: 3px dashed var(--line); border-radius: 20px; padding: 22px; background: color-mix(in srgb, var(--surface) 60%, transparent); }
@@ -322,11 +323,11 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     <p class="greet-sub" id="greet-sub" hidden>Anant and Aman say hi before the episode starts.</p>
     <form class="greet-ask" id="greet-ask" hidden novalidate>
       <label for="greet-first">What should we call you?</label>
-      <input type="text" id="greet-first" name="first" maxlength="40" autocomplete="given-name" placeholder="First name">
+      <input type="text" id="greet-first" name="first" maxlength="24" autocomplete="given-name" placeholder="First name">
       <button type="submit" class="pill">Save</button>
       <p class="sub-msg" id="greet-msg" role="alert" hidden></p>
     </form>
-    <button type="button" class="linkish" id="greet-not" hidden></button>
+    <p class="greet-tools"><button type="button" class="linkish" id="greet-not" hidden></button><button type="button" class="linkish" id="greet-edit" hidden>Change name</button></p>
   </section>
 
 <!-- EPISODES:LATEST -->
@@ -355,7 +356,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
       <strong id="subscribe-title">Know when the next episode is up</strong>
       <span>One email when a new episode is up, nothing else. Unsubscribe with one tap. Leave a first name and the hosts greet you by it when you open an episode from the email.</span>
       <div class="sub-row">
-        <input type="text" name="name" id="sub-name" autocomplete="given-name" placeholder="First name (optional)" aria-label="Your first name, optional" maxlength="40">
+        <input type="text" name="name" id="sub-name" autocomplete="given-name" placeholder="First name (optional)" aria-label="Your first name, optional" maxlength="24">
         <input type="email" name="email" id="sub-email" required autocomplete="email" inputmode="email" placeholder="you@example.com" aria-label="Your email address" maxlength="254">
         <input type="text" class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button type="submit" class="pill">Subscribe</button>
@@ -431,7 +432,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   send("view", "");
 
   const $ = (id) => document.getElementById(id);
-  const greetBox = $("greet"), greetHi = $("greet-hi"), greetWho = $("greet-who"), greetName = $("greet-name"), greetSub = $("greet-sub"), greetAsk = $("greet-ask"), greetNot = $("greet-not"), greetMsg = $("greet-msg");
+  const greetBox = $("greet"), greetHi = $("greet-hi"), greetWho = $("greet-who"), greetName = $("greet-name"), greetSub = $("greet-sub"), greetAsk = $("greet-ask"), greetNot = $("greet-not"), greetEdit = $("greet-edit"), greetMsg = $("greet-msg");
   const hour = new Date().getHours();
   const slot = hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : "evening";
   // Whom the id names (the name may be empty) and whether their own spoken greeting is rendered; a spent id is forgotten.
@@ -504,11 +505,14 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   // load or play falls through to the episode.
   let greeting = null;    // { c }: the episode that follows the clip
   let greeted = false;    // this page already played (or started) the greeting
-  const greetDue = () => { if (greeted || !cards.length) return false; try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } };
+  // Decided once, when the page opens: a greeting is due unless this browser heard one in the last three
+  // hours. A page open across that mark doesn't greet between two episodes.
+  const greetWanted = cards.length > 0 && (() => { try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } })();
+  const greetDue = () => greetWanted && !greeted;
   const greetSrc = () => (named && gid ? "/greet/" + gid + "/" + slot + ".mp3" : "/audio/greet-" + slot + ".mp3");
   function play(c) {
     if (!greetDue()) return playNow(c);
-    if (cur) { cur.pos = cur.want != null ? cur.want : audio.readyState >= 2 ? audio.currentTime : cur.pos; cur.want = null; }
+    if (cur) { cur.pos = audio.ended ? 0 : cur.want != null ? cur.want : audio.readyState >= 2 ? audio.currentTime : cur.pos; cur.want = null; }
     if (live) { send("pause", live.ep, stat(live)); live = null; }
     cur = null; greeting = { c };
     cards.forEach((x) => x.btn.classList.remove("nudge"));
@@ -616,7 +620,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     marks(c);
     c.pos = 0; c.want = null; paintAll();
     const next = cards[cur.i + 1];
-    if (next) { next.art.scrollIntoView({ behavior: "smooth", block: "center" }); play(next); }
+    if (next) { next.art.scrollIntoView({ behavior: "smooth", block: "center" }); playNow(next); } // no greeting between episodes
   });
 
   // Start the newest episode on arrival (or the one a "/<slug>" link named). Phones and some browsers
@@ -627,9 +631,12 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     if (start !== cards[0]) start.art.scrollIntoView({ block: "start" });
     // A listener from an email link: the page first asks whom it greets (so the clip with their name plays), for up to 1.5 s.
     (gid && greetDue() ? Promise.race([whoami, new Promise((r) => setTimeout(r, 1500))]) : Promise.resolve()).then(() => {
+    // A tap meanwhile (a greeting or an episode playing, or another card chosen) wins; the arrival does nothing then.
+    if (greeted || greeting || live || cur !== start || !audio.paused) return;
     const p = play(start);
     if (p && p.catch) p.catch((e) => {
       if (e && e.name === "AbortError") return;
+      if (!audio.paused || live || greeting) return; // a clip that failed to load already handed over to the episode
       start.btn.classList.add("nudge"); paintAll();
       // The first tap on open space counts as "play"; taps on links, buttons and bars do their own thing.
       const onTap = (ev) => {
@@ -653,6 +660,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     greetWho.hidden = !who; greetName.textContent = who;
     greetAsk.hidden = !(gid && !who);
     greetNot.hidden = !who; greetNot.textContent = "Not " + who + "?";
+    greetEdit.hidden = !(gid && who); // a wrong name (a typo, or someone else's) is fixed here, not only forgotten
     greetSub.hidden = !greetDue();
     greetBox.hidden = false;
   }
@@ -664,6 +672,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   }
   showGreeting();
   greetNot.addEventListener("click", forget);
+  greetEdit.addEventListener("click", () => { const first = greetAsk.querySelector("input"); first.value = who; greetAsk.hidden = false; greetEdit.hidden = true; first.focus(); first.select(); });
   greetAsk.addEventListener("submit", async (ev) => {
     ev.preventDefault(); greetMsg.hidden = true;
     const first = greetAsk.querySelector("input"), name = first.value.trim();

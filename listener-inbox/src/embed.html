@@ -149,7 +149,7 @@ noscript a { font-weight: 800; }
   }
   function seekTo(t) { want = t; last = t; trySeek(); paint(); }
   function skip(delta) {
-    const d = dur(), from = want != null ? want : audio.readyState >= 2 ? audio.currentTime : 0;
+    const d = dur(), from = want != null ? want : !greeting && audio.readyState >= 2 ? audio.currentTime : 0;
     let t = Math.max(0, from + delta);
     if (d) t = Math.min(t, Math.max(0, d - 1));
     seekTo(t);

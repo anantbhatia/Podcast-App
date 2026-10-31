@@ -2,10 +2,10 @@
 // listener's browser keeps, a salted hash of the IP address (never the address
 // itself), the episode, and how far they got.
 
-const TYPES = new Set(["view", "play", "pause", "q25", "q50", "q75", "complete", "skip_back", "skip_fwd", "ask_click", "ask_submit", "subscribe", "push"]);
+const TYPES = new Set(["view", "play", "pause", "q25", "q50", "q75", "complete", "skip_back", "skip_fwd", "ask_click", "ask_submit", "subscribe", "push", "greet_name"]);
 // Recorded by the worker itself (a note saved, a sign-up stored), never taken from a page's POST:
 // the daily sign-up caps count them, so anyone could otherwise block sign-ups with a few requests.
-const INTERNAL = new Set(["ask_submit", "subscribe", "push"]);
+const INTERNAL = new Set(["ask_submit", "subscribe", "push", "greet_name"]); // greet_name: a listener set their name on the page (the daily cap counts it)
 const EP = /^[a-z0-9-]{0,60}$/;
 const ID = /^[a-zA-Z0-9-]{8,64}$/;
 const REF = /^[a-z0-9.:-]{1,40}$/; // where the visit came from: "substack", "embed:<host>", a referring host
