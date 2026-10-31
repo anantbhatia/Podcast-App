@@ -1,0 +1,40 @@
+name = "listen"
+main = "src/worker.js"
+compatibility_date = "2025-09-01"
+
+# Before every deploy (and dev), make sure episodes.json is complete and
+# each episode's MP3 is in public/audio. See ADD-EPISODE.md.
+[build]
+command = "node scripts/check-episodes.mjs"
+
+# The page templates are bundled into the worker as text.
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = false
+
+# Voice notes and messages, in Workers KV (free tier, no card needed). Create once with:
+#   npx wrangler kv namespace create INBOX
+# and paste the printed id below.
+[[kv_namespaces]]
+binding = "INBOX"
+id = "1212616bf67a4ed98b994872e445ff1e"
+
+# Episode audio and images, served as static files. The listening page itself is
+# built by the worker from src/index.html and episodes.json (kept out of public/).
+# Audio goes through the worker first so it can answer Range requests
+# (iPhones need them to play and seek); static assets alone don't.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/", "/audio/*"]
+
+# Listening stats. Create once with:
+#   npx wrangler d1 create hpm-stats
+# and paste the printed database_id below. The table is created on first use.
+[[d1_databases]]
+binding = "DB"
+database_name = "hpm-stats"
+database_id = "ff7e176f-01da-4961-972b-a208e1ec43f8"
+
+# INBOX_TOKEN is a secret: npx wrangler secret put INBOX_TOKEN

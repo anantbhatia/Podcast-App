@@ -1,0 +1,415 @@
+// Site for The Two Hallucinating PMs, on Cloudflare's free tier.
+// - "/" is the listening page, built from src/index.html and the episodes in
+//   episodes.json (see ADD-EPISODE.md); /audio/* are the MP3s in public/audio, and
+//   /episodes.json is the public view of that file.
+// - "/ask" is the recorder. Notes go to Workers KV; recordings expire after 90 days.
+//   The ingest script (ingest/ingest.py) reads the inbox with INBOX_TOKEN,
+//   transcribes voice notes, and marks each item done.
+// - "/api/event" takes anonymous listening events into D1; "/stats" shows them
+//   to the hosts (same INBOX_TOKEN as the password).
+// - "/api/subscribe" and "/unsubscribe" are the email sign-ups for new episodes
+//   (src/subscribe.mjs); the hosts list them at /api/subscribers.
+// - "/api/greet" tells the page whom to greet (the listen link in a subscriber's email
+//   carries their id), "/greet/<id>/<slot>.mp3" is their spoken greeting with their name,
+//   rendered at a publish by scripts/greet-clips.mjs; the generic ones are /audio/greet-*.mp3.
+// - "/api/push/*" are the browser notifications (src/push.mjs, public/sw.js): the page
+//   subscribes with the site's public key, and the hosts call /api/push/send at a publish.
+// - "/<slug>" opens the listening page on that episode and carries its share card (the tags
+//   Substack, WhatsApp, LinkedIn and Slack turn into a preview). "/embed" and "/embed/<slug>"
+//   are a compact player for sites that allow an iframe; "/oembed" describes it for sites
+//   that discover oEmbed. Substack posts take neither (only its own list of embeds), so a
+//   Substack post gets the card, which opens the page here with the stats intact.
+import pageTemplate from "./index.html";
+import embedTemplate from "./embed.html";
+import recorderPage from "./recorder.html";
+import statsTemplate from "./stats.html";
+import unsubscribeTemplate from "./unsubscribe.html";
+import episodes from "../episodes.json";
+import { listeningPage, statsPage, feed, embedPage, oembed, bySlug } from "./episodes.mjs";
+import { podcastFeed } from "./feed.mjs";
+import { recordEvent, getStats } from "./stats.js";
+import { subscribe, signupExists, unsubscribeByEmail, listSubscribers, markNotified, subscriberCount, setSubscriberName, greet, setGreetName, greetClip, putGreetClip, markGreetClips } from "./subscribe.mjs";
+import { publicKey, pushSubscribe, pushUnsubscribe, pushSend, pushCount } from "./push.mjs";
+
+const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // about 10 minutes of phone audio
+const MAX_TEXT = 2000;
+const AUDIO_TTL = 90 * 24 * 60 * 60;
+const MAX_NAME = 80;
+const KINDS = new Set(["question", "followup", "feedback"]);
+
+function html(body, extra = {}, request) {
+  return new Response(request && request.method === "HEAD" ? null : body, {
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache", ...extra },
+  });
+}
+
+// The episodes (and the push key, a secret bound at deploy) don't change between deploys,
+// so both pages are built once per worker instance. The listening page carries the public
+// push key; without the secret the attribute is empty and the page hides the button.
+let pages = null;
+function built(env, origin) {
+  return pages || (pages = {
+    listening: listeningPage(pageTemplate, episodes, { origin }).replace("<!-- PUSH:KEY -->", () => publicKey(env) || ""),
+    stats: statsPage(statsTemplate, episodes),
+    feed: JSON.stringify(feed(episodes)),
+    episode: new Map(), embed: new Map(), // per-episode pages, built on first use
+  });
+}
+function episodePage(env, origin, slug) {
+  const b = built(env, origin);
+  if (!b.episode.has(slug)) b.episode.set(slug, listeningPage(pageTemplate, episodes, { origin, start: slug }).replace("<!-- PUSH:KEY -->", () => publicKey(env) || ""));
+  return b.episode.get(slug);
+}
+function embedFor(env, origin, slug) {
+  const b = built(env, origin);
+  if (!b.embed.has(slug)) {
+    const page = embedPage(embedTemplate, episodes, slug, origin);
+    if (!page) return null; // an unknown slug is not worth a map entry
+    b.embed.set(slug, page);
+  }
+  return b.embed.get(slug);
+}
+// The podcast feed, built once per worker instance like the pages. The owner email is the
+// PODCAST_OWNER_EMAIL secret (DEPLOY.md); without it the feed has no owner tag.
+let podcast = null;
+function podcastFor(env, origin) {
+  return podcast || (podcast = podcastFeed(episodes, origin, { ownerEmail: env.PODCAST_OWNER_EMAIL || "" }).catch((e) => { podcast = null; throw e; }));
+}
+// Share links and the embed's "listen on the site" link always use https, whatever the
+// worker was reached by (only a local dev server is left as it is).
+const siteOrigin = (url) => url.origin.replace(/^http:\/\/(?!127\.0\.0\.1|localhost)/, "https://");
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const { pathname } = url;
+    const origin = siteOrigin(url);
+
+    const read = request.method === "GET" || request.method === "HEAD";
+    if (read && (pathname === "/" || pathname === "/index.html")) {
+      return html(built(env, origin).listening, {}, request);
+    }
+    // The compact player, meant for an iframe on another site (so no frame restrictions here).
+    const embed = read && /^\/embed(?:\/([a-z0-9-]{1,60}))?\/?$/.exec(pathname);
+    if (embed) {
+      const page = embedFor(env, origin, embed[1] || "");
+      return page ? html(page, { "x-robots-tag": "noindex" }, request) : json({ error: "not found" }, 404);
+    }
+    if (request.method === "GET" && pathname === "/oembed") {
+      const format = url.searchParams.get("format") || "json";
+      if (format !== "json") return json({ error: "only json" }, 501);
+      const body = oembed(episodes, origin, url.searchParams.get("url") || "");
+      return body
+        ? new Response(JSON.stringify(body), { headers: { "content-type": "application/json+oembed; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "public, max-age=3600" } })
+        : json({ error: "not found" }, 404);
+    }
+    // The podcast feed for Spotify, YouTube and any podcast app.
+    if (read && pathname === "/feed.xml") {
+      const xml = await podcastFor(env, origin);
+      return new Response(request.method === "HEAD" ? null : xml, {
+        headers: { "content-type": "application/rss+xml; charset=utf-8", "cache-control": "public, max-age=600", "access-control-allow-origin": "*" },
+      });
+    }
+    if (request.method === "GET" && pathname === "/episodes.json") {
+      return new Response(built(env, origin).feed, { headers: { "content-type": "application/json", "cache-control": "no-cache" } });
+    }
+    // Audio comes through here so seeking works on every phone.
+    if (read && pathname.startsWith("/audio/")) {
+      return serveAudio(request, env);
+    }
+    if (request.method === "GET" && (pathname === "/ask" || pathname === "/ask/")) {
+      // The page records from the microphone, so it must be allowed here.
+      return html(recorderPage, { "permissions-policy": "microphone=(self)" });
+    }
+    if (request.method === "GET" && (pathname === "/stats" || pathname === "/stats/")) {
+      return html(built(env, origin).stats, { "x-robots-tag": "noindex" });
+    }
+
+    if (request.method === "POST" && pathname === "/api/submit") {
+      return submit(request, env, ctx);
+    }
+    if (request.method === "POST" && pathname === "/api/event") {
+      return recordEvent(request, env);
+    }
+    if (request.method === "POST" && pathname === "/api/subscribe") {
+      return subscribe(request, env, ctx);
+    }
+    if (request.method === "POST" && pathname === "/api/unsubscribe") {
+      return unsubscribeByEmail(request, env);
+    }
+    if (read && (pathname === "/unsubscribe" || pathname === "/unsubscribe/")) {
+      return unsubscribePage(request, env);
+    }
+    if (pathname.startsWith("/api/push/")) {
+      if (request.method === "GET" && pathname === "/api/push/key") {
+        const key = publicKey(env);
+        return key ? json({ key }) : json({ error: "Browser notifications aren't set up on this site yet: VAPID_PRIVATE_KEY is not set on the worker (see DEPLOY.md)." }, 503);
+      }
+      if (request.method === "POST" && pathname === "/api/push/subscribe") return pushSubscribe(request, env, ctx);
+      if (request.method === "POST" && pathname === "/api/push/unsubscribe") return pushUnsubscribe(request, env);
+      if (request.method === "POST" && pathname === "/api/push/send") {
+        return authorized(request, env) ? pushSend(request, env) : json({ error: "unauthorized" }, 401);
+      }
+    }
+    if (request.method === "GET" && pathname === "/api/stats") {
+      if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
+      const stats = await getStats(env);
+      stats.subscribers = await subscriberCount(env);
+      stats.pushSubscribers = await pushCount(env);
+      return json(stats);
+    }
+    if (pathname === "/api/subscribers" || pathname === "/api/subscribers/name" || pathname === "/api/notified") {
+      if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
+      if (request.method === "GET" && pathname === "/api/subscribers") return listSubscribers(request, env);
+      if (request.method === "POST" && pathname === "/api/subscribers/name") return setSubscriberName(request, env);
+      if (request.method === "POST" && pathname === "/api/notified") return markNotified(request, env);
+    }
+    // The greeting: whom the page greets, by the id in their listen link (never a name in a URL).
+    if (request.method === "GET" && pathname === "/api/greet") return greet(request, env);
+    if (request.method === "POST" && pathname === "/api/greet/name") return setGreetName(request, env);
+    const clip = /^\/greet\/([0-9a-f]{64})\/(morning|afternoon|evening)\.mp3$/.exec(pathname);
+    if (clip && read) {
+      const buf = await greetClip(env, clip[1], clip[2]);
+      if (!buf) return json({ error: "not found" }, 404);
+      return ranged(request, buf, { "content-type": "audio/mpeg", "cache-control": "private, max-age=86400", "x-robots-tag": "noindex" });
+    }
+    // Hosts only: a rendered greeting goes in slot by slot, then the name the three say is recorded.
+    const greetApi = /^\/api\/greet\/([0-9a-f]{64})\/(morning|afternoon|evening|clips)$/.exec(pathname);
+    if (greetApi) {
+      if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
+      if (request.method === "PUT" && greetApi[2] !== "clips") return putGreetClip(request, env, greetApi[1], greetApi[2]);
+      if (request.method === "POST" && greetApi[2] === "clips") return markGreetClips(request, env, greetApi[1]);
+      return json({ error: "method" }, 405);
+    }
+
+    if (pathname.startsWith("/api/inbox") || pathname.startsWith("/api/audio/") || pathname.startsWith("/api/done/")) {
+      if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
+      if (request.method === "GET" && pathname === "/api/inbox") return listInbox(env);
+      if (request.method === "GET" && pathname.startsWith("/api/audio/")) return getAudio(env, pathname.slice("/api/audio/".length));
+      if (request.method === "POST" && pathname.startsWith("/api/done/")) return markDone(env, pathname.slice("/api/done/".length));
+    }
+
+    // "/<slug>": the listening page opened on that episode, with that episode's share card.
+    const ep = read && /^\/([a-z0-9-]{1,60})\/?$/.exec(pathname);
+    if (ep && bySlug(episodes, ep[1])) {
+      return html(episodePage(env, origin, ep[1]), {}, request);
+    }
+
+    return json({ error: "not found" }, 404);
+  },
+};
+
+// The link in every episode email opens this page, which asks for one click before the
+// sign-up is removed (over POST), so a mail scanner that opens every link in an email can't
+// unsubscribe anyone. Opening the page changes nothing. Without a token it offers a form
+// for the address instead.
+async function unsubscribePage(request, env) {
+  const token = new URL(request.url).searchParams.get("t");
+  const headers = { "x-robots-tag": "noindex" };
+  let body;
+  if (token && (await signupExists(env, token))) {
+    body = `    <h1>Unsubscribe?</h1>
+    <p class="muted">One tap and the address this link was emailed to gets no more episode emails.</p>
+${unsubscribeForm(`<input type="hidden" name="t" value="${token}">`, "Yes, unsubscribe")}`;
+  } else if (token) {
+    body = `    <h1>That link is spent.</h1>
+    <p class="muted">The address on it was already removed, or the link is incomplete. To unsubscribe another way, enter the address below.</p>
+${unsubscribeForm(emailField, "Unsubscribe")}`;
+  } else {
+    body = `    <h1>Unsubscribe</h1>
+    <p class="muted">Enter the address you signed up with and we stop emailing it about new episodes.</p>
+${unsubscribeForm(emailField, "Unsubscribe")}`;
+  }
+  return html(unsubscribeTemplate.replace("<!-- BODY -->", () => body), headers, request);
+}
+const emailField = `<input type="email" name="email" required autocomplete="email" inputmode="email" placeholder="you@example.com" aria-label="Your email address">`;
+// `field` is the hidden token (validated hex) or the address input; the script shows the answer in place.
+const unsubscribeForm = (field, label) => `    <form id="f" method="post" action="/api/unsubscribe" style="display:grid;gap:12px">
+      ${field}
+      <input type="text" class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="err" id="err" role="alert" hidden></p>
+      <button type="submit">${label}</button>
+    </form>
+    <script>
+      const f = document.getElementById("f"), err = document.getElementById("err");
+      f.addEventListener("submit", async (e) => {
+        e.preventDefault(); err.hidden = true;
+        const btn = f.querySelector("button"); btn.disabled = true;
+        try {
+          const res = await fetch("/api/unsubscribe", { method: "POST", body: new FormData(f) });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || "Couldn't do that. Try again in a minute.");
+          f.outerHTML = data.removed === false
+            ? '<p>That link was already used. To unsubscribe another address, <a href="/unsubscribe">enter it here</a>.</p>'
+            : '<p>Done. That address gets no more episode emails. If that was a slip, sign up again on the <a href="/">listening page</a>.</p>';
+        } catch (ex) { err.textContent = ex.message; err.hidden = false; btn.disabled = false; }
+      });
+    </script>`;
+
+async function serveAudio(request, env) {
+  const res = await env.ASSETS.fetch(new Request(request.url, { method: "GET" }));
+  if (!res.ok) return res;
+  const headers = new Headers(res.headers);
+  headers.set("accept-ranges", "bytes");
+  headers.set("cache-control", "public, max-age=86400");
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") || "");
+  // The asset's size isn't a header here (the runtime adds it as it sends the body), so a HEAD
+  // answer would carry none; podcast directories read it, so it comes from episodes.json's bytes.
+  if (!headers.has("content-length")) {
+    const name = decodeURIComponent(new URL(request.url).pathname.slice("/audio/".length));
+    const known = episodes.find((e) => e && e.audio === name && Number.isInteger(e.bytes));
+    if (known) headers.set("content-length", String(known.bytes));
+  }
+  if (!range) {
+    return new Response(request.method === "HEAD" ? null : res.body, { status: 200, headers });
+  }
+  return ranged(request, await res.arrayBuffer(), headers);
+}
+
+// A whole file, or the part a Range header asks for (206), from bytes already in memory.
+function ranged(request, buf, extra) {
+  const headers = new Headers(extra);
+  headers.set("accept-ranges", "bytes");
+  const size = buf.byteLength;
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") || "");
+  if (!range || (range[1] === "" && range[2] === "")) {
+    headers.set("content-length", String(size));
+    return new Response(request.method === "HEAD" ? null : buf, { status: 200, headers });
+  }
+  const start = range[1] === "" ? Math.max(0, size - Number(range[2])) : Number(range[1]);
+  const end = range[1] !== "" && range[2] !== "" ? Math.min(Number(range[2]), size - 1) : size - 1;
+  if (start >= size || start > end) {
+    return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
+  }
+  headers.set("content-range", `bytes ${start}-${end}/${size}`);
+  headers.set("content-length", String(end - start + 1));
+  return new Response(request.method === "HEAD" ? null : buf.slice(start, end + 1), { status: 206, headers });
+}
+
+function authorized(request, env) {
+  const header = request.headers.get("authorization") || "";
+  return env.INBOX_TOKEN && header === `Bearer ${env.INBOX_TOKEN}`;
+}
+
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function clean(value, max) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+const SAFE_ID = /^[a-z0-9-]{8,64}$/;
+
+async function submit(request, env, ctx) {
+  let form;
+  try {
+    form = await request.formData();
+  } catch {
+    return json({ error: "Send the form as multipart form data." }, 400);
+  }
+
+  // Bots fill every field; people never see this one.
+  if (clean(form.get("website"), 200)) return json({ ok: true });
+
+  const text = clean(form.get("text"), MAX_TEXT);
+  const audio = form.get("audio");
+  const hasAudio = audio && typeof audio === "object" && audio.size > 0;
+  if (!text && !hasAudio) return json({ error: "Record a voice note or type a message first." }, 400);
+  if (hasAudio && audio.size > MAX_AUDIO_BYTES) return json({ error: "That recording is over 10 MB. Keep it under about 10 minutes." }, 413);
+  if (hasAudio && audio.type && !audio.type.startsWith("audio/") && !audio.type.startsWith("video/")) {
+    return json({ error: "That file isn't audio." }, 415);
+  }
+
+  const kind = KINDS.has(form.get("kind")) ? form.get("kind") : "question";
+  const name = clean(form.get("name"), MAX_NAME);
+  const listenerId = clean(form.get("listenerId"), 64);
+  const id = `${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}-${crypto.randomUUID().slice(0, 8)}`;
+
+  let audioKey = null;
+  if (hasAudio) {
+    const ext = extFor(audio.type, audio.name);
+    audioKey = `audio/${id}.${ext}`;
+    await env.INBOX.put(audioKey, await audio.arrayBuffer(), {
+      metadata: { contentType: audio.type || "application/octet-stream" },
+      expirationTtl: AUDIO_TTL,
+    });
+  }
+
+  const record = {
+    id,
+    receivedAt: new Date().toISOString(),
+    kind,
+    text,
+    name,
+    // Name on air only when they gave one and ticked the box.
+    nameOk: Boolean(name) && form.get("nameOk") === "yes",
+    // Optional way to reach them, kept for a later personal reply.
+    contact: clean(form.get("contact"), 120),
+    // Random id the listener's browser keeps, so later notes from the same
+    // person can be grouped without knowing who they are.
+    listenerId: SAFE_ID.test(listenerId) ? listenerId : null,
+    episode: clean(form.get("episode"), 60),
+    audioKey,
+    audioType: hasAudio ? audio.type || null : null,
+    audioBytes: hasAudio ? audio.size : 0,
+  };
+  await env.INBOX.put(`inbox/${id}.json`, JSON.stringify(record));
+  // Count it as a conversion in the listening stats (no note content is copied there).
+  ctx.waitUntil(recordEvent(request, env, {
+    type: "ask_submit", ep: record.episode, v: record.listenerId, voice: hasAudio ? 1 : 0,
+  }).catch(() => {}));
+  return json({ ok: true, id });
+}
+
+function extFor(type = "", name = "") {
+  if (type.includes("webm")) return "webm";
+  if (type.includes("ogg")) return "ogg";
+  if (type.includes("mp4") || type.includes("m4a") || type.includes("aac")) return "m4a";
+  if (type.includes("mpeg") || type.includes("mp3")) return "mp3";
+  if (type.includes("wav")) return "wav";
+  const m = /\.([a-z0-9]{2,4})$/i.exec(name);
+  return m ? m[1].toLowerCase() : "bin";
+}
+
+async function listInbox(env) {
+  const items = [];
+  let cursor;
+  do {
+    const page = await env.INBOX.list({ prefix: "inbox/", cursor });
+    for (const { name } of page.keys) {
+      const rec = await env.INBOX.get(name, { type: "json" });
+      if (rec) items.push(rec);
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  items.sort((a, b) => a.receivedAt.localeCompare(b.receivedAt));
+  return json({ items });
+}
+
+async function getAudio(env, id) {
+  if (!/^[0-9]{14}-[0-9a-f]{8}$/.test(id)) return json({ error: "bad id" }, 400);
+  const rec = await env.INBOX.get(`inbox/${id}.json`, { type: "json" })
+    || await env.INBOX.get(`done/${id}.json`, { type: "json" });
+  if (!rec) return json({ error: "not found" }, 404);
+  const { value, metadata } = rec.audioKey
+    ? await env.INBOX.getWithMetadata(rec.audioKey, { type: "stream" })
+    : { value: null };
+  if (!value) return json({ error: "no audio" }, 404);
+  return new Response(value, {
+    headers: { "content-type": metadata?.contentType || "application/octet-stream" },
+  });
+}
+
+async function markDone(env, id) {
+  if (!/^[0-9]{14}-[0-9a-f]{8}$/.test(id)) return json({ error: "bad id" }, 400);
+  const key = `inbox/${id}.json`;
+  const rec = await env.INBOX.get(key);
+  if (rec === null) return json({ ok: true, already: true });
+  await env.INBOX.put(`done/${id}.json`, rec);
+  await env.INBOX.delete(key);
+  return json({ ok: true });
+}
