@@ -100,7 +100,8 @@ noscript a { font-weight: 800; }
   const top = document.getElementById("top"); top.textContent = "Good " + slot + " · " + top.textContent;
   let greeting = false, greeted = false; // the clip is playing; this page already greeted
   // Decided once, when the page opens (as on the listening page): due unless this browser heard a greeting in the last three hours.
-  const greetWanted = (() => { try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } })();
+  let greetWanted = (() => { try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } })();
+  addEventListener("storage", (e) => { if (e.key === "hpm-greeted" && !greeting) greetWanted = false; }); // another embed on the page, or another tab, greeted meanwhile
   const greetDue = () => greetWanted && !greeted;
   function startEpisode() { greeting = false; audio.src = epSrc; const p = audio.play(); if (p && p.catch) p.catch(() => paint()); }
   function greetThenPlay() {

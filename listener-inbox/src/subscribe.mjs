@@ -20,7 +20,7 @@
 // the stats, the repo or a thread.
 import { recordEvent, countToday } from "./stats.js";
 
-const EMAIL = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;
+const EMAIL = /^[^\s@\p{Cc}]{1,64}@[^\s@\p{Cc}]+\.[^\s@\p{Cc}]{2,}$/u;
 const TOKEN = /^[0-9a-f]{32}$/;
 const GID = /^[0-9a-f]{64}$/;
 const MAX_EMAIL = 254;
@@ -44,7 +44,9 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), { status
 
 export function normalizeEmail(raw) {
   const email = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  return email.length <= MAX_EMAIL && EMAIL.test(email) ? email : null;
+  // Bounded as stored (JSON-escaped, in bytes), not only as typed: the record's copy in KV
+  // metadata has to stay under 1 KB whatever the address is made of.
+  return email.length <= MAX_EMAIL && size(email) <= MAX_EMAIL + 2 && EMAIL.test(email) ? email : null;
 }
 
 // The name to greet someone by: "" when none was given, null when it isn't a name.
@@ -101,7 +103,7 @@ function store(env, token, rec) {
 async function indexGreet(env, token, rec) {
   if (rec.gi) return rec;
   await env.INBOX.put(`greet/${await greetId(token)}`, token);
-  const next = { ...rec, gi: 1 };
+  const next = { ...((await env.INBOX.get(key(token), { type: "json" })) || rec), gi: 1 }; // from the value: the metadata copy may hold fewer slugs
   await store(env, token, next);
   return next;
 }
@@ -186,12 +188,21 @@ async function rename(env, token, gid, plain, name) {
   return { ...plain, name, clipsFor: "" };
 }
 
-// GET /api/greet?g=<gid>: who the page is greeting (the name may be empty: then the page asks
-// for one) and whether the spoken greeting with that name is there (/greet/<gid>/<slot>.mp3).
+// GET /api/greet?g=<gid>[&s=<slot>]: who the page is greeting (the name may be empty: then the
+// page asks for one) and whether the spoken greeting with that name is there
+// (/greet/<gid>/<slot>.mp3). With the page's slot, `clips` also needs that clip to really be
+// there (a rename or a hiccup can leave the record ahead of the store), so the page falls back
+// to the show's clip rather than to silence.
 export async function greet(request, env) {
-  const rec = await byGreetId(env, new URL(request.url).searchParams.get("g"));
+  const q = new URL(request.url).searchParams;
+  const rec = await byGreetId(env, q.get("g"));
   if (!rec) return json({ error: "unknown" }, 404);
-  return new Response(JSON.stringify(greeting(rec)), { headers: { "content-type": "application/json", "cache-control": "private, no-store" } });
+  const g = greeting(rec), slot = q.get("s");
+  if (g.clips && SLOTS.includes(slot)) {
+    const clip = await env.INBOX.get(clipKey(rec.gid, slot), { type: "stream" });
+    if (clip) clip.cancel().catch(() => {}); else g.clips = false;
+  }
+  return new Response(JSON.stringify(g), { headers: { "content-type": "application/json", "cache-control": "private, no-store" } });
 }
 
 // POST /api/greet/name { g, name }: the listener sets, changes or clears the name on their
@@ -255,8 +266,11 @@ export async function markGreetClips(request, env, gid) {
   const rec = await byGreetId(env, gid);
   if (!rec) return json({ error: "unknown" }, 404);
   const { token, gid: g, ...plain } = rec;
+  // The listener changed or cleared the name while the clips were being made: they say the wrong
+  // thing now, so they go, and the publish run moves on (the next one renders the new name).
+  if (plain.name !== name) { for (const slot of SLOTS) await env.INBOX.delete(clipKey(g, slot)); return json({ error: "name changed", name: plain.name }, 409); }
   await store(env, token, { ...plain, clipsFor: name });
-  return json({ ok: true, clipsFor: name, current: plain.name === name });
+  return json({ ok: true, clipsFor: name });
 }
 
 // Every sign-up from the list's metadata (a record written without it is read once and repaired).
@@ -315,8 +329,11 @@ export async function markNotified(request, env) {
   let marked = 0, already = 0;
   for await (const r of records(env)) {
     if (!wanted.delete(r.email)) continue;
-    if ((r.notified || []).includes(f.ep)) { already++; continue; }
-    await store(env, r.token, { ...r, notified: [...(r.notified || []), f.ep] });
+    // The full record (the listing's metadata copy may hold fewer slugs), so a mark never loses one.
+    const full = (await env.INBOX.get(key(r.token), { type: "json" })) || r;
+    const notified = [...new Set([...(full.notified || []), ...(r.notified || [])])];
+    if (notified.includes(f.ep)) { already++; continue; }
+    await store(env, r.token, { ...full, notified: [...notified, f.ep] });
     marked++;
   }
   return json({ ok: true, ep: f.ep, marked, already, unknown: wanted.size, skipped: given.length - Math.min(given.length, MARK_MAX) });

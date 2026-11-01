@@ -412,8 +412,12 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   try {
     const q = new URLSearchParams(location.search), l = q.get("l");
     if (l && /^[0-9a-f]{64}$/.test(l)) {
-      gid = l; localStorage.setItem("hpm-greet", gid);
-      q.delete("l"); const rest = q.toString(); // the id stays out of the address bar, copied links and history
+      gid = l;
+      if (localStorage.getItem("hpm-greet") !== gid) localStorage.removeItem("hpm-greet-name"); // a link for someone else drops the cached name
+      localStorage.setItem("hpm-greet", gid);
+      // Once this browser holds the id it leaves the address bar, copied links and history (a browser
+      // that refuses storage keeps it there: the only way its reloads can still greet).
+      q.delete("l"); const rest = q.toString();
       history.replaceState(null, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
     } else gid = localStorage.getItem("hpm-greet") || "";
     who = (gid && localStorage.getItem("hpm-greet-name")) || "";
@@ -436,10 +440,18 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   const hour = new Date().getHours();
   const slot = hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : "evening";
   // Whom the id names (the name may be empty) and whether their own spoken greeting is rendered; a spent id is forgotten.
-  const whoami = gid ? fetch("/api/greet?g=" + gid).then(async (r) => {
-    if (r.status === 404) return forget();
-    if (r.ok) learned(await r.json());
-  }).catch(() => {}) : Promise.resolve();
+  let acted = false; // the listener tapped "Not you?", "Change name" or Save: a late answer must not undo that
+  const whoami = gid ? (async (asked) => {
+    try {
+      const r = await fetch("/api/greet?g=" + asked + "&s=" + slot);
+      if (gid !== asked || acted) return;
+      if (r.status === 404) return forget();
+      if (!r.ok) return;
+      const d = await r.json();
+      if (gid !== asked || acted) return;
+      learned(d);
+    } catch {}
+  })(gid) : Promise.resolve();
 
   const audio = document.getElementById("player-audio");
   const fmt = (s) => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
@@ -507,7 +519,8 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   let greeted = false;    // this page already played (or started) the greeting
   // Decided once, when the page opens: a greeting is due unless this browser heard one in the last three
   // hours. A page open across that mark doesn't greet between two episodes.
-  const greetWanted = cards.length > 0 && (() => { try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } })();
+  let greetWanted = cards.length > 0 && (() => { try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } })();
+  addEventListener("storage", (e) => { if (e.key === "hpm-greeted" && !greeting && !greeted) { greetWanted = false; greetSub.hidden = true; } }); // another tab, or an embed, greeted meanwhile
   const greetDue = () => greetWanted && !greeted;
   const greetSrc = () => (named && gid ? "/greet/" + gid + "/" + slot + ".mp3" : "/audio/greet-" + slot + ".mp3");
   function play(c) {
@@ -671,12 +684,13 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     showGreeting();
   }
   showGreeting();
-  greetNot.addEventListener("click", forget);
-  greetEdit.addEventListener("click", () => { const first = greetAsk.querySelector("input"); first.value = who; greetAsk.hidden = false; greetEdit.hidden = true; first.focus(); first.select(); });
+  greetNot.addEventListener("click", () => { acted = true; forget(); });
+  greetEdit.addEventListener("click", () => { acted = true; const first = greetAsk.querySelector("input"); first.value = who; greetAsk.hidden = false; greetEdit.hidden = true; first.focus(); first.select(); });
   greetAsk.addEventListener("submit", async (ev) => {
     ev.preventDefault(); greetMsg.hidden = true;
     const first = greetAsk.querySelector("input"), name = first.value.trim();
     if (!name) { first.focus(); return; }
+    acted = true;
     const btn = greetAsk.querySelector("button"); btn.disabled = true;
     try {
       const res = await fetch("/api/greet/name", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ g: gid, name }) });

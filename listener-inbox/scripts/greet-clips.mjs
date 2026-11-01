@@ -17,19 +17,24 @@
 //     and lists the names due, for the operator's eyes (the hosts' voices will say them; clear
 //     one that isn't a first name with POST /api/subscribers/name first), and prints the
 //     --approve code for exactly that list. The real run takes that code and refuses if the
-//     list has changed since (a name typed in between waits for the next dry run), and stops
-//     above --max subscribers (25 unless given), so a run can't spend more than a host expects.
+//     list is not the one shown (a sign-up or a name change since, or a run that stopped
+//     partway: run the dry run again for a fresh code), and stops above --max subscribers (25
+//     unless given), so a run can't spend more than a host expects. Each person is checked once
+//     more right before their clips are made (removed or renamed since: skipped, nothing spent);
+//     any other trouble stops the run, and the next dry run picks up the rest.
 //
-// Needs ELEVENLABS_API_KEY and ffmpeg (both in the cloud environment); --named also INBOX_URL and
-// INBOX_TOKEN. Addresses are printed only with --verbose; neither names nor addresses belong in a thread.
+// Needs ELEVENLABS_API_KEY, ffmpeg and ffprobe (all in the cloud environment); --named also
+// INBOX_URL and INBOX_TOKEN. ELEVENLABS_API_URL points the renders at a test double. Addresses
+// are printed only with --verbose; neither names nor addresses belong in a thread.
 import { writeFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync, spawnSync } from "node:child_process";
+import { cleanName } from "../src/subscribe.mjs"; // the worker's rule for a name, so the two never disagree
 
-const API = "https://api.elevenlabs.io/v1/text-to-dialogue?output_format=mp3_44100_128";
+const API = process.env.ELEVENLABS_API_URL || "https://api.elevenlabs.io/v1/text-to-dialogue?output_format=mp3_44100_128";
 const MODEL = "eleven_v4";
 const VOICES = { anant: "2VlXj8B3IygUVWIq1EAC", aman: "Nj6ChQDqm6Ghv0E6HlCu" };
 const CREDITS_PER_CHAR = 0.44;
@@ -95,20 +100,22 @@ async function renderSet(name, key, dir, into, after) {
   }
   return made;
 }
-// A worker answer the run can't recover from: the token is wrong or the route is missing. Any
-// other answer is one person's (a sign-up removed mid-run is a 404; a 5xx is tried again next run).
-class WorkerRefused extends Error {}
+// Two worker answers are one person's and the run moves on: 404 (the sign-up was removed since
+// the dry run) and 409 (the listener changed the name meanwhile; the worker dropped the clips).
+// Anything else (token, route, quota, outage) stops the run, so no further clip is paid for
+// only to be refused.
+class Skip extends Error {}
 async function check(res, what) {
   if (res.ok) return;
-  const text = (await res.text()).slice(0, 200);
-  if (res.status === 401 || res.status === 405) throw new WorkerRefused(`${what}: the worker answered ${res.status} ${text}`);
-  throw new Error(`${what}: ${res.status} ${text}`);
+  if (res.status === 404) throw new Skip(`${what}: this sign-up was removed since the dry run`);
+  if (res.status === 409) throw new Skip(`${what}: this listener changed the name since the dry run`);
+  throw new Error(`${what}: the worker answered ${res.status} ${(await res.text()).slice(0, 200)}`);
 }
 
 const key = process.env.ELEVENLABS_API_KEY;
-if (!flag("--generic") && !flag("--named")) fail("Usage: node scripts/greet-clips.mjs --generic | --named [--max N] [--dry-run] [--verbose]");
+if (!flag("--generic") && !flag("--named")) fail("Usage: node scripts/greet-clips.mjs --generic | --named --dry-run [--verbose] | --named --approve <code> [--max N]");
 if (!dry && !key) fail("ELEVENLABS_API_KEY is not set.");
-try { execFileSync("ffmpeg", ["-version"], { stdio: "ignore" }); } catch { if (!dry) fail("ffmpeg is not installed; the clips can't be finished without it."); }
+for (const tool of ["ffmpeg", "ffprobe"]) { try { execFileSync(tool, ["-version"], { stdio: "ignore" }); } catch { if (!dry) fail(`${tool} is not installed; the clips can't be finished without it.`); } }
 const dir = mkdtempSync(join(tmpdir(), "greet-"));
 process.on("exit", () => { try { rmSync(dir, { recursive: true, force: true }); } catch {} });
 for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => process.exit(130)); // so the clips with names don't outlive an interrupted run
@@ -135,30 +142,41 @@ if (flag("--named")) {
   if (!res.ok) fail(`${base}/api/subscribers answered ${res.status}.`);
   const { items, count, unindexed } = await res.json();
   if (unindexed) console.log(`Note: ${unindexed} older sign-ups still have no greeting link; list /api/subscribers again until the answer's unindexed is 0.`);
-  const due = items.filter((s) => s.name && s.clipsFor !== s.name && /^[0-9a-f]{64}$/.test(s.gid));
+  // Only names the worker's rule accepts today (an older rule may have let others in): a clip the
+  // worker would refuse to mark is never paid for; the dry run names the rest for a host to clear.
+  const named = items.filter((s) => s.name);
+  const rejects = named.filter((s) => cleanName(s.name) !== s.name);
+  const due = named.filter((s) => cleanName(s.name) === s.name && s.clipsFor !== s.name && /^[0-9a-f]{64}$/.test(s.gid));
   const total = due.reduce((n, s) => n + chars(s.name), 0);
   // The code for exactly this list of people and names; the real run must be given it.
   const code = createHash("sha256").update(JSON.stringify(due.map((s) => [s.gid, s.name]).sort())).digest("hex").slice(0, 10);
-  console.log(`${count} sign-ups, ${items.filter((s) => s.name).length} with a name, ${due.length} without clips in that name: ${total} characters, about ${credits(total)} credits.`);
+  console.log(`${count} sign-ups, ${named.length} with a name, ${due.length} without clips in that name: ${total} characters, about ${credits(total)} credits.`);
   if (dry) {
     for (const s of due) console.log(`  would render for "${s.name}" (id ${s.gid.slice(0, 8)}…${verbose ? `, ${s.email}` : ""}): ${script("morning", s.name)[0][1]}`);
+    for (const s of rejects) console.log(`  not a first name under the current rule, so no clips: "${s.name}" (id ${s.gid.slice(0, 8)}…${verbose ? `, ${s.email}` : ""}); clear it with POST /api/subscribers/name`);
     if (due.length > max) console.log(`That is more than ${max} in one run: the real run stops unless given --max ${due.length}.`);
-    if (due.length) console.log(`If every name above is a first name, render exactly this list with: node scripts/greet-clips.mjs --named --approve ${code}`);
+    if (due.length) console.log(`If every name above is a first name, render exactly this list with: node scripts/greet-clips.mjs --named --approve ${code}${due.length > max ? ` --max ${due.length}` : ""}`);
     process.exit(0);
   }
   if (!due.length) { console.log("Nothing to render."); process.exit(0); }
   const approved = opt("--approve", "");
   if (!approved) fail("Run with --dry-run first, read the names, then run again with the --approve code it prints.");
-  if (approved !== code) fail("The list of names has changed since that dry run (someone signed up or changed a name). Run --dry-run again and read the new list.");
+  if (approved !== code) fail("The list of names is not the one that dry run showed (a sign-up or a name change since, a run that stopped partway, or older sign-ups indexed since). Run --dry-run again and read the new list.");
   if (due.length > max) fail(`That is more than ${max} subscribers in one run; a host should expect the spend. Run again with --max ${due.length} to go ahead.`);
   // Before any credit is spent: the worker must carry the greeting routes and take the token.
   // An empty body gets the route's own "an MP3 between ..." refusal; anything else means stop.
   const probe = await fetch(`${base}/api/greet/${due[0].gid}/morning`, { method: "PUT", headers: { ...auth, "content-type": "audio/mpeg" }, body: new Uint8Array(0) });
   if (probe.status !== 400) fail(`The worker at ${base} doesn't take greeting clips yet (answered ${probe.status} to a probe): deploy this version first (DEPLOY.md), then run again.`);
-  let done = 0;
+  let done = 0, skipped = 0;
   for (const s of due) {
     const who = verbose ? `${s.name} <${s.email}>` : `id ${s.gid.slice(0, 8)}…`;
     try {
+      // Once more, right before paying: still signed up, still this name (the dry run may be minutes old).
+      const now = await fetch(`${base}/api/greet?g=${s.gid}`);
+      await check(now, "checking the sign-up");
+      const { name: current, clips } = await now.json();
+      if (current !== s.name) throw new Skip("this listener changed the name since the dry run (nothing spent)");
+      if (clips) throw new Skip("already has clips in this name, another run got there first (nothing spent)");
       const made = await renderSet(s.name, key, dir, (slot) => join(dir, `${s.gid.slice(0, 8)}-${slot}.mp3`), async (slot, file) => {
         const put = await fetch(`${base}/api/greet/${s.gid}/${slot}`, { method: "PUT", headers: { ...auth, "content-type": "audio/mpeg" }, body: readFileSync(file) });
         try { rmSync(file, { force: true }); } catch {}
@@ -169,10 +187,12 @@ if (flag("--named")) {
       done++;
       console.log(`  ${who}: 3 clips stored (${SLOTS.map((x) => made[x].seconds.toFixed(1) + " s").join(", ")})`);
     } catch (e) {
+      if (e instanceof Skip) { skipped++; console.log(`  ${who}: skipped, ${e.message}.`); continue; }
       console.error(`  ${who}: ${e.message}`);
-      if (e instanceof WorkerRefused) { console.error("Stopping: the worker refuses the token or the route, so nothing more is rendered."); process.exit(1); }
+      console.error(`Stopping after ${done} of ${due.length}, so no more clips are paid for while this lasts. Once it is sorted out, run --dry-run again for a fresh code and --approve that.`);
+      process.exit(1);
     }
   }
-  console.log(`${done} of ${due.length} subscribers have their greeting now${done < due.length ? "; run again for the rest" : ""}.`);
-  process.exit(done === due.length ? 0 : 1);
+  console.log(`${done} of ${due.length} subscribers have their greeting now${skipped ? ` (${skipped} skipped)` : ""}.`);
+  process.exit(0);
 }
