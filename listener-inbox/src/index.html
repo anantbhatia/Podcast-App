@@ -509,22 +509,26 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     if (p && p.catch) p.catch(() => paintAll());
     return p;
   }
-  // The spoken greeting: before the first episode of a visit (a visit being three hours in this
-  // browser), the player plays a few seconds of Anant and Aman saying good morning, afternoon or
-  // evening, with the listener's name once their own clip is rendered. While it plays nothing is
+  // The spoken greeting: before every episode a listener starts, the player plays a few seconds of
+  // Anant and Aman saying good morning, afternoon or evening, with the listener's name once their
+  // own clip is rendered (Anant chose "every play" on 2026-11-06). While it plays nothing is
   // "loaded" (cur is null), so the position, stats and marks of the episode are untouched; its
   // card shows as playing and its button pauses, which skips the greeting. A clip that won't
   // load or play falls through to the episode.
   let greeting = null;    // { c }: the episode that follows the clip
-  let greeted = false;    // this page already played (or started) the greeting
-  // Decided once, when the page opens: a greeting is due unless this browser heard one in the last three
-  // hours. A page open across that mark doesn't greet between two episodes.
-  let greetWanted = cards.length > 0 && (() => { try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } })();
-  addEventListener("storage", (e) => { if (e.key === "hpm-greeted" && !greeting && !greeted) { greetWanted = false; greetSub.hidden = true; } }); // another tab, or an embed, greeted meanwhile
-  const greetDue = () => greetWanted && !greeted;
+  let played = null;      // the episode whose audio has begun and not yet finished, so a resume is not re-greeted
+  const greetWanted = cards.length > 0;
+  // Due before a fresh start, not when resuming the episode already playing/paused partway, and not
+  // while a clip is already playing. The ended/auto-advance path uses playNow, so the next episode
+  // after one finishes starts with no greeting; replaying a finished episode greets again.
+  function greetDue(c) {
+    if (!greetWanted || greeting) return false;
+    if (played === c && !audio.ended) return false; // resuming the episode that is already underway
+    return true;
+  }
   const greetSrc = () => (named && gid ? "/greet/" + gid + "/" + slot + ".mp3" : "/audio/greet-" + slot + ".mp3");
   function play(c) {
-    if (!greetDue()) return playNow(c);
+    if (!greetDue(c)) return playNow(c);
     if (cur) { cur.pos = audio.ended ? 0 : cur.want != null ? cur.want : audio.readyState >= 2 ? audio.currentTime : cur.pos; cur.want = null; }
     if (live) { send("pause", live.ep, stat(live)); live = null; }
     cur = null; greeting = { c };
@@ -584,8 +588,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
   }
 
   audio.addEventListener("play", () => {
-    if (greeting) { greeted = true; try { localStorage.setItem("hpm-greeted", String(Date.now())); } catch {} greetSub.hidden = true; }
-    if (cur) { cur.last = audio.currentTime; live = cur; send("play", cur.ep, stat(cur)); }
+    if (cur) { cur.last = audio.currentTime; live = cur; played = cur; send("play", cur.ep, stat(cur)); }
     paintAll();
   });
   audio.addEventListener("pause", () => {
@@ -631,7 +634,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     const c = cur; if (!c) return;
     if (c.last !== null) heard(c, c.last, audio.duration);
     marks(c);
-    c.pos = 0; c.want = null; paintAll();
+    c.pos = 0; c.want = null; played = null; paintAll();
     const next = cards[cur.i + 1];
     if (next) { next.art.scrollIntoView({ behavior: "smooth", block: "center" }); playNow(next); } // no greeting between episodes
   });
@@ -643,9 +646,9 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     select(start);
     if (start !== cards[0]) start.art.scrollIntoView({ block: "start" });
     // A listener from an email link: the page first asks whom it greets (so the clip with their name plays), for up to 1.5 s.
-    (gid && greetDue() ? Promise.race([whoami, new Promise((r) => setTimeout(r, 1500))]) : Promise.resolve()).then(() => {
+    (gid && greetDue(start) ? Promise.race([whoami, new Promise((r) => setTimeout(r, 1500))]) : Promise.resolve()).then(() => {
     // A tap meanwhile (a greeting or an episode playing, or another card chosen) wins; the arrival does nothing then.
-    if (greeted || greeting || live || cur !== start || !audio.paused) return;
+    if (greeting || live || cur !== start || !audio.paused) return;
     const p = play(start);
     if (p && p.catch) p.catch((e) => {
       if (e && e.name === "AbortError") return;
@@ -674,7 +677,7 @@ footer img { grid-row: span 2; width: 56px; height: 56px; }
     greetAsk.hidden = !(gid && !who);
     greetNot.hidden = !who; greetNot.textContent = "Not " + who + "?";
     greetEdit.hidden = !(gid && who); // a wrong name (a typo, or someone else's) is fixed here, not only forgotten
-    greetSub.hidden = !greetDue();
+    greetSub.hidden = !greetWanted;
     greetBox.hidden = false;
   }
   function forget() { gid = ""; who = ""; named = false; try { localStorage.removeItem("hpm-greet"); localStorage.removeItem("hpm-greet-name"); } catch {} showGreeting(); }
