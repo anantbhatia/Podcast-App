@@ -1,5 +1,259 @@
 [
   {
+    "episode": 4,
+    "slug": "ep04",
+    "title": "Pixel: The Most Potent Tracker invented by Mankind!",
+    "date": "2026-11-02",
+    "durationSec": 1248,
+    "description": "We dive into the most pervasive tracking technology used on the internet, and how it’s found it’s way into the chat sessions with your bot. Hard to build trust into the new world.",
+    "summary": [
+      "Why Google's AI Mode earns less, and how the ads moved into your follow-up questions.",
+      "How a ChatGPT ad view can follow you to your TV, and the wiretap suit over OpenAI's pixel.",
+      "The pixel's story: from the 1999 'web bug' to the FTC's first pixel health-breach case.",
+      "A test of 23 AI models: most pushed a pricier sponsored flight more than half the time."
+    ],
+    "sources": [
+      {
+        "story": "The Story of a Pixel",
+        "refs": [
+          {
+            "title": "Alphabet Announces Third Quarter 2026 Results",
+            "outlet": "Alphabet (earnings release)",
+            "url": "https://s206.q4cdn.com/479360582/files/doc_financials/2026/q3/2026q3-alphabet-earnings-release.pdf"
+          },
+          {
+            "title": "Ads in AI Mode expand to 10 new countries",
+            "outlet": "Google Ads blog",
+            "url": "https://blog.google/products/ads-commerce/ads-in-ai-mode-global/"
+          },
+          {
+            "title": "Google's ad growth slows to 10.5% as AI Mode ads go to 10 more markets",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/googles-ad-growth-slows-to-10-5-as-ai-mode-ads-go-to-10-more-markets/"
+          },
+          {
+            "title": "ChatGPT now shows ads to free and Go users, with opt-out cutting daily message limits",
+            "outlet": "The Decoder",
+            "url": "https://the-decoder.com/chatgpt-now-shows-ads-to-free-and-go-users-with-opt-out-cutting-daily-message-limits/"
+          },
+          {
+            "title": "OpenAI expands ChatGPT ads to 26 more countries in bid to boost revenue",
+            "outlet": "The Star (Reuters)",
+            "url": "https://www.thestar.com.my/tech/tech-news/2026/10/21/openai-expands-chatgpt-ads-to-26-more-countries-in-bid-to-boost-revenue"
+          },
+          {
+            "title": "StackAdapt lets advertisers retarget ChatGPT ad viewers on CTV and display",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/stackadapt-lets-advertisers-retarget-chatgpt-ad-viewers-on-ctv-and-display/"
+          },
+          {
+            "title": "OpenAI hit with US suit alleging wiretapping claims over ad tracking",
+            "outlet": "MLex",
+            "url": "https://www.mlex.com/mlex/articles/2542713"
+          },
+          {
+            "title": "OpenAI hit with US federal, state wiretapping claims over tracking",
+            "outlet": "MLex",
+            "url": "https://www.mlex.com/mlex/articles/2542702"
+          },
+          {
+            "title": "FTC Provides Insight Into Pixel Tracking Technology",
+            "outlet": "Frankfurt Kurnit Klein & Selz",
+            "url": "https://advertisinglaw.fkks.com/post/102ias8/ftc-provides-insight-into-pixel-tracking-technology"
+          },
+          {
+            "title": "The FTC Outlines What It Sees as The Hidden Impacts of Pixel Tracking",
+            "outlet": "Foley Hoag",
+            "url": "https://foleyhoag.com/news-and-insights/blogs/security-privacy-and-the-law/2023/march/the-ftc-outlines-what-it-sees-as-the-hidden-impacts-of-pixel-tracking/"
+          },
+          {
+            "title": "AirTag",
+            "outlet": "Apple",
+            "url": "https://www.apple.com/airtag/"
+          },
+          {
+            "title": "Apple and Google deliver support for unwanted tracking alerts in iOS and Android",
+            "outlet": "Apple Newsroom",
+            "url": "https://www.apple.com/newsroom/2024/05/apple-and-google-deliver-support-for-unwanted-tracking-alerts-in-ios-and-android/"
+          },
+          {
+            "title": "Ads that Talk Back: Implications and Perceptions of Injecting Personalized Advertising into LLM Chatbots",
+            "outlet": "arXiv, Proc. ACM IMWUT 2025",
+            "url": "https://arxiv.org/abs/2409.15436"
+          },
+          {
+            "title": "Web-Tracking 'Cookies' Meant to Protect Privacy: Inventor",
+            "outlet": "SecurityWeek (AFP)",
+            "url": "https://www.securityweek.com/web-tracking-cookies-meant-protect-privacy-inventor/"
+          },
+          {
+            "title": "The Web Bug FAQ",
+            "outlet": "EFF (Richard M. Smith, v1.0, 11 Nov 1999)",
+            "url": "https://w2.eff.org/Privacy/Marketing/web_bug.html"
+          },
+          {
+            "title": "The National Advertising Initiative: The Beginnings of the NAI",
+            "outlet": "World Privacy Forum",
+            "url": "https://worldprivacyforum.org/?p=5673"
+          },
+          {
+            "title": "FTC Ends DoubleClick Privacy Investigation",
+            "outlet": "InternetNews",
+            "url": "https://internetnews.com/marketing/ftc-ends-doubleclick-privacy-investigation"
+          },
+          {
+            "title": "FTC clears DoubleClick of privacy invasion",
+            "outlet": "The Register",
+            "url": "https://www.theregister.com/2001/01/23/ftc_clears_doubleclick_of_privacy/"
+          },
+          {
+            "title": "Regulators Clear Google-DoubleClick Deal",
+            "outlet": "Redmond Channel Partner (AP)",
+            "url": "https://rcpmag.com/articles/2007/12/20/regulators-clear-googledoubleclick-deal.aspx"
+          },
+          {
+            "title": "Google-DoubleClick Deal Cleared by the FTC",
+            "outlet": "MichaelZimmer.org",
+            "url": "https://michaelzimmer.org/2007/12/20/google-doubleclick-deal-cleared-by-the-ftc/"
+          },
+          {
+            "title": "Foresight, ignored",
+            "outlet": "Memex 1.1 (John Naughton)",
+            "url": "https://memex.naughtons.org/?p=27997"
+          },
+          {
+            "title": "Announcing Facebook Pixel",
+            "outlet": "Facebook for Developers",
+            "url": "https://developers.facebook.com/ads/blog/post/2015/10/14/announcing-facebook-pixel/"
+          },
+          {
+            "title": "Kevin Ashton May Change the World",
+            "outlet": "RFID Journal",
+            "url": "https://www.rfidjournal.com/?p=73848"
+          },
+          {
+            "title": "FTC slaps $1.5M fine on GoodRx for sharing users' health data with Facebook and Google",
+            "outlet": "TechCrunch",
+            "url": "https://techcrunch.com/2023/02/01/ftc-slaps-online-pharmacy-goodrx-for-sharing-users-health-data-with-facebook-and-google/"
+          },
+          {
+            "title": "FTC Imposes $1.5M Penalty on GoodRx Over Failure to Report Healthcare Data Breach",
+            "outlet": "HealthITSecurity (TechTarget)",
+            "url": "https://www.techtarget.com/healthtechsecurity/news/366593890/FTC-Imposes-15M-Penalty-on-GoodRx-Over-Failure-to-Report-Healthcare-Data-Breach"
+          },
+          {
+            "title": "FTC Proposes $7.8M Settlement With BetterHelp Over Improper Health Data Sharing",
+            "outlet": "HealthITSecurity (TechTarget)",
+            "url": "https://techtarget.com/healthtechsecurity/news/366594431/FTC-Proposes-78M-Settlement-With-BetterHelp-Over-Improper-Health-Data-Sharing"
+          },
+          {
+            "title": "FTC, HHS warn health providers not to use tracking tech in websites, apps",
+            "outlet": "The Record",
+            "url": "https://therecord.media/apps-website-tracking-healthcare-ftc-hhs-warning"
+          },
+          {
+            "title": "Meta Pixel will count more conversions from Nov 12 unless advertisers opt out",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/meta-pixel-will-count-more-conversions-from-nov-12-unless-advertisers-opt-out/"
+          },
+          {
+            "title": "Meta Pixel counts more sales from Nov 12 as AI ads go undisclosed",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/meta-pixel-counts-more-sales-from-nov-12-as-ai-ads-go-undisclosed/"
+          },
+          {
+            "title": "Google Launches Self-Service Ad Program",
+            "outlet": "InternetNews",
+            "url": "https://www.internetnews.com/marketing/google-launches-self-service-ad-program/"
+          },
+          {
+            "title": "A Brief History of 'Pixel'",
+            "outlet": "Richard F. Lyon, SPIE 2006",
+            "url": "https://dicklyon.com/tech/Photography/Pixel-SPIE06-Lyon.pdf"
+          },
+          {
+            "title": "15 U.S. Code § 45 (FTC Act Section 5)",
+            "outlet": "Cornell Law, Legal Information Institute",
+            "url": "https://www.law.cornell.edu/uscode/text/15/45"
+          },
+          {
+            "title": "FTC brings first enforcement action under the Health Breach Notification Rule",
+            "outlet": "Davis Polk",
+            "url": "https://www.davispolk.com/insights/client-update/ftc-brings-first-enforcement-action-under-health-breach-notification-rule"
+          },
+          {
+            "title": "Children's Online Privacy Protection Rule (2013 amendments)",
+            "outlet": "Federal Register",
+            "url": "https://www.govinfo.gov/content/pkg/FR-2013-01-17/html/2012-31341.htm"
+          },
+          {
+            "title": "11 CCR § 7025: Opt-out preference signals",
+            "outlet": "Cornell Law, Legal Information Institute",
+            "url": "https://www.law.cornell.edu/regulations/california/11-CCR-7025"
+          },
+          {
+            "title": "Attorney General Bonta announces settlement with Sephora",
+            "outlet": "California Attorney General",
+            "url": "https://oag.ca.gov/news/press-releases/attorney-general-bonta-announces-settlement-sephora-part-ongoing-enforcement"
+          },
+          {
+            "title": "Planet49: storing cookies requires active consent",
+            "outlet": "Court of Justice of the EU",
+            "url": "https://curia.europa.eu/jcms/upload/docs/application/pdf/2019-10/cp190125en.pdf"
+          },
+          {
+            "title": "Twenty-four states now have comprehensive consumer privacy laws",
+            "outlet": "MultiState",
+            "url": "https://www.multistate.us/insider/2026/10/28/twenty-four-states-now-have-comprehensive-consumer-privacy-laws"
+          }
+        ]
+      },
+      {
+        "story": "Whose side is the chatbot on?",
+        "refs": [
+          {
+            "title": "Ads in AI Chatbots? An Analysis of How Large Language Models Navigate Conflicts of Interest",
+            "outlet": "arXiv, COLM 2026",
+            "url": "https://arxiv.org/abs/2604.08525"
+          },
+          {
+            "title": "Ads in AI Mode expand to 10 new countries",
+            "outlet": "Google Ads blog",
+            "url": "https://blog.google/products/ads-commerce/ads-in-ai-mode-global/"
+          },
+          {
+            "title": "OpenAI finally pulls trigger on ChatGPT ads after monthslong delay",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/openai-finally-pulls-trigger-on-chatgpt-ads-after-monthslong-delay/"
+          },
+          {
+            "title": "LLM-OSDA: An Optimal-Stopping Dynamic Auction for Native Advertising in Multi-Turn LLM Conversations",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2608.00123"
+          },
+          {
+            "title": "OpenAI tests sponsored agents and rolls out AI tools for ChatGPT ads",
+            "outlet": "Unite.AI",
+            "url": "https://unite.ai/openai-tests-sponsored-agents-and-rolls-out-ai-tools-for-chatgpt-ads"
+          },
+          {
+            "title": "Behavioral Feature Boosting via Substitute Relationships for E-commerce Search",
+            "outlet": "arXiv preprint (Amazon researchers)",
+            "url": "https://arxiv.org/abs/2602.14502"
+          },
+          {
+            "title": "How Google determines ranking results",
+            "outlet": "Google, How Search Works",
+            "url": "https://www.google.com/intl/en_us/search/howsearchworks/how-search-works/ranking-results/"
+          }
+        ]
+      }
+    ],
+    "audio": "ep04.mp3",
+    "bytes": 14979339,
+    "publishedAt": "2026-11-02T20:16:50.111Z"
+  },
+  {
     "episode": 3,
     "slug": "ep03",
     "title": "Your AI went on crazy Shopping Spree. Who pays for the returns?",
