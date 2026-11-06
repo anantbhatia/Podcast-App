@@ -98,14 +98,21 @@ noscript a { font-weight: 800; }
   const ep = body.dataset.ep, dur0 = +body.dataset.dur || 0, epSrc = audio.getAttribute("src");
   const hour = new Date().getHours(), slot = hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : "evening";
   const top = document.getElementById("top"); top.textContent = "Good " + slot + " · " + top.textContent;
-  let greeting = false, greeted = false; // the clip is playing; this page already greeted
-  // Decided once, when the page opens (as on the listening page): due unless this browser heard a greeting in the last three hours.
-  let greetWanted = (() => { try { return Date.now() - (+localStorage.getItem("hpm-greeted") || 0) > 3 * 3600e3; } catch { return true; } })();
-  addEventListener("storage", (e) => { if (e.key === "hpm-greeted" && !greeting) greetWanted = false; }); // another embed on the page, or another tab, greeted meanwhile
-  const greetDue = () => greetWanted && !greeted;
+  let greeting = false; // the clip is playing
+  let played = false;   // the episode's audio has begun and not yet finished, so a resume is not re-greeted
+  // The spoken greeting plays before every episode start (Anant chose "every play" on 2026-11-06),
+  // but not when resuming the episode already underway, and not while the clip is already playing;
+  // replaying a finished episode greets again.
+  function greetDue() {
+    if (greeting) return false;
+    if (played && !audio.ended) return false; // resuming the episode that is already underway
+    return true;
+  }
   function startEpisode() { greeting = false; audio.src = epSrc; const p = audio.play(); if (p && p.catch) p.catch(() => paint()); }
   function greetThenPlay() {
-    if (want == null && audio.readyState >= 2 && !audio.ended && audio.currentTime > 0.5) want = audio.currentTime; // a paused position comes back after the clip
+    // A position reached before the first play (Ahead 15, or a drag) lives only in currentTime once
+    // its seek settled and cleared want; recapture it so it survives the clip wiping the src.
+    if (want == null && audio.readyState >= 2 && !audio.ended && audio.currentTime > 0.5) want = audio.currentTime;
     greeting = true; audio.src = "/audio/greet-" + slot + ".mp3"; paint();
     const p = audio.play();
     if (p && p.catch) p.catch((e) => { if (!greeting) return; if (e && e.name === "NotAllowedError") { greeting = false; audio.src = epSrc; paint(); } else startEpisode(); });
@@ -168,8 +175,8 @@ noscript a { font-weight: 800; }
   seek.addEventListener("input", () => { dragging = true; curEl.textContent = fmt((seek.value / 1000) * dur()); seek.style.setProperty("--p", seek.value / 10 + "%"); });
   seek.addEventListener("change", () => { dragging = false; const d = dur(); seekTo(Math.min((seek.value / 1000) * d, Math.max(0, d - 1))); });
   audio.addEventListener("play", () => {
-    if (greeting) { greeted = true; try { localStorage.setItem("hpm-greeted", String(Date.now())); } catch {} paint(); return; }
-    last = audio.currentTime; live = true; send("play", stat()); paint();
+    if (greeting) { paint(); return; }
+    last = audio.currentTime; live = true; played = true; send("play", stat()); paint();
   });
   audio.addEventListener("pause", () => {
     if (greeting) { if (!audio.ended) { greeting = false; audio.src = epSrc; } paint(); return; } // pausing the greeting skips it
@@ -192,7 +199,7 @@ noscript a { font-weight: 800; }
   });
   audio.addEventListener("ended", () => {
     if (greeting) return startEpisode(); // the greeting is over: the episode starts
-    if (last !== null) heard(last, audio.duration); marks(); live = false; paint();
+    if (last !== null) heard(last, audio.duration); marks(); live = false; played = false; paint();
   });
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.metadata = new MediaMetadata({ title: document.querySelector("h1").textContent, artist: "Two Hallucinating PMs", artwork: [{ src: "/icon-512.png", sizes: "512x512", type: "image/png" }] }); } catch {}
