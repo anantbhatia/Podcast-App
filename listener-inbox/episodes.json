@@ -1,5 +1,234 @@
 [
   {
+    "episode": 5,
+    "slug": "ep05",
+    "title": "Shrinkflation of Artificial Intelligence",
+    "date": "2026-11-11",
+    "durationSec": 1147,
+    "description": "A judge reads the fine print on a \"20x\" AI plan, we do the maths on what a token really costs, and a medieval bread law explains what your monthly fee buys.",
+    "summary": [
+      "A judge reads an AI plan's \"20x\" asterisk, and three claims against Anthropic go ahead.",
+      "The token equation, out loud: why writing an answer costs five times more than reading your prompt.",
+      "Did you get the model you paid for? Relays, resellers, and a tool that proves which model answered.",
+      "England's medieval bread law and the Subway Footlong explain the meter on your AI plan."
+    ],
+    "sources": [
+      {
+        "story": "The Meter Is Running",
+        "refs": [
+          {
+            "title": "Kahn v. Anthropic PBC, Order on Motion to Dismiss (Dkt. 50)",
+            "outlet": "U.S. District Court, N.D. Cal., via CourtListener",
+            "url": "https://storage.courtlistener.com/recap/gov.uscourts.cand.472161/gov.uscourts.cand.472161.50.0.pdf"
+          },
+          {
+            "title": "Kahn v. Anthropic PBC docket feed",
+            "outlet": "CourtListener",
+            "url": "https://www.courtlistener.com/docket/73482575/feed/"
+          },
+          {
+            "title": "In re Claude Service Degradation Litigation docket feed",
+            "outlet": "CourtListener",
+            "url": "https://www.courtlistener.com/docket/73670930/feed/"
+          },
+          {
+            "title": "Partner Center announcements, November 2026 (Copilot Chat: limits for users without a Microsoft 365 Copilot license)",
+            "outlet": "Microsoft Learn",
+            "url": "https://learn.microsoft.com/en-us/partner-center/announcements/2026-november"
+          },
+          {
+            "title": "Copilot Chat has usage caps, and Microsoft would rather you found them by hitting them",
+            "outlet": "The Register",
+            "url": "https://www.theregister.com/ai-and-ml/2026/11/05/copilot-chat-has-usage-caps-and-microsoft-would-rather-you-found-them-by-hitting-them/5307814"
+          },
+          {
+            "title": "Musk says Grok Bot costs were unsustainably high as users ran out early",
+            "outlet": "TNW",
+            "url": "https://thenextweb.com/news/grok-bot-costs-unsustainably-high-musk-usage-limits"
+          },
+          {
+            "title": "Grok Bot weekly usage meter flips between 77% and 100% in real time (thread)",
+            "outlet": "Cursor community forum",
+            "url": "https://forum.cursor.com/t/grok-bot-weekly-usage-meter-flips-between-77-and-100-in-real-time/176909"
+          },
+          {
+            "title": "Supplemental Consumer Credit Terms",
+            "outlet": "Anthropic",
+            "url": "https://www.anthropic.com/legal/consumer-credit-terms"
+          },
+          {
+            "title": "Usage Policy",
+            "outlet": "Anthropic",
+            "url": "https://www.anthropic.com/legal/aup"
+          },
+          {
+            "title": "OpenAI Sets Nov. 20 Approval Rules for AI Gateways",
+            "outlet": "eWeek",
+            "url": "https://www.eweek.com/news/openai-ai-gateway-approval-rules/"
+          },
+          {
+            "title": "Progress on provable inference for large language models",
+            "outlet": "Anthropic",
+            "url": "https://www.anthropic.com/research/provable-inference"
+          },
+          {
+            "title": "FlashProve guide: known limits",
+            "outlet": "Anthropic FlashProve repository (GitHub)",
+            "url": "https://raw.githubusercontent.com/anthropics/FlashProve/main/guide/known-limits.md"
+          },
+          {
+            "title": "FlashProve technical report",
+            "outlet": "Anthropic FlashProve repository (GitHub)",
+            "url": "https://raw.githubusercontent.com/anthropics/FlashProve/main/paper/paper.pdf"
+          },
+          {
+            "title": "Is Opus 5.5 nerfed? Thinking patterns changed on November 3",
+            "outlet": "Hacker News",
+            "url": "https://news.ycombinator.com/item?id=50422069"
+          },
+          {
+            "title": "Glossary",
+            "outlet": "Claude Docs",
+            "url": "https://platform.claude.com/docs/en/about-claude/glossary"
+          },
+          {
+            "title": "Pricing",
+            "outlet": "Claude Docs",
+            "url": "https://platform.claude.com/docs/en/about-claude/pricing"
+          },
+          {
+            "title": "Pricing",
+            "outlet": "Claude",
+            "url": "https://claude.com/pricing"
+          },
+          {
+            "title": "Measuring the Tokenization Premium: A Cost Audit for Underserved Language Communities (Roy, Roy, Patel)",
+            "outlet": "arXiv, IJCAI 2026 Workshop",
+            "url": "https://arxiv.org/abs/2608.09046"
+          },
+          {
+            "title": "Is Your LLM Overcharging You? Tokenization, Transparency, and Incentives (Artola Velasco, Tsirtsis, Okati, Gomez-Rodriguez)",
+            "outlet": "arXiv, ICML 2026",
+            "url": "https://arxiv.org/abs/2505.21627"
+          },
+          {
+            "title": "Towards Proving Frontier-Scale LLM Inference (research note)",
+            "outlet": "SASH",
+            "url": "https://aisafety.sg/research/what-proving-llm-inference-actually-costs-research-note"
+          },
+          {
+            "title": "Scout Before You Route: Predicting Task Success and Token Count from a Small LLM Prefill (Milios, Pal)",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2611.09028"
+          },
+          {
+            "title": "ChatGPT and Codex will share one usage limit starting in December",
+            "outlet": "Notebookcheck",
+            "url": "https://www.notebookcheck.net/ChatGPT-and-Codex-will-share-one-usage-limit-starting-in-December.1440897.0.html"
+          },
+          {
+            "title": "Assize of Bread and Ale",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Assize_of_Bread_and_Ale"
+          },
+          {
+            "title": "Anthropic PBC Form S-1",
+            "outlet": "SEC EDGAR",
+            "url": "https://www.sec.gov/Archives/edgar/data/2130357/000162828026067168/anthropicpbc-sx1.htm"
+          },
+          {
+            "title": "Anthropic PBC Form S-1/A",
+            "outlet": "SEC EDGAR",
+            "url": "https://www.sec.gov/Archives/edgar/data/2130357/000162828026068676/anthropicpbc-sx1ax1.htm"
+          },
+          {
+            "title": "From Tokens to Credits to Outcomes: Pricing AI Across Models, Applications, and Cloud Platforms (Pratik Gupta)",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2610.30701"
+          },
+          {
+            "title": "Capital Efficiency, Isolation, Risk, and Ruin in Generative AI Inference Serving Infrastructure (St. Amant et al.)",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2611.08999"
+          },
+          {
+            "title": "Ramp data shows AI spending stalling just as Anthropic nears its IPO",
+            "outlet": "TechCrunch",
+            "url": "https://techcrunch.com/2026/11/06/ramp-data-shows-ai-spending-stalling-just-as-anthropic-nears-its-ipo/"
+          },
+          {
+            "title": "What the Middleman Delivers: Answer Behavior, Tool Permissions, and Billed Usage in LLM API Relays (Wu et al.)",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2611.07650"
+          },
+          {
+            "title": "Behavioral Consistency and Transparency Analysis on Large Language Model API Gateways (GateScope; Lin et al.)",
+            "outlet": "arXiv, IMC '26",
+            "url": "https://arxiv.org/abs/2604.21083"
+          },
+          {
+            "title": "Which Model Is Actually Serving You? IRIS: Budgeted Black-Box Auditing of Model Substitution and Routing Dilution in LLM Gateways (Zhang et al.)",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2607.20860"
+          },
+          {
+            "title": "Uncovering and Understanding Hidden Dependencies in the LLM API Reseller Ecosystem via Prefix-Cache Side Channels (CacheTracer; Ji et al.)",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2608.20732"
+          },
+          {
+            "title": "Token Inflation: How Dishonest Providers Can Overcharge for Large Language Model Usage (Hoque et al.)",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2605.30040"
+          },
+          {
+            "title": "ads.txt - Authorized Digital Sellers",
+            "outlet": "IAB Tech Lab",
+            "url": "https://iabtechlab.com/ads-txt/"
+          },
+          {
+            "title": "Seventh Circuit Holds Footlong Settlement Falls Short",
+            "outlet": "National Law Review",
+            "url": "https://natlawreview.com/article/seventh-circuit-holds-footlong-settlement-falls-short"
+          },
+          {
+            "title": "Subway 11-inch sandwiches settlement only benefited lawyers, judge rules",
+            "outlet": "Legal Cheek",
+            "url": "https://www.legalcheek.com/2017/09/subway-11-inch-sandwiches-settlement-only-benefited-lawyers-judge-rules"
+          },
+          {
+            "title": "History of Bread - The Industrial Age (1700-1887)",
+            "outlet": "Federation of Bakers",
+            "url": "https://www.fob.uk.com/about-the-bread-industry/history-of-bread-antiquity/history-bread-industrial-age/"
+          },
+          {
+            "title": "Claude Code CHANGELOG (2.1.319)",
+            "outlet": "Anthropic (GitHub)",
+            "url": "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md"
+          },
+          {
+            "title": "The countdown is on: new DMCCA subscription rules landing in January 2027",
+            "outlet": "Gowling WLG",
+            "url": "https://gowlingwlg.com/en/insights-resources/articles/2026/the-countdown-is-on-new-dmcca-subscription-rules-landing-in-january-2027"
+          },
+          {
+            "title": "How Rovo credits work (Rovo usage limits)",
+            "outlet": "Atlassian Support",
+            "url": "https://support.atlassian.com/rovo/docs/rovo-usage-limits"
+          },
+          {
+            "title": "Atlassian Usage Based Pricing (FAQ)",
+            "outlet": "Atlassian",
+            "url": "https://www.atlassian.com/licensing/usage-based-pricing"
+          }
+        ]
+      }
+    ],
+    "audio": "ep05.mp3",
+    "bytes": 13764958,
+    "publishedAt": "2026-11-11T15:17:14.169Z"
+  },
+  {
     "episode": 4,
     "slug": "ep04",
     "title": "Pixel: The Most Potent Tracker invented by Mankind!",
