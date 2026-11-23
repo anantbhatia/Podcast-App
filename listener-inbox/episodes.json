@@ -1,5 +1,249 @@
 [
   {
+    "episode": 6,
+    "slug": "ep06",
+    "title": "Your next Boss could be a Software!",
+    "date": "2026-11-23",
+    "durationSec": 1322.2,
+    "description": "United and eBay lock AI agents out while Delaware drafts a company an agent could run. Who answers when it goes wrong? Plus ads aimed at agents, Claude in meetings and a pay-to-drive Cybercab.",
+    "summary": [
+      "Why United and eBay wrote AI agents out, and how a Delaware draft could shield the owner behind one.",
+      "Ads are learning to persuade agents, and a McGill test finds a 'Sponsored' label doesn't fix it.",
+      "Claude joins your Google Meet calls: whose email it opens, and who can use it today.",
+      "A Cybercab that only drives while you pay, and an agent that proofread its owner's email unasked."
+    ],
+    "sources": [
+      {
+        "story": "Cold open: this week in tech",
+        "refs": [
+          {
+            "title": "GTA VI hits 99 on Metacritic",
+            "outlet": "TNW",
+            "url": "https://thenextweb.com/news/gta-vi-metacritic-99-reviews-30fps-launch"
+          },
+          {
+            "title": "GTA 6 review roundup: 99 on Metacritic and 118 perfect scores",
+            "outlet": "TechPowerUp",
+            "url": "https://www.techpowerup.com/354998/gta-6-review-roundup-99-on-metacritic-and-118-perfect-scores"
+          },
+          {
+            "title": "GTA VI's team eschewed AI and procedural generation for handcrafted fidelity",
+            "outlet": "The New York Times (via Techmeme)",
+            "url": "https://www.techmeme.com/river"
+          },
+          {
+            "title": "Nasdaq 100 fell 5.6% on Friday, 10.4% for the week, worst run in more than six years",
+            "outlet": "Financial Times (via Techmeme)",
+            "url": "https://www.techmeme.com/river"
+          },
+          {
+            "title": "Amazon unifies Alexa and Rufus as AI rivals move into online shopping",
+            "outlet": "GeekWire",
+            "url": "https://www.geekwire.com/2026/amazon-unifies-alexa-and-rufus-as-ai-rivals-move-into-online-shopping/"
+          }
+        ]
+      },
+      {
+        "story": "Agents not welcome, and the company with no one home",
+        "refs": [
+          {
+            "title": "United bans AI agents from buying its tickets, seats and upgrades",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/united-bans-ai-agents-from-buying-its-tickets-seats-and-upgrades/"
+          },
+          {
+            "title": "eBay bans the robot shopper, unless eBay sends the invitation",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/ebay-bans-the-robot-shopper-unless-ebay-sends-the-invitation/"
+          },
+          {
+            "title": "AI agents have a big problem: Nobody wants to let them in",
+            "outlet": "PCWorld",
+            "url": "https://www.pcworld.com/article/3283946/ai-agents-have-a-big-problem-nobody-wants-to-let-them-in.html"
+          },
+          {
+            "title": "OpenAI launches ChatGPT Wallet, enabling 'dot' agents to make purchases",
+            "outlet": "9to5Mac",
+            "url": "https://9to5mac.com/2026/11/13/openai-launches-chatgpt-wallet-enabling-dot-agents-to-make-purchases/"
+          },
+          {
+            "title": "OpenAI hands its AI agents a wallet without the real card number in it",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/openai-hands-its-ai-agents-a-wallet-without-the-real-card-number-in-it/"
+          },
+          {
+            "title": "Delaware Considers AI-Managed Companies",
+            "outlet": "JD Supra",
+            "url": "https://www.jdsupra.com/legalnews/delaware-considers-ai-managed-companies-7749604/"
+          },
+          {
+            "title": "A Critique of Delaware's AIC Draft Legislation",
+            "outlet": "Oxford Business Law Blog",
+            "url": "https://blogs.law.ox.ac.uk/oblb/blog-post/2026/10/critique-delawares-aic-draft-legislation"
+          },
+          {
+            "title": "Brave New World: Delaware's Proposed New “Artificial Intelligence Company”",
+            "outlet": "The D&O Diary",
+            "url": "https://www.dandodiary.com/2026/07/articles/artificial-intelligence/brave-new-world-delawares-proposed-new-artificial-intelligence-company/"
+          },
+          {
+            "title": "Draft Artificial Intelligence Company Act (draft of 2 June 2026)",
+            "outlet": "The D&O Diary (draft bill text)",
+            "url": "https://www.dandodiary.com/wp-content/uploads/sites/893/2026/07/Draft-Delaware-Bill-Artificial-Intellgence-Company-1.pdf"
+          },
+          {
+            "title": "Legal experts question who's liable as Delaware pursues AI-run companies idea",
+            "outlet": "WHYY",
+            "url": "https://whyy.org/articles/delaware-artificial-intelligence-companies-state-proposal/"
+          },
+          {
+            "title": "Whose Agent Are You? Multi-Layer Fingerprinting and Attribution of Autonomous Web Agents",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2606.20910"
+          },
+          {
+            "title": "Explaining Web Bot Auth",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/web-bot-auth/"
+          },
+          {
+            "title": "An Attenuated Delegation Profile for Automated Agents (draft-hamr-oauth-agent-delegation)",
+            "outlet": "IETF Datatracker",
+            "url": "https://datatracker.ietf.org/doc/draft-hamr-oauth-agent-delegation/"
+          },
+          {
+            "title": "Deodand",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Deodand"
+          },
+          {
+            "title": "15 U.S. Code § 7001 - General rule of validity",
+            "outlet": "Cornell Law School LII",
+            "url": "https://www.law.cornell.edu/uscode/text/15/7001"
+          },
+          {
+            "title": "Moffatt v. Air Canada, 2024 BCCRT 149",
+            "outlet": "BC Civil Resolution Tribunal",
+            "url": "https://decisions.civilresolutionbc.ca/crt/crtd/en/525448/1/document.do"
+          },
+          {
+            "title": "Agents at the Checkout: Loss Allocation in Frontier-Lab Payment Wallets",
+            "outlet": "Cloud Security Alliance",
+            "url": "https://labs.cloudsecurityalliance.org/research/csa-research-note-agent-payment-wallet-liability-concentrati/"
+          },
+          {
+            "title": "No One to Blame: A Framework of Constitutive AI Unaccountability",
+            "outlet": "arXiv, AAAI/ACM AIES 2026",
+            "url": "https://arxiv.org/abs/2608.12104"
+          },
+          {
+            "title": "A Short History of the Court of Chancery",
+            "outlet": "Delaware Courts",
+            "url": "https://courts.delaware.gov/chancery/history.aspx"
+          },
+          {
+            "title": "DEFAC General Fund revenue worksheet, October 2026",
+            "outlet": "Delaware Economic and Financial Advisory Council",
+            "url": "https://financefiles.delaware.gov/DEFAC/10_26/2026_10_RevWorksheet.pdf"
+          },
+          {
+            "title": "Delaware Division of Corporations: 2025 Annual Report",
+            "outlet": "Delaware Division of Corporations",
+            "url": "https://corpfiles.delaware.gov/Annual-Reports/Division-of-Corporations-2025-Annual-Report.pdf"
+          },
+          {
+            "title": "AppLovin Corporation preliminary information statement (PRE 14C)",
+            "outlet": "SEC EDGAR",
+            "url": "https://www.sec.gov/Archives/edgar/data/1751008/000175100826000075/app-2026xpre14c.htm"
+          },
+          {
+            "title": "Early November 2026 Reincorporation Update",
+            "outlet": "Business Law Prof Blog",
+            "url": "https://www.businesslawprofessors.com/2026/11/early-november-2026-reincorporation-update/"
+          }
+        ]
+      },
+      {
+        "story": "The agent is the new audience",
+        "refs": [
+          {
+            "title": "Amazon puts Sponsored Products ads inside Audible, free during beta",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/amazon-puts-sponsored-products-ads-inside-audible-free-during-beta/"
+          },
+          {
+            "title": "Audible is trying to make it easier to find audiobooks you'll actually like",
+            "outlet": "The Verge",
+            "url": "https://www.theverge.com/tech/1034083/audible-audio-discovery-ai-feature-availability"
+          },
+          {
+            "title": "Amazon has a plan to index the world's online shopping data",
+            "outlet": "The Verge",
+            "url": "https://www.theverge.com/tech/1033697/amazon-world-product-graph-ai-search"
+          },
+          {
+            "title": "Businesses gain ChatGPT click and mention counts in OpenAI's Business Hub",
+            "outlet": "PPC Land",
+            "url": "https://ppc.land/businesses-gain-chatgpt-click-and-mention-counts-in-openais-business-hub/"
+          },
+          {
+            "title": "Payola",
+            "outlet": "Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Payola"
+          },
+          {
+            "title": "47 U.S. Code § 508 - Disclosure of payments to individuals connected with broadcasts",
+            "outlet": "Cornell Law School LII",
+            "url": "https://www.law.cornell.edu/uscode/text/47/508"
+          },
+          {
+            "title": "Whom Do AI Agents Serve? Role-Induced Sponsorship Bias in Decision Models and Generative LLMs",
+            "outlet": "arXiv preprint",
+            "url": "https://arxiv.org/abs/2609.17989"
+          }
+        ]
+      },
+      {
+        "story": "Claude Meetings",
+        "refs": [
+          {
+            "title": "Introducing Claude Meetings, now in beta",
+            "outlet": "Anthropic",
+            "url": "https://claude.com/resources/articles/claude-meetings"
+          }
+        ]
+      },
+      {
+        "story": "Tesla's Cybercab needs a subscription to drive",
+        "refs": [
+          {
+            "title": "Tesla Cybercab's autonomy agreement is insane: $299/mo or it doesn't move",
+            "outlet": "Electrek",
+            "url": "https://electrek.co/2026/11/14/tesla-cybercab-autonomy-subscription-agreement-terms/"
+          }
+        ]
+      },
+      {
+        "story": "The agent that opened a Google Doc nobody asked it to",
+        "refs": [
+          {
+            "title": "My ChatGPT agent proofread a Google Doc I never asked it to open",
+            "outlet": "PCWorld",
+            "url": "https://www.pcworld.com/article/3280320/my-chatgpt-agent-proofread-a-google-doc-i-never-asked-it-to-open.html"
+          },
+          {
+            "title": "OpenAI launches ChatGPT Wallet, enabling 'dot' agents to make purchases",
+            "outlet": "9to5Mac",
+            "url": "https://9to5mac.com/2026/11/13/openai-launches-chatgpt-wallet-enabling-dot-agents-to-make-purchases/"
+          }
+        ]
+      }
+    ],
+    "audio": "ep06.mp3",
+    "bytes": 13915774,
+    "publishedAt": "2026-11-23T21:18:41.152Z"
+  },
+  {
     "episode": 5,
     "slug": "ep05",
     "title": "Shrinkflation of Artificial Intelligence",
